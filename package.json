@@ -1,0 +1,13 @@
+{
+  "name": "medshield",
+  "version": "1.0.0",
+  "description": "MedShield — AI-Powered Insurance Policy Intelligence Assistant",
+  "scripts": {
+    "server": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run seed"
+  },
+  "keywords": ["insurance", "rag", "mongodb", "chromadb", "react", "express", "tailwind"],
+  "author": "MedShield Team",
+  "license": "MIT"
+}
