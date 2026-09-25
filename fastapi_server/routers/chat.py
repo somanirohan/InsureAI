@@ -1,0 +1,189 @@
+import uuid
+import json
+import asyncio
+from datetime import datetime
+from typing import Optional
+from bson import ObjectId
+from fastapi import APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query
+
+from fastapi_server.models.chat import QuestionRequest
+from fastapi_server.services.auth_service import get_current_user
+from fastapi_server.services.rag_service import rag_service
+from fastapi_server.db import get_async_db
+
+router = APIRouter(prefix="/api/chat", tags=["Chat & RAG"])
+
+@router.post("/message")
+async def send_message(payload: QuestionRequest, current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    db = get_async_db()
+
+    conv_id = payload.conversation_id
+    conversation = None
+
+    if conv_id:
+        try:
+            c_id = ObjectId(conv_id)
+        except Exception:
+            c_id = conv_id
+        conversation = await db.conversations.find_one({"_id": c_id, "user_id": user_id})
+
+    # If conversation doesn't exist, create a new one
+    if not conversation:
+        title = payload.question[:45] + "..." if len(payload.question) > 45 else payload.question
+        conv_doc = {
+            "user_id": user_id,
+            "policy_id": payload.policy_id,
+            "title": title,
+            "messages": [],
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        res = await db.conversations.insert_one(conv_doc)
+        conv_id = str(res.inserted_id)
+        conversation = conv_doc
+        conversation["_id"] = conv_id
+    else:
+        conv_id = str(conversation["_id"])
+
+    # Build User Message
+    user_msg = {
+        "message_id": str(uuid.uuid4()),
+        "role": "user",
+        "content": payload.question,
+        "query_type": None,
+        "plain_language": None,
+        "confidence_level": None,
+        "verification_passed": None,
+        "verification_notes": None,
+        "citations": [],
+        "created_at": datetime.utcnow()
+    }
+
+    # Process question using RAG pipeline
+    rag_response = await rag_service.answer_question(
+        user_id=user_id,
+        policy_id=payload.policy_id,
+        question=payload.question,
+        plain_language_requested=payload.plain_language_mode
+    )
+
+    assistant_msg = {
+        "message_id": str(uuid.uuid4()),
+        "role": "assistant",
+        "content": rag_response["answer"],
+        "query_type": rag_response["query_type"],
+        "plain_language": rag_response["plain_language"],
+        "confidence_level": rag_response["confidence_level"],
+        "verification_passed": rag_response["verification_passed"],
+        "verification_notes": rag_response["verification_notes"],
+        "citations": rag_response["citations"],
+        "created_at": datetime.utcnow()
+    }
+
+    try:
+        c_id = ObjectId(conv_id)
+    except Exception:
+        c_id = conv_id
+
+    await db.conversations.update_one(
+        {"_id": c_id},
+        {
+            "$push": {"messages": {"$each": [user_msg, assistant_msg]}},
+            "$set": {"updated_at": datetime.utcnow()}
+        }
+    )
+
+    return {
+        "success": True,
+        "conversationId": conv_id,
+        "userMessage": user_msg,
+        "assistantMessage": assistant_msg
+    }
+
+@router.get("/conversations")
+async def get_conversations(current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    db = get_async_db()
+
+    conversations = await db.conversations.find({"user_id": user_id}).sort("updated_at", -1).to_list(length=100)
+    for c in conversations:
+        c["_id"] = str(c["_id"])
+        if c.get("policy_id"):
+            c["policy_id"] = str(c["policy_id"])
+
+    return {"conversations": conversations}
+
+@router.get("/conversations/{conversation_id}")
+async def get_conversation_by_id(conversation_id: str, current_user: dict = Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    db = get_async_db()
+
+    try:
+        c_id = ObjectId(conversation_id)
+    except Exception:
+        c_id = conversation_id
+
+    conversation = await db.conversations.find_one({"_id": c_id, "user_id": user_id})
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    conversation["_id"] = str(conversation["_id"])
+    return {"conversation": conversation}
+
+# WebSocket Endpoint for Real-time Streaming
+@router.websocket("/ws")
+async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
+    await websocket.accept()
+    try:
+        if not token:
+            await websocket.send_json({"error": "Unauthorized: Token missing"})
+            await websocket.close(code=1008)
+            return
+
+        from fastapi_server.services.auth_service import settings, jwt
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+
+        await websocket.send_json({"type": "connected", "message": "Connected to MedShield WebSocket RAG Stream"})
+
+        while True:
+            data = await websocket.receive_text()
+            req = json.loads(data)
+            question = req.get("question", "")
+            policy_id = req.get("policy_id")
+            plain_language = req.get("plain_language_mode", False)
+
+            if not question:
+                continue
+
+            # Stream chunks simulation or real-time answer
+            rag_response = await rag_service.answer_question(user_id, policy_id, question, plain_language)
+
+            full_answer = rag_response["answer"]
+            words = full_answer.split()
+
+            # Send metadata header first
+            await websocket.send_json({
+                "type": "start",
+                "query_type": rag_response["query_type"],
+                "confidence_level": rag_response["confidence_level"],
+                "verification_passed": rag_response["verification_passed"],
+                "citations": rag_response["citations"]
+            })
+
+            # Stream word chunks
+            for word in words:
+                await websocket.send_json({"type": "chunk", "text": word + " "})
+                await asyncio.sleep(0.02)
+
+            await websocket.send_json({
+                "type": "complete",
+                "plain_language": rag_response["plain_language"]
+            })
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        await websocket.send_json({"type": "error", "message": str(e)})
+        await websocket.close()

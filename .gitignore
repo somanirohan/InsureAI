@@ -30,6 +30,13 @@ pnpm-debug.log*
 lerna-debug.log*
 *.log
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+uploads/
+fastapi_server/uploads/
+
 # Editor and OS files
 .vscode/
 .idea/
