@@ -1,7 +1,11 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from fastapi_server.db import get_vector_collection
 import logging
+
+try:
+    from db import get_vector_collection
+except ImportError:
+    from server.db import get_vector_collection
 
 logger = logging.getLogger("medshield.chroma")
 

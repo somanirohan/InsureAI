@@ -1,10 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 
-from fastapi_server.models.cost import CostEstimateRequest, WhatIfRequest
-from fastapi_server.services.auth_service import get_current_user
-from fastapi_server.services.cost_service import cost_estimator_service, TREATMENT_BENCHMARKS
-from fastapi_server.db import get_async_db
+try:
+    from models.cost import CostEstimateRequest, WhatIfRequest
+    from services.auth_service import get_current_user
+    from services.cost_service import cost_estimator_service, TREATMENT_BENCHMARKS
+    from db import get_async_db
+except ImportError:
+    from server.models.cost import CostEstimateRequest, WhatIfRequest
+    from server.services.auth_service import get_current_user
+    from server.services.cost_service import cost_estimator_service, TREATMENT_BENCHMARKS
+    from server.db import get_async_db
 
 router = APIRouter(prefix="/api/cost", tags=["Cost Estimator & What-If"])
 

@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends
-from fastapi_server.services.auth_service import get_current_user
-from fastapi_server.db import get_async_db
+
+try:
+    from services.auth_service import get_current_user
+    from db import get_async_db
+except ImportError:
+    from server.services.auth_service import get_current_user
+    from server.db import get_async_db
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 

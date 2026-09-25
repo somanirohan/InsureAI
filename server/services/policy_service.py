@@ -3,18 +3,21 @@ import math
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from bson import ObjectId
-from fastapi_server.db import get_async_db
-from fastapi_server.services.chroma_service import chroma_service
 import logging
+
+try:
+    from db import get_async_db
+    from services.chroma_service import chroma_service
+except ImportError:
+    from server.db import get_async_db
+    from server.services.chroma_service import chroma_service
 
 logger = logging.getLogger("medshield.policy")
 
 class PolicyService:
     async def process_policy_document(self, policy_id: str, user_id: str):
-        """Background worker task for processing policy document pipeline (FR-03)"""
         db = get_async_db()
         try:
-            # Query by ObjectId or string
             try:
                 p_id = ObjectId(policy_id)
             except Exception:
@@ -24,13 +27,11 @@ class PolicyService:
             if not policy:
                 return
 
-            # Step 1: Update status to 'extracting'
             await db.policies.update_one(
                 {"_id": p_id},
                 {"$set": {"status": "extracting", "updated_at": datetime.utcnow()}}
             )
 
-            # Extract facts & chunks
             extracted_data = self.generate_extracted_facts(policy.get("file_name", ""))
 
             await db.policies.update_one(
@@ -50,7 +51,6 @@ class PolicyService:
                 }}
             )
 
-            # Step 2: Index text chunks in MongoDB & ChromaDB
             chunks_to_insert = []
             for i, chunk_data in enumerate(extracted_data["chunks"]):
                 vector_id = str(uuid.uuid4())
@@ -72,7 +72,6 @@ class PolicyService:
                 await db.policy_chunks.insert_many(chunks_to_insert)
                 chroma_service.upsert_chunks(chunks_to_insert)
 
-            # Step 3: Finalize status to 'ready'
             await db.policies.update_one(
                 {"_id": p_id},
                 {"$set": {"status": "ready", "updated_at": datetime.utcnow()}}
@@ -90,7 +89,6 @@ class PolicyService:
             )
 
     async def delete_policy_cascade(self, user_id: str, policy_id: str) -> Dict[str, Any]:
-        """Cascade delete policy (Section 8 data model)"""
         db = get_async_db()
         try:
             p_id = ObjectId(policy_id)
@@ -101,20 +99,14 @@ class PolicyService:
         if not policy:
             raise Exception("Policy not found or unauthorized")
 
-        # 1. Delete associated policy chunks from MongoDB
         await db.policy_chunks.delete_many({"policy_id": str(policy_id), "user_id": str(user_id)})
-
-        # 2. Delete matching vectors from ChromaDB
         chroma_service.delete_policy_vectors(user_id, policy_id)
 
-        # 3. Clean up reference in conversations and cost_estimates
         await db.conversations.update_many(
             {"policy_id": str(policy_id), "user_id": str(user_id)},
             {"$set": {"policy_id": None}}
         )
         await db.cost_estimates.delete_many({"policy_id": str(policy_id), "user_id": str(user_id)})
-
-        # 4. Delete policy record
         await db.policies.delete_one({"_id": p_id, "user_id": str(user_id)})
 
         return {"success": True, "message": "Policy and associated records deleted successfully"}

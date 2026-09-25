@@ -2,7 +2,11 @@ import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from bson import ObjectId
-from fastapi_server.db import get_async_db
+
+try:
+    from db import get_async_db
+except ImportError:
+    from server.db import get_async_db
 
 TREATMENT_BENCHMARKS = {
     "knee replacement": {"tier_1": 350000, "tier_2": 250000, "tier_3": 180000},
@@ -31,7 +35,6 @@ class CostEstimatorService:
         base_cost = benchmark.get(hospital_tier, benchmark.get("tier_1", 250000))
         sum_insured = policy.get("sum_insured", 1000000.0) if policy else 1000000.0
 
-        # Room rent cap calculation from policy facts
         room_rent_cap = sum_insured * 0.01
         if policy and policy.get("facts"):
             room_fact = next((f for f in policy["facts"] if f.get("category") == "room_rent_limit"), None)

@@ -1,1 +1,0 @@
-# MedShield FastAPI Package

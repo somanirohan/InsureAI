@@ -5,12 +5,12 @@ from datetime import datetime
 class CostEstimateRequest(BaseModel):
     policy_id: str
     treatment_name: str
-    hospital_tier: str = "tier_1"  # 'tier_1' | 'tier_2' | 'tier_3'
+    hospital_tier: str = "tier_1"
     room_rent_per_day: float = 8000.0
     stay_days: int = 4
 
 class WhatIfRequest(BaseModel):
-    changed_variable: str  # 'hospital_tier' | 'rider' | 'sum_insured'
+    changed_variable: str
     new_value: str
 
 class WhatIfVariantModel(BaseModel):

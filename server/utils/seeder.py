@@ -1,8 +1,13 @@
 import uuid
 from datetime import datetime, timedelta
 from bson import ObjectId
-from fastapi_server.db import get_sync_db, get_vector_collection
-from fastapi_server.services.auth_service import hash_password
+
+try:
+    from db import get_sync_db, get_vector_collection
+    from services.auth_service import hash_password
+except ImportError:
+    from server.db import get_sync_db, get_vector_collection
+    from server.services.auth_service import hash_password
 
 def seed_data():
     print("[Python Seeder] Connecting to database...")
@@ -17,7 +22,6 @@ def seed_data():
     db.cost_estimates.delete_many({})
     db.policy_comparisons.delete_many({})
 
-    # 1. Create Demo User
     user_id = ObjectId()
     pwd_hash = hash_password("password123")
     user_doc = {
@@ -33,7 +37,6 @@ def seed_data():
     db.users.insert_one(user_doc)
     print(f"[Python Seeder] Created User: {user_doc['email']} (ID: {user_id})")
 
-    # 2. Create Policies with Embedded Facts
     star_policy_id = ObjectId()
     hdfc_policy_id = ObjectId()
 
@@ -236,7 +239,6 @@ def seed_data():
     db.policies.insert_many([star_policy, hdfc_policy])
     print(f"[Python Seeder] Created 2 Policies: {star_policy['insurer_name']} and {hdfc_policy['insurer_name']}")
 
-    # 3. Create Policy Chunks & Vectors
     raw_chunks = [
         {
             "policy_id": str(star_policy_id),
@@ -292,7 +294,6 @@ def seed_data():
     )
     print(f"[Python Seeder] Created {len(raw_chunks)} policy chunks in MongoDB and Vector Store")
 
-    # 4. Create Demo Conversation
     conv_id = ObjectId()
     conv_doc = {
         "_id": conv_id,
@@ -337,7 +338,6 @@ def seed_data():
     }
     db.conversations.insert_one(conv_doc)
 
-    # 5. Create Demo Cost Estimate
     est_id = ObjectId()
     est_doc = {
         "_id": est_id,

@@ -1,10 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 
-from fastapi_server.models.comparison import CompareRequest
-from fastapi_server.services.auth_service import get_current_user
-from fastapi_server.services.comparison_service import comparison_service
-from fastapi_server.db import get_async_db
+try:
+    from models.comparison import CompareRequest
+    from services.auth_service import get_current_user
+    from services.comparison_service import comparison_service
+    from db import get_async_db
+except ImportError:
+    from server.models.comparison import CompareRequest
+    from server.services.auth_service import get_current_user
+    from server.services.comparison_service import comparison_service
+    from server.db import get_async_db
 
 router = APIRouter(prefix="/api/comparisons", tags=["Policy Comparison"])
 

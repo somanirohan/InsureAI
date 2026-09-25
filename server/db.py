@@ -1,16 +1,18 @@
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
-from fastapi_server.config import settings
 import logging
+
+try:
+    from config import settings
+except ImportError:
+    from server.config import settings
 
 logger = logging.getLogger("medshield.db")
 
-# Async Motor Client for FastAPI endpoints
 motor_client = None
 db = None
 
-# Sync MongoClient for scripts/seeder
 sync_mongo_client = None
 sync_db = None
 
@@ -18,7 +20,6 @@ def get_async_db():
     global motor_client, db
     if db is None:
         motor_client = AsyncIOMotorClient(settings.MONGO_URI)
-        # Extract database name from URI or fallback to medshield
         db_name = settings.MONGO_URI.split("/")[-1].split("?")[0] or "medshield"
         db = motor_client[db_name]
         logger.info(f"Connected to Async MongoDB: {db_name}")
@@ -32,12 +33,10 @@ def get_sync_db():
         sync_db = sync_mongo_client[db_name]
     return sync_db
 
-# ChromaDB Initialization with In-Memory Fallback
 chroma_client = None
 vector_collection = None
 
 class MemoryVectorStoreFallback:
-    """In-memory vector store fallback when standalone ChromaDB is not active"""
     def __init__(self):
         self.documents = []
         self.metadatas = []
@@ -45,7 +44,6 @@ class MemoryVectorStoreFallback:
 
     def add(self, ids, documents, metadatas):
         for i, doc_id in enumerate(ids):
-            # Update existing or append
             if doc_id in self.ids:
                 idx = self.ids.index(doc_id)
                 self.documents[idx] = documents[i]
@@ -62,7 +60,6 @@ class MemoryVectorStoreFallback:
 
         matched_indices = []
         for i, (doc, meta) in enumerate(zip(self.documents, self.metadatas)):
-            # Apply metadata filters (user_id & policy_id data isolation)
             if where:
                 match = True
                 for k, v in where.items():
@@ -76,12 +73,10 @@ class MemoryVectorStoreFallback:
                 if not match:
                     continue
 
-            # Calculate keyword similarity score
             doc_lower = doc.lower()
             overlap = sum(1 for word in query_words if word in doc_lower)
             matched_indices.append((i, overlap))
 
-        # Sort by overlap score descending
         matched_indices.sort(key=lambda x: x[1], reverse=True)
         top_indices = [idx for idx, score in matched_indices[:n_results]]
 

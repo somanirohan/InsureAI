@@ -10,11 +10,11 @@ class CitationModel(BaseModel):
 
 class MessageModel(BaseModel):
     message_id: str
-    role: str  # 'user' | 'assistant'
+    role: str
     content: str
-    query_type: Optional[str] = None  # 'structured' | 'semantic'
+    query_type: Optional[str] = None
     plain_language: Optional[str] = None
-    confidence_level: Optional[str] = None  # 'high' | 'medium' | 'low'
+    confidence_level: Optional[str] = None
     verification_passed: Optional[bool] = None
     verification_notes: Optional[str] = None
     citations: List[CitationModel] = []

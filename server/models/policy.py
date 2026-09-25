@@ -4,7 +4,7 @@ from datetime import datetime
 
 class FactModel(BaseModel):
     fact_id: str
-    category: str  # coverage_category, sum_insured, sub_limit, waiting_period, exclusion, room_rent_limit, co_payment, deductible, claim_condition
+    category: str
     fact_key: str
     fact_value: str
     fact_value_numeric: Optional[float] = None
@@ -31,7 +31,7 @@ class PolicyResponse(BaseModel):
     policy_number: Optional[str] = None
     sum_insured: Optional[float] = None
     premium_amount: Optional[float] = None
-    status: str = "uploading"  # uploading, extracting, indexed, ready, failed
+    status: str = "uploading"
     ocr_used: bool = False
     red_flag_summary: Optional[RedFlagSummaryModel] = None
     facts: List[FactModel] = []

@@ -5,10 +5,16 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, BackgroundTasks, status
 
-from fastapi_server.services.auth_service import get_current_user
-from fastapi_server.services.policy_service import policy_service
-from fastapi_server.db import get_async_db
-from fastapi_server.config import settings
+try:
+    from services.auth_service import get_current_user
+    from services.policy_service import policy_service
+    from db import get_async_db
+    from config import settings
+except ImportError:
+    from server.services.auth_service import get_current_user
+    from server.services.policy_service import policy_service
+    from server.db import get_async_db
+    from server.config import settings
 
 router = APIRouter(prefix="/api/policies", tags=["Policies"])
 
@@ -58,7 +64,6 @@ async def upload_policy(
     policy_id = str(res.inserted_id)
     policy_doc["_id"] = policy_id
 
-    # Queue background task for processing policy document pipeline (FR-03, async task execution)
     background_tasks.add_task(policy_service.process_policy_document, policy_id, user_id)
 
     return {

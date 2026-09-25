@@ -6,10 +6,16 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query
 
-from fastapi_server.models.chat import QuestionRequest
-from fastapi_server.services.auth_service import get_current_user
-from fastapi_server.services.rag_service import rag_service
-from fastapi_server.db import get_async_db
+try:
+    from models.chat import QuestionRequest
+    from services.auth_service import get_current_user
+    from services.rag_service import rag_service
+    from db import get_async_db
+except ImportError:
+    from server.models.chat import QuestionRequest
+    from server.services.auth_service import get_current_user
+    from server.services.rag_service import rag_service
+    from server.db import get_async_db
 
 router = APIRouter(prefix="/api/chat", tags=["Chat & RAG"])
 
@@ -28,7 +34,6 @@ async def send_message(payload: QuestionRequest, current_user: dict = Depends(ge
             c_id = conv_id
         conversation = await db.conversations.find_one({"_id": c_id, "user_id": user_id})
 
-    # If conversation doesn't exist, create a new one
     if not conversation:
         title = payload.question[:45] + "..." if len(payload.question) > 45 else payload.question
         conv_doc = {
@@ -46,7 +51,6 @@ async def send_message(payload: QuestionRequest, current_user: dict = Depends(ge
     else:
         conv_id = str(conversation["_id"])
 
-    # Build User Message
     user_msg = {
         "message_id": str(uuid.uuid4()),
         "role": "user",
@@ -60,7 +64,6 @@ async def send_message(payload: QuestionRequest, current_user: dict = Depends(ge
         "created_at": datetime.utcnow()
     }
 
-    # Process question using RAG pipeline
     rag_response = await rag_service.answer_question(
         user_id=user_id,
         policy_id=payload.policy_id,
@@ -131,7 +134,6 @@ async def get_conversation_by_id(conversation_id: str, current_user: dict = Depe
     conversation["_id"] = str(conversation["_id"])
     return {"conversation": conversation}
 
-# WebSocket Endpoint for Real-time Streaming
 @router.websocket("/ws")
 async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
     await websocket.accept()
@@ -141,7 +143,11 @@ async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Q
             await websocket.close(code=1008)
             return
 
-        from fastapi_server.services.auth_service import settings, jwt
+        try:
+            from services.auth_service import settings, jwt
+        except ImportError:
+            from server.services.auth_service import settings, jwt
+
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
         user_id = payload.get("user_id")
 
@@ -157,13 +163,11 @@ async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Q
             if not question:
                 continue
 
-            # Stream chunks simulation or real-time answer
             rag_response = await rag_service.answer_question(user_id, policy_id, question, plain_language)
 
             full_answer = rag_response["answer"]
             words = full_answer.split()
 
-            # Send metadata header first
             await websocket.send_json({
                 "type": "start",
                 "query_type": rag_response["query_type"],
@@ -172,7 +176,6 @@ async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Q
                 "citations": rag_response["citations"]
             })
 
-            # Stream word chunks
             for word in words:
                 await websocket.send_json({"type": "chunk", "text": word + " "})
                 await asyncio.sleep(0.02)

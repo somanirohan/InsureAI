@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "MedShield — AI-Powered Insurance Policy Intelligence Assistant",
   "scripts": {
-    "server": "python -m uvicorn fastapi_server.main:app --port 5000 --reload",
+    "server": "python -m uvicorn server.main:app --port 5000 --reload",
     "server:node": "npm --prefix server run dev",
     "client": "npm --prefix client run dev",
-    "seed": "python -m fastapi_server.utils.seeder",
+    "seed": "python -m server.utils.seeder",
     "seed:node": "npm --prefix server run seed"
   },
   "keywords": ["insurance", "rag", "mongodb", "chromadb", "react", "express", "tailwind"],

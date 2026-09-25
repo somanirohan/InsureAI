@@ -1,7 +1,11 @@
 from datetime import datetime
 from typing import Dict, Any, List
 from bson import ObjectId
-from fastapi_server.db import get_async_db
+
+try:
+    from db import get_async_db
+except ImportError:
+    from server.db import get_async_db
 
 class ComparisonService:
     async def compare_policies(self, user_id: str, policy_ids: List[str]) -> Dict[str, Any]:
@@ -17,7 +21,6 @@ class ComparisonService:
             except Exception:
                 query_ids.append(pid)
 
-        # Enforce user_id scoping (NFR 5.3)
         policies = await db.policies.find({
             "_id": {"$in": query_ids},
             "user_id": str(user_id)

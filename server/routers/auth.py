@@ -1,10 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from datetime import datetime
-from bson import ObjectId
 
-from fastapi_server.models.user import UserRegister, UserLogin, UserResponse, AuthTokenResponse
-from fastapi_server.services.auth_service import hash_password, verify_password, create_access_token, get_current_user
-from fastapi_server.db import get_async_db
+try:
+    from models.user import UserRegister, UserLogin, UserResponse, AuthTokenResponse
+    from services.auth_service import hash_password, verify_password, create_access_token, get_current_user
+    from db import get_async_db
+except ImportError:
+    from server.models.user import UserRegister, UserLogin, UserResponse, AuthTokenResponse
+    from server.services.auth_service import hash_password, verify_password, create_access_token, get_current_user
+    from server.db import get_async_db
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 

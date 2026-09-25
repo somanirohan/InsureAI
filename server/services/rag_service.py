@@ -1,19 +1,22 @@
 import re
 from typing import Dict, Any, Optional, List
 from bson import ObjectId
-from fastapi_server.db import get_async_db
-from fastapi_server.services.chroma_service import chroma_service
+
+try:
+    from db import get_async_db
+    from services.chroma_service import chroma_service
+except ImportError:
+    from server.db import get_async_db
+    from server.services.chroma_service import chroma_service
 
 class RagService:
     def classify_query(self, question: str) -> str:
-        """Classify user question into 'structured' or 'semantic' (FR-09)"""
         q = question.lower()
         structured_triggers = [
             "room rent", "icu", "copay", "co-pay", "co payment",
             "deductible", "sum insured", "waiting period", "waiting time",
             "limit", "cap", "sublimit", "sub-limit", "premium", "ped"
         ]
-
         is_structured = any(keyword in q for keyword in structured_triggers)
         return "structured" if is_structured else "semantic"
 
@@ -24,11 +27,9 @@ class RagService:
         question: str,
         plain_language_requested: bool = False
     ) -> Dict[str, Any]:
-        """Process question across policy context with grounding, self-verification & citations"""
         db = get_async_db()
         query_type = self.classify_query(question)
 
-        # Fetch active policy
         policy = None
         if policy_id:
             try:
@@ -51,7 +52,6 @@ class RagService:
                 "citations": []
             }
 
-        # 1. STRUCTURED ROUTE: Fact matching
         if query_type == "structured":
             structured_res = self.answer_from_structured_facts(policy, question)
             if structured_res["found"]:
@@ -68,7 +68,6 @@ class RagService:
                     "citations": structured_res["citations"]
                 }
 
-        # 2. SEMANTIC ROUTE: Vector Search via ChromaDB
         vector_chunks = chroma_service.query_policy_chunks(
             user_id=user_id,
             policy_id=str(policy["_id"]),
@@ -122,7 +121,6 @@ class RagService:
         facts = policy.get("facts", [])
         p_id = str(policy["_id"])
 
-        # Room rent
         if "room rent" in q or "room limit" in q or "room charge" in q:
             fact = next((f for f in facts if f.get("category") == "room_rent_limit"), None)
             if fact:
@@ -137,7 +135,6 @@ class RagService:
                     }]
                 }
 
-        # Waiting period
         if "waiting" in q or "ped" in q or "pre-existing" in q:
             waiting_facts = [f for f in facts if f.get("category") == "waiting_period"]
             if waiting_facts:
@@ -154,7 +151,6 @@ class RagService:
                     } for f in waiting_facts]
                 }
 
-        # Co-payment
         if "copay" in q or "co-pay" in q or "co payment" in q:
             fact = next((f for f in facts if f.get("category") == "co_payment"), None)
             if fact:
@@ -169,7 +165,6 @@ class RagService:
                     }]
                 }
 
-        # Sum Insured
         if "sum insured" in q or "coverage amount" in q or "maximum coverage" in q:
             fact = next((f for f in facts if f.get("category") == "sum_insured"), None)
             if fact:
@@ -187,7 +182,6 @@ class RagService:
         return {"found": False}
 
     def verify_semantic_relevance(self, question: str, chunk_text: str) -> bool:
-        """Self-verification check (FR-11)"""
         q_words = [
             w for w in re.sub(r'[^\w\s]', '', question.lower()).split()
             if len(w) > 3 and w not in ["what", "when", "does", "this", "have", "policy", "cover"]
@@ -199,7 +193,6 @@ class RagService:
         return matches >= min(2, len(q_words))
 
     def simplify_to_plain_language(self, text: str) -> str:
-        """Plain-Language Jargon Translator (FR-13)"""
         simplified = text
         simplified = re.sub(r'proportionate deduction', 'paying extra out of your own pocket for everything', simplified, flags=re.IGNORECASE)
         simplified = re.sub(r'co-payment', 'your share of the bill (e.g. you pay a fixed percentage while insurance pays the rest)', simplified, flags=re.IGNORECASE)
