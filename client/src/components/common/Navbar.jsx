@@ -1,80 +1,185 @@
-import React from 'react';
-import { Shield, MessageSquare, Scale, Calculator, LayoutDashboard, LogOut, User } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  LayoutGrid,
+  MessageSquare,
+  DollarSign,
+  GitCompare,
+  Shield,
+  LogOut,
+  User,
+  ChevronRight,
+  Menu,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-export default function Navbar({ activeTab, setActiveTab }) {
+const navItems = [
+  { id: 'dashboard', label: 'Dashboard',     icon: LayoutGrid },
+  { id: 'chat',      label: 'AI Assistant',  icon: MessageSquare },
+  { id: 'cost',      label: 'Cost',          icon: DollarSign },
+  { id: 'compare',   label: 'Compare',       icon: GitCompare },
+];
+
+// ─── Desktop Sidebar ───────────────────────────────────────
+export function Sidebar({ activeTab, setActiveTab }) {
   const { user, logout } = useAuth();
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'chat', label: 'AI Policy Assistant', icon: MessageSquare },
-    { id: 'cost', label: 'Cost Estimator & What-If', icon: Calculator },
-    { id: 'compare', label: 'Compare Policies', icon: Scale },
-  ];
-
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <Shield className="w-6 h-6 text-slate-950" />
-            </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight text-white font-['Space_Grotesk']">
-                Med<span className="text-brand-400">Shield</span>
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-emerald-300 bg-emerald-950/80 border border-emerald-800/60 rounded-full uppercase">
-                AI Intelligence
-              </span>
-            </div>
+    <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 h-screen sticky top-0 border-r border-black/[0.07] bg-white">
+      {/* Logo */}
+      <div className="px-5 pt-7 pb-6">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className="flex items-center gap-2.5"
+        >
+          <div className="w-8 h-8 rounded-[10px] bg-zinc-900 flex items-center justify-center flex-shrink-0">
+            <Shield size={15} className="text-white" strokeWidth={2.5} />
           </div>
+          <div>
+            <p className="text-sm font-semibold tracking-tight text-zinc-900">MedShield</p>
+            <p className="text-2xs text-zinc-400">Policy Intelligence</p>
+          </div>
+        </button>
+      </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex space-x-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* User profile & Logout */}
-          <div className="flex items-center space-x-3">
-            <div className="hidden sm:flex items-center space-x-2 text-right">
-              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
-                <User className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div className="text-xs">
-                <div className="font-medium text-slate-200">{user?.full_name || 'Policyholder'}</div>
-                <div className="text-slate-400 truncate max-w-[140px]">{user?.email}</div>
-              </div>
-            </div>
-
+      {/* Navigation */}
+      <nav className="flex-1 px-3 space-y-0.5">
+        <p className="label-xs px-2 mb-3">Navigation</p>
+        {navItems.map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
             <button
-              onClick={logout}
-              title="Logout"
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 border border-transparent hover:border-rose-900/40 rounded-lg transition-colors"
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                ${isActive
+                  ? 'bg-zinc-900 text-white'
+                  : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100'
+                }
+              `}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <LogOut className="w-4 h-4" />
+              <Icon size={15} className={isActive ? 'text-white' : 'text-zinc-400'} />
+              <span className="flex-1 text-left">{label}</span>
+              {isActive && <ChevronRight size={12} className="text-zinc-400" />}
             </button>
+          );
+        })}
+      </nav>
+
+      {/* User Footer */}
+      <div className="px-3 pb-5 border-t border-black/[0.07] pt-4">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-xl">
+          <div className="w-7 h-7 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center flex-shrink-0">
+            <User size={13} className="text-zinc-500" />
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-zinc-700 truncate leading-tight">
+              {user?.full_name?.split(' ')[0] || 'User'}
+            </p>
+            <p className="text-2xs text-zinc-400 truncate">{user?.email}</p>
+          </div>
+          <button
+            onClick={logout}
+            title="Sign out"
+            className="btn-destructive p-1.5 rounded-lg transition-colors"
+          >
+            <LogOut size={13} />
+          </button>
         </div>
       </div>
-    </header>
+    </aside>
+  );
+}
+
+// ─── Mobile Top Bar ────────────────────────────────────────
+export function MobileTopBar({ activeTab, setActiveTab }) {
+  const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const activeItem = navItems.find(i => i.id === activeTab);
+
+  return (
+    <>
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 h-14 bg-white/90 backdrop-blur-xl border-b border-black/[0.07]">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-[8px] bg-zinc-900 flex items-center justify-center">
+            <Shield size={13} className="text-white" strokeWidth={2.5} />
+          </div>
+          <span className="text-sm font-semibold tracking-tight text-zinc-900">MedShield</span>
+        </div>
+        {activeItem && (
+          <span className="text-sm font-medium text-zinc-400">{activeItem.label}</span>
+        )}
+        <button
+          onClick={() => setOpen(true)}
+          className="btn-ghost p-2 rounded-xl"
+          aria-label="Open navigation"
+        >
+          <Menu size={18} className="text-zinc-600" />
+        </button>
+      </header>
+
+      {/* Drawer overlay */}
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 flex"
+          onClick={() => setOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <nav
+            className="relative ml-auto w-64 h-full bg-white border-l border-black/[0.07] flex flex-col animate-slide-in shadow-lg"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.07]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-[8px] bg-zinc-900 flex items-center justify-center">
+                  <Shield size={13} className="text-white" strokeWidth={2.5} />
+                </div>
+                <span className="text-sm font-semibold text-zinc-900">MedShield</span>
+              </div>
+              <button onClick={() => setOpen(false)} className="btn-ghost p-1.5 rounded-lg">
+                <X size={16} className="text-zinc-500" />
+              </button>
+            </div>
+            <div className="flex-1 px-3 py-4 space-y-0.5">
+              {navItems.map(({ id, label, icon: Icon }) => {
+                const isActive = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => { setActiveTab(id); setOpen(false); }}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all
+                      ${isActive
+                        ? 'bg-zinc-900 text-white'
+                        : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100'
+                      }
+                    `}
+                  >
+                    <Icon size={15} className={isActive ? 'text-white' : 'text-zinc-400'} />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="px-4 pb-6 pt-3 border-t border-black/[0.07]">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-7 h-7 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center">
+                  <User size={13} className="text-zinc-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-zinc-700 truncate">{user?.full_name}</p>
+                  <p className="text-2xs text-zinc-400 truncate">{user?.email}</p>
+                </div>
+              </div>
+              <button onClick={logout} className="btn btn-secondary w-full text-xs gap-2">
+                <LogOut size={13} />Sign out
+              </button>
+            </div>
+          </nav>
+        </div>
+      )}
+    </>
   );
 }
