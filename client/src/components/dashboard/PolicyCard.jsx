@@ -1,131 +1,113 @@
 import React from 'react';
-import { FileText, AlertTriangle, CheckCircle2, Clock, Trash2, ArrowUpRight, ShieldCheck, Zap } from 'lucide-react';
+import {
+  FileText,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Upload,
+  Trash2,
+  MessageSquare,
+  ChevronRight,
+  Eye,
+} from 'lucide-react';
+import { StatusBadge } from '../common/ui';
+
+const formatCoverage = (v) =>
+  v ? `₹${(v / 100000).toFixed(1)}L` : '—';
+
+const formatPremium = (v) =>
+  v ? `₹${v.toLocaleString('en-IN')}` : '—';
 
 export default function PolicyCard({ policy, onSelect, onDelete, onStartChat }) {
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'ready':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800">
-            <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-400" />
-            Ready for Q&A
-          </span>
-        );
-      case 'extracting':
-      case 'indexed':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-950/80 text-amber-300 border border-amber-800 animate-pulse">
-            <Clock className="w-3 h-3 mr-1 text-amber-400" />
-            Extracting Facts...
-          </span>
-        );
-      case 'uploading':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-950/80 text-blue-300 border border-blue-800 animate-pulse">
-            <Zap className="w-3 h-3 mr-1 text-blue-400" />
-            Uploading...
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-950/80 text-rose-300 border border-rose-800">
-            <AlertTriangle className="w-3 h-3 mr-1 text-rose-400" />
-            Processing Failed
-          </span>
-        );
-    }
-  };
-
-  const formattedSum = policy.sum_insured
-    ? `₹${(policy.sum_insured / 100000).toFixed(1)} Lakh`
-    : 'Pending Extraction';
-
+  const isReady = policy.status === 'ready';
   const redFlags = policy.red_flag_summary || {};
+  const factCount = policy.facts?.length ?? 0;
 
   return (
-    <div className="glass-panel rounded-2xl p-5 hover:border-slate-700 transition-all group flex flex-col justify-between">
-      <div>
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-emerald-400">
-              <FileText className="w-5 h-5" />
+    <article className="surface group flex flex-col gap-0 overflow-hidden hover:border-white/[0.12] transition-all duration-200">
+      {/* Top section */}
+      <div className="p-5">
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center flex-shrink-0">
+              <FileText size={16} className="text-zinc-400" />
             </div>
-            <div>
-              <h3 className="font-semibold text-slate-100 text-base leading-snug group-hover:text-emerald-400 transition-colors">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-zinc-100 truncate leading-tight">
                 {policy.insurer_name || policy.file_name}
               </h3>
-              <p className="text-xs text-slate-400 capitalize">
-                {policy.policy_type ? policy.policy_type.replace(/_/g, ' ') : 'Health Insurance'} • {policy.policy_number || 'Processing'}
+              <p className="text-xs text-zinc-500 capitalize mt-0.5">
+                {policy.policy_type?.replace(/_/g, ' ') || 'Health Insurance'}
+                {policy.policy_number ? ` · ${policy.policy_number}` : ''}
               </p>
             </div>
           </div>
-          <div>{getStatusBadge(policy.status)}</div>
+          <StatusBadge status={policy.status} />
         </div>
 
-        {/* Coverage Metrics Grid */}
-        <div className="grid grid-cols-2 gap-2 my-4 p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
-          <div>
-            <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Sum Insured</div>
-            <div className="text-base font-bold text-white tracking-tight">{formattedSum}</div>
+        {/* Coverage row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="surface-inset p-3 rounded-xl">
+            <p className="label-xs mb-1">Sum Insured</p>
+            <p className="text-sm font-semibold text-zinc-100">{formatCoverage(policy.sum_insured)}</p>
           </div>
-          <div>
-            <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Annual Premium</div>
-            <div className="text-base font-semibold text-slate-200">
-              {policy.premium_amount ? `₹${policy.premium_amount.toLocaleString('en-IN')}` : 'Included in Plan'}
-            </div>
+          <div className="surface-inset p-3 rounded-xl">
+            <p className="label-xs mb-1">Premium</p>
+            <p className="text-sm font-semibold text-zinc-100">{formatPremium(policy.premium_amount)}</p>
           </div>
         </div>
 
-        {/* Red Flags / Highlights Summary (FR-06) */}
-        {redFlags.room_rent_cap && (
-          <div className="space-y-1.5 mb-4">
-            <div className="text-[11px] font-semibold text-slate-400 flex items-center space-x-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Extracted Key Conditions ({policy.facts ? policy.facts.length : 0} facts)</span>
+        {/* Red flag highlights */}
+        {factCount > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/[0.06]">
+            <p className="label-xs mb-2">{factCount} Extracted Facts</p>
+            <div className="space-y-1">
+              {redFlags.room_rent_cap && (
+                <div className="flex items-start gap-2 text-xs text-zinc-400">
+                  <span className="text-amber-500 mt-0.5 flex-shrink-0">·</span>
+                  <span><span className="text-zinc-300">Room Rent:</span> {redFlags.room_rent_cap}</span>
+                </div>
+              )}
+              {redFlags.copay_percentage && (
+                <div className="flex items-start gap-2 text-xs text-zinc-400">
+                  <span className="text-blue-500 mt-0.5 flex-shrink-0">·</span>
+                  <span><span className="text-zinc-300">Co-pay:</span> {redFlags.copay_percentage}</span>
+                </div>
+              )}
             </div>
-            <div className="text-xs text-slate-300 bg-slate-950/40 border border-slate-800/80 p-2.5 rounded-lg line-clamp-2">
-              <span className="text-amber-400 font-medium">Room Rent: </span>
-              {redFlags.room_rent_cap}
-            </div>
-            {redFlags.copay_percentage && (
-              <div className="text-xs text-slate-300 bg-slate-950/40 border border-slate-800/80 p-2 rounded-lg truncate">
-                <span className="text-blue-400 font-medium">Co-pay: </span>
-                {redFlags.copay_percentage}
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* Action Footer */}
-      <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+      {/* Action footer */}
+      <div className="border-t border-white/[0.06] px-4 py-3 flex items-center justify-between bg-white/[0.02]">
         <button
           onClick={() => onSelect(policy)}
-          className="text-xs font-medium text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-200 transition-colors"
         >
-          View Facts Table
+          <Eye size={13} />
+          View facts
         </button>
-
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onStartChat(policy)}
-            disabled={policy.status !== 'ready'}
-            className="flex items-center space-x-1.5 text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors shadow-sm shadow-emerald-500/20"
+            disabled={!isReady}
+            className="btn btn-primary text-xs py-1.5 px-3 rounded-lg gap-1.5"
+            title={!isReady ? 'Policy still processing' : 'Ask AI about this policy'}
           >
-            <span>Ask AI</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
+            <MessageSquare size={12} />
+            Ask AI
           </button>
-
           <button
             onClick={() => onDelete(policy._id)}
-            title="Delete Policy and clean up vectors"
-            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-colors"
+            className="btn btn-destructive p-1.5 rounded-lg transition-colors"
+            title="Delete policy"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

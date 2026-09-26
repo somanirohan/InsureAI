@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
-import Navbar from './components/common/Navbar';
+import { Sidebar, MobileTopBar } from './components/common/Navbar';
 import AuthModal from './components/auth/AuthModal';
 import DashboardView from './components/dashboard/DashboardView';
 import ChatBox from './components/chat/ChatBox';
 import CostEstimatorView from './components/cost/CostEstimatorView';
 import ComparisonView from './components/comparison/ComparisonView';
 import api from './services/api';
+import { Spinner } from './components/common/ui';
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -28,23 +29,18 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchPolicies();
-    }
+    if (user) fetchPolicies();
   }, [user]);
 
-  const handlePolicyUploadSuccess = (newPolicy) => {
-    fetchPolicies();
-  };
+  const handlePolicyUploadSuccess = () => fetchPolicies();
 
   const handleDeletePolicy = async (policyId) => {
-    if (window.confirm('Are you sure you want to delete this policy? This will cascade delete its text chunks, ChromaDB vectors, and associated estimates.')) {
-      try {
-        await api.delete(`/policies/${policyId}`);
-        fetchPolicies();
-      } catch (err) {
-        alert(err.response?.data?.error || 'Failed to delete policy');
-      }
+    if (!window.confirm('Delete this policy? This will remove its text chunks and vector embeddings.')) return;
+    try {
+      await api.delete(`/policies/${policyId}`);
+      fetchPolicies();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete policy');
     }
   };
 
@@ -53,55 +49,65 @@ export default function App() {
     setActiveTab('chat');
   };
 
+  // ── Auth loading ───────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 text-xs">
-        <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mb-2" />
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-2xl bg-zinc-100 border border-zinc-200 flex items-center justify-center">
+            <Spinner size={18} className="text-zinc-500" />
+          </div>
+          <p className="text-sm text-zinc-500">Loading MedShield...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
-    return <AuthModal />;
-  }
+  if (!user) return <AuthModal />;
 
-  return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-['Plus_Jakarta_Sans']">
-      {/* Top Navigation */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {activeTab === 'dashboard' && (
+  // ── Render view ────────────────────────────────────────
+  const renderView = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
           <DashboardView
             policies={policies}
+            loadingPolicies={loadingPolicies}
             onPolicyUploadSuccess={handlePolicyUploadSuccess}
             onDeletePolicy={handleDeletePolicy}
             onStartChat={handleStartChatWithPolicy}
             onNavigateToCost={() => setActiveTab('cost')}
             onNavigateToCompare={() => setActiveTab('compare')}
           />
-        )}
+        );
+      case 'chat':
+        return <ChatBox initialPolicy={chatTargetPolicy} policies={policies} />;
+      case 'cost':
+        return <CostEstimatorView policies={policies} />;
+      case 'compare':
+        return <ComparisonView policies={policies} />;
+      default:
+        return null;
+    }
+  };
 
-        {activeTab === 'chat' && (
-          <ChatBox
-            initialPolicy={chatTargetPolicy}
-            policies={policies}
-          />
-        )}
+  return (
+    <div className="flex min-h-screen bg-[#f5f5f7]">
+      {/* Desktop Sidebar */}
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {activeTab === 'cost' && (
-          <CostEstimatorView
-            policies={policies}
-          />
-        )}
+      {/* Main column */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar */}
+        <MobileTopBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {activeTab === 'compare' && (
-          <ComparisonView
-            policies={policies}
-          />
-        )}
-      </main>
+        {/* Page content */}
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-6xl w-full mx-auto">
+          <div key={activeTab} className="animate-fade-in">
+            {renderView()}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

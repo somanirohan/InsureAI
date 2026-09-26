@@ -1,121 +1,175 @@
 import React, { useState } from 'react';
-import { Scale, Check, AlertTriangle, ShieldCheck, ArrowRightLeft, Sparkles } from 'lucide-react';
+import { GitCompare, Check, AlertTriangle, ArrowRightLeft, ChevronUp, ChevronDown } from 'lucide-react';
 import api from '../../services/api';
+import { Spinner, EmptyState, ErrorBanner } from '../common/ui';
+
+// ─── Cell coloring helper ──────────────────────────────────
+function CoverageTag({ text, positive, negative }) {
+  if (!text) return <span className="text-zinc-600">—</span>;
+  const cls = positive
+    ? 'status-ready'
+    : negative
+    ? 'status-error'
+    : 'status-info';
+  return (
+    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {text}
+    </span>
+  );
+}
+
+// ─── Comparison row ────────────────────────────────────────
+function CompareRow({ label, children, striped }) {
+  return (
+    <tr className={`${striped ? 'bg-white/[0.02]' : ''} hover:bg-white/[0.03] transition-colors`}>
+      <td className="px-4 py-3.5 text-xs font-medium text-zinc-400 w-40 align-top border-b border-white/[0.05]">
+        {label}
+      </td>
+      {children}
+    </tr>
+  );
+}
+
+function DataCell({ children }) {
+  return (
+    <td className="px-4 py-3.5 text-sm text-zinc-200 border-b border-white/[0.05] border-l border-l-white/[0.04] align-top">
+      {children}
+    </td>
+  );
+}
 
 export default function ComparisonView({ policies }) {
-  const [selectedPolicyIds, setSelectedPolicyIds] = useState(
+  const [selectedIds, setSelectedIds] = useState(
     policies.length >= 2 ? [policies[0]._id, policies[1]._id] : []
   );
-  const [comparisonResult, setComparisonResult] = useState(null);
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError]   = useState(null);
 
-  const togglePolicySelection = (id) => {
-    setSelectedPolicyIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((item) => item !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
+  const toggle = (id) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
-  const handleRunComparison = async () => {
-    if (selectedPolicyIds.length < 2) {
-      setError('Please select at least 2 policies to compare');
+  const handleCompare = async () => {
+    if (selectedIds.length < 2) {
+      setError('Select at least 2 policies to compare.');
       return;
     }
     setError(null);
     setLoading(true);
-
     try {
-      const res = await api.post('/comparisons', {
-        policy_ids: selectedPolicyIds,
-      });
-      setComparisonResult(res.data.comparison.comparison_result);
+      const res = await api.post('/comparisons', { policy_ids: selectedIds });
+      setResult(res.data.comparison.comparison_result);
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.error || 'Comparison failed');
+      setError(err.response?.data?.error || 'Comparison failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const metadata = comparisonResult?.policies_metadata || [];
+  const metadata = result?.policies_metadata || [];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="glass-panel rounded-2xl p-6">
-        <h2 className="text-xl font-bold text-white font-['Space_Grotesk'] flex items-center space-x-2">
-          <Scale className="w-6 h-6 text-emerald-400" />
-          <span>Multi-Policy Comparative Analysis (FR-07)</span>
-        </h2>
-        <p className="text-xs text-slate-400 mt-1">
-          Side-by-side contrast of coverage caps, premium costs, co-payments, room-rent clauses, waiting periods, and exclusions.
+      {/* Page header */}
+      <div>
+        <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Compare Policies</h1>
+        <p className="text-sm text-zinc-500 mt-0.5">
+          Side-by-side comparison of coverage, co-payment, room rent, waiting periods, and exclusions
         </p>
-
-        {/* Policy Checkbox Selectors */}
-        <div className="mt-4 pt-4 border-t border-slate-800">
-          <div className="text-xs font-semibold text-slate-300 mb-2">Select Policies to Compare:</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {policies.map((p) => {
-              const isSelected = selectedPolicyIds.includes(p._id);
-              return (
-                <div
-                  key={p._id}
-                  onClick={() => togglePolicySelection(p._id)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                    isSelected
-                      ? 'bg-emerald-950/40 border-emerald-500 text-white'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="text-xs truncate mr-2">
-                    <div className="font-semibold text-slate-200">{p.insurer_name}</div>
-                    <div className="text-[11px] text-slate-400 capitalize">{p.policy_type.replace(/_/g, ' ')}</div>
-                  </div>
-                  <div
-                    className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${
-                      isSelected ? 'bg-emerald-500 text-slate-950' : 'border border-slate-700'
-                    }`}
-                  >
-                    {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {error && <div className="mt-2 text-xs text-rose-400">{error}</div>}
-
-          <div className="mt-4">
-            <button
-              onClick={handleRunComparison}
-              disabled={loading || selectedPolicyIds.length < 2}
-              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              <ArrowRightLeft className="w-4 h-4" />
-              <span>{loading ? 'Analyzing Differences...' : 'Run Comparative Matrix'}</span>
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Comparison Diff Table */}
-      {comparisonResult && metadata.length > 0 && (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+      <ErrorBanner message={error} onDismiss={() => setError(null)} />
+
+      {/* ─── Policy selector ────────────────────────── */}
+      <div className="surface p-5">
+        <p className="text-sm font-medium text-zinc-300 mb-4">Select Policies to Compare</p>
+
+        {policies.length === 0 ? (
+          <EmptyState
+            icon={GitCompare}
+            title="No policies available"
+            description="Upload at least 2 policy documents to run a comparison."
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+              {policies.map(p => {
+                const isSelected = selectedIds.includes(p._id);
+                return (
+                  <button
+                    key={p._id}
+                    onClick={() => toggle(p._id)}
+                    aria-pressed={isSelected}
+                    className={`
+                      p-4 rounded-xl border text-left flex items-start justify-between gap-3 transition-all duration-150
+                      ${isSelected
+                        ? 'border-brand-500/40 bg-brand-500/[0.06]'
+                        : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.12]'
+                      }
+                    `}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-zinc-200 truncate">{p.insurer_name || p.file_name}</p>
+                      <p className="text-xs text-zinc-500 capitalize mt-0.5">
+                        {p.policy_type?.replace(/_/g, ' ') || 'Health Insurance'}
+                        {p.sum_insured
+                          ? ` · ₹${(p.sum_insured / 100000).toFixed(1)}L`
+                          : ''}
+                      </p>
+                    </div>
+                    <div
+                      className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                        isSelected
+                          ? 'bg-brand-500 border-brand-500'
+                          : 'border border-white/[0.12]'
+                      }`}
+                    >
+                      {isSelected && <Check size={12} strokeWidth={3} className="text-black" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleCompare}
+                disabled={loading || selectedIds.length < 2}
+                className="btn btn-primary gap-2"
+              >
+                {loading
+                  ? <><Spinner size={14} className="text-black" /> Analyzing…</>
+                  : <><ArrowRightLeft size={14} /> Compare {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</>
+                }
+              </button>
+              {selectedIds.length < 2 && (
+                <p className="text-xs text-zinc-600">Select at least 2 policies</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ─── Comparison table ───────────────────────── */}
+      {result && metadata.length > 0 && (
+        <div className="surface overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-950 border-b border-slate-800">
-                  <th className="p-4 text-slate-400 font-semibold uppercase text-[10px] w-52 tracking-wider">
-                    Feature / Clause
+                <tr className="bg-white/[0.03] border-b border-white/[0.07]">
+                  <th className="px-4 py-3.5 text-left text-xs font-medium text-zinc-500 w-40">
+                    Feature
                   </th>
-                  {metadata.map((m) => (
-                    <th key={m.policy_id} className="p-4 text-white font-bold border-l border-slate-800 text-sm">
-                      <div className="text-emerald-400 font-['Space_Grotesk']">{m.insurer_name}</div>
-                      <div className="text-[10px] text-slate-400 capitalize font-normal">
+                  {metadata.map(m => (
+                    <th
+                      key={m.policy_id}
+                      className="px-4 py-3.5 text-left text-xs font-semibold text-zinc-100 border-l border-l-white/[0.04]"
+                    >
+                      <div className="text-brand-500 font-semibold text-sm">{m.insurer_name}</div>
+                      <div className="text-zinc-500 font-normal capitalize mt-0.5">
                         {m.policy_type?.replace(/_/g, ' ')}
                       </div>
                     </th>
@@ -123,109 +177,120 @@ export default function ComparisonView({ policies }) {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
+              <tbody>
                 {/* Sum Insured */}
-                <tr className="hover:bg-slate-900/50">
-                  <td className="p-4 font-bold text-white bg-slate-950/40">Sum Insured Coverage</td>
-                  {metadata.map((m) => (
-                    <td key={m.policy_id} className="p-4 border-l border-slate-800 font-bold text-emerald-300 text-sm">
-                      {comparisonResult.coverage_comparison[m.policy_id]}
-                    </td>
+                <CompareRow label="Sum Insured">
+                  {metadata.map(m => (
+                    <DataCell key={m.policy_id}>
+                      <span className="font-semibold text-brand-500">
+                        {result.coverage_comparison[m.policy_id] || '—'}
+                      </span>
+                    </DataCell>
                   ))}
-                </tr>
+                </CompareRow>
 
                 {/* Annual Premium */}
-                <tr className="hover:bg-slate-900/50">
-                  <td className="p-4 font-bold text-white bg-slate-950/40">Annual Premium</td>
-                  {metadata.map((m) => (
-                    <td key={m.policy_id} className="p-4 border-l border-slate-800 font-mono font-medium text-white">
-                      {comparisonResult.premium_comparison[m.policy_id]}
-                    </td>
+                <CompareRow label="Annual Premium" striped>
+                  {metadata.map(m => (
+                    <DataCell key={m.policy_id}>
+                      <span className="font-mono">
+                        {result.premium_comparison[m.policy_id] || '—'}
+                      </span>
+                    </DataCell>
                   ))}
-                </tr>
+                </CompareRow>
 
-                {/* Room Rent Cap */}
-                <tr className="hover:bg-slate-900/50">
-                  <td className="p-4 font-bold text-white bg-slate-950/40">Room Rent Limits</td>
-                  {metadata.map((m) => {
-                    const text = comparisonResult.room_rent_comparison[m.policy_id] || '';
-                    const hasCap = text.includes('1%') || text.includes('cap');
+                {/* Room Rent */}
+                <CompareRow label="Room Rent Limit">
+                  {metadata.map(m => {
+                    const text = result.room_rent_comparison[m.policy_id] || '';
+                    const hasCap = text.toLowerCase().includes('1%') || text.toLowerCase().includes('cap');
                     return (
-                      <td key={m.policy_id} className="p-4 border-l border-slate-800">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-md text-xs ${
-                            hasCap
-                              ? 'bg-amber-950/60 text-amber-300 border border-amber-800/80'
-                              : 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/80 font-semibold'
-                          }`}
-                        >
-                          {text}
-                        </span>
-                      </td>
+                      <DataCell key={m.policy_id}>
+                        <CoverageTag text={text} positive={!hasCap} negative={hasCap} />
+                      </DataCell>
                     );
                   })}
-                </tr>
+                </CompareRow>
 
-                {/* Co-Payment Terms */}
-                <tr className="hover:bg-slate-900/50">
-                  <td className="p-4 font-bold text-white bg-slate-950/40">Co-Payment Terms</td>
-                  {metadata.map((m) => {
-                    const text = comparisonResult.copay_comparison[m.policy_id] || '';
-                    const zeroCopay = text.includes('0%') || text.includes('Zero');
+                {/* Co-Payment */}
+                <CompareRow label="Co-Payment" striped>
+                  {metadata.map(m => {
+                    const text = result.copay_comparison[m.policy_id] || '';
+                    const zeroCopay = text.includes('0%') || text.toLowerCase().includes('zero') || text.toLowerCase().includes('nil');
                     return (
-                      <td key={m.policy_id} className="p-4 border-l border-slate-800">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-md text-xs ${
-                            zeroCopay
-                              ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/80 font-semibold'
-                              : 'bg-amber-950/60 text-amber-300 border border-amber-800/80'
-                          }`}
-                        >
-                          {text}
-                        </span>
-                      </td>
+                      <DataCell key={m.policy_id}>
+                        <CoverageTag text={text} positive={zeroCopay} negative={!zeroCopay && text !== '—'} />
+                      </DataCell>
                     );
                   })}
-                </tr>
+                </CompareRow>
 
                 {/* Waiting Periods */}
-                <tr className="hover:bg-slate-900/50">
-                  <td className="p-4 font-bold text-white bg-slate-950/40">Waiting Periods</td>
-                  {metadata.map((m) => {
-                    const waits = comparisonResult.waiting_periods_comparison[m.policy_id] || [];
+                <CompareRow label="Waiting Periods">
+                  {metadata.map(m => {
+                    const waits = result.waiting_periods_comparison[m.policy_id] || [];
                     return (
-                      <td key={m.policy_id} className="p-4 border-l border-slate-800">
-                        <ul className="space-y-1 list-disc list-inside text-xs text-slate-300">
-                          {waits.map((w, idx) => (
-                            <li key={idx}>{w}</li>
-                          ))}
-                        </ul>
-                      </td>
+                      <DataCell key={m.policy_id}>
+                        {waits.length === 0 ? (
+                          <span className="text-zinc-600">—</span>
+                        ) : (
+                          <ul className="space-y-1">
+                            {waits.map((w, i) => (
+                              <li key={i} className="flex items-start gap-1.5 text-xs text-zinc-400">
+                                <span className="text-amber-500 mt-0.5 flex-shrink-0">·</span>
+                                {w}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </DataCell>
                     );
                   })}
-                </tr>
+                </CompareRow>
 
-                {/* Major Exclusions */}
-                <tr className="hover:bg-slate-900/50">
-                  <td className="p-4 font-bold text-white bg-slate-950/40">Key Policy Exclusions</td>
-                  {metadata.map((m) => {
-                    const exclusions = comparisonResult.exclusions_diff[m.policy_id] || [];
+                {/* Exclusions */}
+                <CompareRow label="Key Exclusions" striped>
+                  {metadata.map(m => {
+                    const exclusions = result.exclusions_diff[m.policy_id] || [];
                     return (
-                      <td key={m.policy_id} className="p-4 border-l border-slate-800">
-                        <ul className="space-y-1 text-xs text-slate-400">
-                          {exclusions.map((ex, idx) => (
-                            <li key={idx} className="flex items-start space-x-1.5">
-                              <span className="text-rose-400 font-bold">•</span>
-                              <span>{ex}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
+                      <DataCell key={m.policy_id}>
+                        {exclusions.length === 0 ? (
+                          <span className="text-zinc-600">—</span>
+                        ) : (
+                          <ul className="space-y-1">
+                            {exclusions.map((ex, i) => (
+                              <li key={i} className="flex items-start gap-1.5 text-xs text-zinc-400">
+                                <span className="text-red-500 mt-0.5 flex-shrink-0">·</span>
+                                {ex}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </DataCell>
                     );
                   })}
-                </tr>
+                </CompareRow>
               </tbody>
             </table>
+          </div>
+
+          {/* Table footer */}
+          <div className="px-4 py-3 border-t border-white/[0.06] flex items-center gap-4">
+            <div className="flex items-center gap-3 text-2xs text-zinc-600">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-brand-500 inline-block" />
+                Favorable
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                Restrictive
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                Neutral
+              </span>
+            </div>
           </div>
         </div>
       )}

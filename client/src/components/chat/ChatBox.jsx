@@ -1,44 +1,218 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, ShieldCheck, Sparkles, BookOpen, AlertCircle, CheckCircle, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Send,
+  Bot,
+  User,
+  Plus,
+  BookOpen,
+  ShieldCheck,
+  Sparkles,
+  ChevronDown,
+  MessageSquare,
+  Wifi,
+  WifiOff,
+  AlertCircle,
+} from 'lucide-react';
 import api from '../../services/api';
+import { Toggle, Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 
+// ─── WebSocket connection (ws://localhost:5000/ws/chat) ─────────────────
+//
+// The backend accepts JSON: { token, question, policy_id, conversation_id, plain_language_mode }
+// and streams back:
+//   { type: 'status',   message: string }
+//   { type: 'chunk',    token: string, isFirst: bool, isLast: bool }
+//   { type: 'complete', queryType, confidenceLevel, verificationPassed, citations }
+//   { type: 'error',    message: string }
+//
+// TODO: Replace WS_URL with env var in production.
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5001/ws/chat';
+
+const SAMPLE_QUESTIONS = [
+  "What's my room-rent limit per day?",
+  "Is there any co-payment for Tier 1 hospitals?",
+  "What is the waiting period for pre-existing diseases?",
+  "What are the major exclusions under this policy?",
+];
+
+// ─── Message bubble ──────────────────────────────────────────────────────
+function MessageBubble({ msg, plainLanguageMode }) {
+  const isUser = msg.role === 'user';
+  const content = plainLanguageMode && msg.plain_language ? msg.plain_language : msg.content;
+
+  return (
+    <div
+      className={`flex items-start gap-3 animate-fade-in ${isUser ? 'flex-row-reverse' : ''}`}
+    >
+      {/* Avatar */}
+      <div
+        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+          isUser
+            ? 'bg-brand-500/15 border border-brand-500/25'
+            : 'bg-white/[0.06] border border-white/[0.08]'
+        }`}
+      >
+        {isUser
+          ? <User size={13} className="text-brand-500" />
+          : <Bot size={13} className="text-zinc-400" />
+        }
+      </div>
+
+      {/* Bubble */}
+      <div className={`max-w-2xl min-w-0 ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+        {/* Meta row (assistant only) */}
+        {!isUser && (msg.query_type || msg.confidence_level || msg.verification_passed) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {msg.query_type && (
+              <span className="text-[10px] font-medium text-zinc-600 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full">
+                {msg.query_type === 'structured' ? 'Structured lookup' : 'Semantic search'}
+              </span>
+            )}
+            {msg.confidence_level && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                msg.confidence_level === 'high'   ? 'status-ready' :
+                msg.confidence_level === 'medium' ? 'status-pending' :
+                'status-error'
+              }`}>
+                {msg.confidence_level} confidence
+              </span>
+            )}
+            {msg.verification_passed && (
+              <span className="text-[10px] flex items-center gap-1 text-brand-500">
+                <ShieldCheck size={10} />
+                Verified
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Content */}
+        <div
+          className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+            isUser
+              ? 'bg-brand-500/12 border border-brand-500/20 text-zinc-100 rounded-tr-sm'
+              : 'bg-white/[0.04] border border-white/[0.07] text-zinc-200 rounded-tl-sm'
+          }`}
+        >
+          {msg.streaming ? (
+            <span>
+              {content}
+              <span className="inline-block w-0.5 h-4 bg-brand-500 ml-0.5 animate-pulse-dot" />
+            </span>
+          ) : (
+            <span className="whitespace-pre-line">{content}</span>
+          )}
+        </div>
+
+        {/* Citations */}
+        {!isUser && msg.citations?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-0.5">
+            {msg.citations.map((cite, i) => (
+              <span
+                key={i}
+                className="text-[10px] text-zinc-500 bg-white/[0.03] border border-white/[0.06] px-2 py-0.5 rounded-full"
+              >
+                <BookOpen size={9} className="inline mr-1" />
+                p.{cite.page_number || '?'} · {cite.section_heading || 'Policy clause'}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Typing indicator ─────────────────────────────────────────────────────
+function TypingIndicator({ statusMsg }) {
+  return (
+    <div className="flex items-start gap-3 animate-fade-in">
+      <div className="w-7 h-7 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Bot size={13} className="text-zinc-400" />
+      </div>
+      <div className="px-4 py-3 bg-white/[0.04] border border-white/[0.07] rounded-2xl rounded-tl-sm">
+        {statusMsg ? (
+          <p className="text-xs text-zinc-500 italic">{statusMsg}</p>
+        ) : (
+          <div className="flex items-center gap-1.5 py-0.5">
+            {[0, 0.2, 0.4].map((delay, i) => (
+              <span
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse-dot"
+                style={{ animationDelay: `${delay}s` }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ChatBox ──────────────────────────────────────────────────────────
 export default function ChatBox({ initialPolicy, policies }) {
   const [selectedPolicyId, setSelectedPolicyId] = useState(initialPolicy?._id || '');
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [inputQuestion, setInputQuestion] = useState('');
+  const [input, setInput] = useState('');
   const [plainLanguageMode, setPlainLanguageMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+  const [error, setError] = useState(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [wsAvailable, setWsAvailable] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
   const messagesEndRef = useRef(null);
+  const scrollAreaRef  = useRef(null);
+  const wsRef          = useRef(null);
+  const inputRef       = useRef(null);
 
+  // ── Fetch conversation list ──────────────────────────
+  useEffect(() => { fetchConversations(); }, []);
   useEffect(() => {
-    fetchConversations();
-  }, []);
-
-  useEffect(() => {
-    if (initialPolicy) {
-      setSelectedPolicyId(initialPolicy._id);
-    }
+    if (initialPolicy) setSelectedPolicyId(initialPolicy._id);
   }, [initialPolicy]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // ── WebSocket init ───────────────────────────────────
+  useEffect(() => {
+    tryConnectWS();
+    return () => wsRef.current?.close();
+  }, []);
+
+  const tryConnectWS = () => {
+    try {
+      const ws = new WebSocket(WS_URL);
+      ws.onopen = () => { setWsConnected(true); setWsAvailable(true); };
+      ws.onclose = () => { setWsConnected(false); };
+      ws.onerror = () => { setWsAvailable(false); setWsConnected(false); };
+      wsRef.current = ws;
+    } catch {
+      setWsAvailable(false);
+    }
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading]);
+  const scrollToBottom = useCallback((smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  }, []);
+
+  useEffect(() => { scrollToBottom(); }, [messages, loading]);
+
+  const handleScroll = () => {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 120);
+  };
 
   const fetchConversations = async () => {
     try {
       const res = await api.get('/chat/conversations');
-      setConversations(res.data.conversations || []);
-      if (res.data.conversations && res.data.conversations.length > 0) {
-        loadConversation(res.data.conversations[0]._id);
-      }
+      const list = res.data.conversations || [];
+      setConversations(list);
+      if (list.length > 0) loadConversation(list[0]._id);
     } catch (err) {
-      console.error('Error fetching conversations:', err);
+      console.error('Failed to fetch conversations', err);
     }
   };
 
@@ -46,178 +220,278 @@ export default function ChatBox({ initialPolicy, policies }) {
     try {
       const res = await api.get(`/chat/conversations/${convId}`);
       setCurrentConversationId(convId);
-      setMessages(res.data.conversation.messages || []);
-      if (res.data.conversation.policy_id) {
-        setSelectedPolicyId(res.data.conversation.policy_id._id || res.data.conversation.policy_id);
+      const conv = res.data.conversation;
+      setMessages(conv.messages || []);
+      if (conv.policy_id) {
+        setSelectedPolicyId(conv.policy_id._id || conv.policy_id);
       }
     } catch (err) {
-      console.error('Error loading conversation:', err);
+      console.error('Failed to load conversation', err);
     }
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputQuestion.trim() || loading) return;
+  const startNewChat = () => {
+    setCurrentConversationId(null);
+    setMessages([]);
+    setError(null);
+    inputRef.current?.focus();
+  };
 
-    const questionText = inputQuestion.trim();
-    setInputQuestion('');
+  // ── Send message via WebSocket (streaming) ──────────
+  const sendViaWS = (question) => {
+    return new Promise((resolve, reject) => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        reject(new Error('WebSocket not open'));
+        return;
+      }
+      const token = localStorage.getItem('medshield_token');
+      let streamingMsgId = `stream-${Date.now()}`;
 
-    // Optimistically append user message
-    const tempUserMsg = {
-      message_id: Date.now().toString(),
-      role: 'user',
-      content: questionText,
-      created_at: new Date(),
-    };
+      // Add placeholder streaming message
+      setMessages(prev => [...prev, {
+        message_id: streamingMsgId,
+        role: 'assistant',
+        content: '',
+        streaming: true,
+      }]);
 
-    setMessages((prev) => [...prev, tempUserMsg]);
+      let finalMetadata = null;
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'status') {
+            setStatusMsg(data.message);
+          } else if (data.type === 'chunk') {
+            setStatusMsg('');
+            setMessages(prev => prev.map(m =>
+              m.message_id === streamingMsgId
+                ? { ...m, content: m.content + data.token }
+                : m
+            ));
+          } else if (data.type === 'complete') {
+            finalMetadata = data;
+            setMessages(prev => prev.map(m =>
+              m.message_id === streamingMsgId
+                ? {
+                    ...m,
+                    streaming: false,
+                    query_type: data.queryType,
+                    confidence_level: data.confidenceLevel,
+                    verification_passed: data.verificationPassed,
+                    citations: data.citations,
+                  }
+                : m
+            ));
+            resolve(finalMetadata);
+          } else if (data.type === 'error') {
+            setMessages(prev => prev.map(m =>
+              m.message_id === streamingMsgId
+                ? { ...m, streaming: false, content: data.message || 'An error occurred.' }
+                : m
+            ));
+            reject(new Error(data.message));
+          }
+        } catch {
+          reject(new Error('Failed to parse WebSocket message'));
+        }
+      };
+
+      ws.send(JSON.stringify({
+        token,
+        question,
+        policy_id: selectedPolicyId || null,
+        conversation_id: currentConversationId,
+        plain_language_mode: plainLanguageMode,
+      }));
+    });
+  };
+
+  // ── Send message via REST (fallback) ────────────────
+  const sendViaREST = async (question) => {
+    const res = await api.post('/chat/message', {
+      conversation_id: currentConversationId,
+      policy_id: selectedPolicyId || null,
+      question,
+      plain_language_mode: plainLanguageMode,
+    });
+    if (res.data.success) {
+      if (!currentConversationId) {
+        setCurrentConversationId(res.data.conversationId);
+        fetchConversations();
+      }
+      setMessages(prev => [...prev, res.data.assistantMessage]);
+    }
+  };
+
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    const question = input.trim();
+    if (!question || loading) return;
+
+    setInput('');
+    setError(null);
     setLoading(true);
+    setStatusMsg('');
+
+    // Optimistic user message
+    setMessages(prev => [...prev, {
+      message_id: `user-${Date.now()}`,
+      role: 'user',
+      content: question,
+      created_at: new Date(),
+    }]);
 
     try {
-      const res = await api.post('/chat/message', {
-        conversation_id: currentConversationId,
-        policy_id: selectedPolicyId || null,
-        question: questionText,
-        plain_language_mode: plainLanguageMode,
-      });
-
-      if (res.data.success) {
-        if (!currentConversationId) {
-          setCurrentConversationId(res.data.conversationId);
-          fetchConversations();
-        }
-        setMessages((prev) => [...prev, res.data.assistantMessage]);
+      if (wsAvailable && wsConnected && wsRef.current?.readyState === WebSocket.OPEN) {
+        await sendViaWS(question);
+      } else {
+        await sendViaREST(question);
       }
     } catch (err) {
       console.error(err);
-      setMessages((prev) => [
-        ...prev,
-        {
-          message_id: Date.now().toString(),
-          role: 'assistant',
-          content: 'Sorry, I encountered an issue retrieving information from your policy documents. Please ensure your policy has finished processing.',
-          confidence_level: 'low',
-          verification_passed: false,
-        },
-      ]);
+      setError(err.message || 'Failed to get a response. Please try again.');
+      // Remove streaming placeholder if present
+      setMessages(prev => prev.filter(m => !m.streaming));
     } finally {
       setLoading(false);
+      setStatusMsg('');
     }
   };
 
-  const handleStartNewChat = () => {
-    setCurrentConversationId(null);
-    setMessages([]);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
-  const sampleQuestions = [
-    "What's my room-rent limit?",
-    "Is there any co-payment in Tier 1 hospitals?",
-    "What is the waiting period for pre-existing diseases?",
-    "What are the major exclusions under this policy?",
+  const policyOptions = [
+    { value: '', label: 'All Policies' },
+    ...policies.map(p => ({
+      value: p._id,
+      label: `${p.insurer_name || p.file_name}`,
+    })),
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] gap-4">
-      {/* Sidebar: Conversations & Policy Scope */}
-      <div className="w-full lg:w-72 flex-shrink-0 glass-panel rounded-2xl p-4 flex flex-col justify-between">
-        <div>
-          {/* Policy Selector Scope */}
-          <div className="mb-4">
-            <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-              Active Policy Scope (FR-09)
-            </label>
-            <select
-              value={selectedPolicyId}
-              onChange={(e) => setSelectedPolicyId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">All Policies (Cross-Policy Search)</option>
-              {policies.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.insurer_name || p.file_name} ({p.policy_number || 'Policy'})
-                </option>
-              ))}
-            </select>
-          </div>
-
+    <div className="flex gap-4 h-[calc(100dvh-8rem)] lg:h-[calc(100dvh-5rem)]">
+      {/* ─── Sidebar ────────────────────────────────── */}
+      <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 surface rounded-xl overflow-hidden">
+        {/* New conversation */}
+        <div className="p-3 border-b border-white/[0.06]">
           <button
-            onClick={handleStartNewChat}
-            className="w-full py-2 px-3 mb-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center justify-center space-x-1.5 transition-colors border border-slate-700/80"
+            onClick={startNewChat}
+            className="btn btn-secondary w-full gap-2 text-xs"
           >
-            <span>+ New Conversation</span>
+            <Plus size={13} />
+            New conversation
           </button>
+        </div>
 
-          {/* Past Conversations List */}
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            Recent Conversations
-          </div>
-          <div className="space-y-1 overflow-y-auto max-h-[42vh] pr-1">
-            {conversations.length === 0 ? (
-              <div className="text-xs text-slate-500 py-3 text-center">No chat history yet</div>
-            ) : (
-              conversations.map((c) => (
+        {/* Policy scope */}
+        <div className="p-3 border-b border-white/[0.06]">
+          <Select
+            label="Policy Scope"
+            value={selectedPolicyId}
+            onChange={setSelectedPolicyId}
+            options={policyOptions}
+          />
+        </div>
+
+        {/* Conversation list */}
+        <div className="flex-1 overflow-y-auto p-2 scroll-area">
+          <p className="label-xs px-2 mb-2 mt-1">Recent</p>
+          {conversations.length === 0 ? (
+            <p className="text-xs text-zinc-600 text-center py-6">No chats yet</p>
+          ) : (
+            <div className="space-y-0.5">
+              {conversations.map(c => (
                 <button
                   key={c._id}
                   onClick={() => loadConversation(c._id)}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs transition-colors truncate block ${
-                    currentConversationId === c._id
-                      ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/80'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                  }`}
+                  className={`
+                    w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all duration-100 truncate block
+                    ${currentConversationId === c._id
+                      ? 'bg-white/[0.07] text-zinc-200'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+                    }
+                  `}
                 >
-                  {c.title || 'Untitled Session'}
+                  {c.title || 'Untitled session'}
                 </button>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Plain Language Mode Toggle (FR-13) */}
-        <div className="pt-3 border-t border-slate-800">
-          <label className="flex items-center justify-between cursor-pointer p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <div>
-                <div className="text-xs font-semibold text-slate-200">Plain Language</div>
-                <div className="text-[10px] text-slate-400">Demystifies insurance jargon</div>
-              </div>
+              ))}
             </div>
-            <input
-              type="checkbox"
-              checked={plainLanguageMode}
-              onChange={(e) => setPlainLanguageMode(e.target.checked)}
-              className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 bg-slate-800 border-slate-700"
-            />
-          </label>
+          )}
         </div>
-      </div>
 
-      {/* Main Chat Interface */}
-      <div className="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden">
-        {/* Messages Stream */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 max-w-lg mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4 shadow-lg shadow-emerald-500/10">
-                <Bot className="w-7 h-7" />
+        {/* Plain language toggle */}
+        <div className="p-3 pt-3 border-t border-white/[0.06]">
+          <Toggle
+            checked={plainLanguageMode}
+            onChange={setPlainLanguageMode}
+            label="Plain language"
+            description="Simplify insurance jargon"
+          />
+        </div>
+
+        {/* WS status indicator */}
+        <div className={`px-4 py-2.5 flex items-center gap-2 text-2xs ${wsConnected ? 'text-brand-500' : 'text-zinc-600'}`}>
+          {wsConnected
+            ? <><Wifi size={10} /><span>Streaming connected</span></>
+            : <><WifiOff size={10} /><span>REST mode</span></>
+          }
+        </div>
+      </aside>
+
+      {/* ─── Main chat area ──────────────────────────── */}
+      <div className="flex-1 flex flex-col surface rounded-xl overflow-hidden min-w-0">
+        {/* Mobile: scope + toggle bar */}
+        <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-b border-white/[0.06]">
+          <select
+            value={selectedPolicyId}
+            onChange={e => setSelectedPolicyId(e.target.value)}
+            className="input-field text-xs flex-1"
+          >
+            {policyOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <button
+            onClick={startNewChat}
+            className="btn btn-ghost p-2 rounded-xl flex-shrink-0"
+            title="New conversation"
+          >
+            <Plus size={15} />
+          </button>
+        </div>
+
+        {/* Messages area */}
+        <div
+          ref={scrollAreaRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-5 scroll-area relative"
+        >
+          {messages.length === 0 && !loading ? (
+            // Empty state
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-12 max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-4">
+                <Bot size={20} className="text-zinc-500" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 font-['Space_Grotesk']">
-                MedShield Policy Intelligence
+              <h3 className="text-sm font-semibold text-zinc-200 mb-1.5">
+                Policy Intelligence Assistant
               </h3>
-              <p className="text-xs text-slate-400 mb-6">
-                Ask specific questions about coverage amounts, ICU caps, exclusions, waiting periods, or claim conditions. All answers are cited back to exact policy pages.
+              <p className="text-xs text-zinc-500 leading-relaxed mb-6">
+                Ask anything about coverage amounts, waiting periods, exclusions, ICU caps, or claim procedures. Answers are cited back to exact policy pages.
               </p>
-
-              {/* Sample Questions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full text-left">
-                {sampleQuestions.map((q, idx) => (
+              <div className="grid grid-cols-1 gap-2 w-full">
+                {SAMPLE_QUESTIONS.map((q, i) => (
                   <button
-                    key={idx}
-                    onClick={() => {
-                      setInputQuestion(q);
-                    }}
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800/80 border border-slate-800 text-xs text-slate-300 hover:text-emerald-300 transition-colors"
+                    key={i}
+                    onClick={() => setInput(q)}
+                    className="text-left px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.10] hover:bg-white/[0.05] text-xs text-zinc-400 hover:text-zinc-200 transition-all duration-150"
                   >
                     "{q}"
                   </button>
@@ -225,130 +499,90 @@ export default function ChatBox({ initialPolicy, policies }) {
               </div>
             </div>
           ) : (
-            messages.map((msg, index) => {
-              const isUser = msg.role === 'user';
-              return (
-                <div
-                  key={index}
-                  className={`flex items-start space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}
-                >
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                      isUser
-                        ? 'bg-emerald-500 text-slate-950'
-                        : 'bg-slate-800 text-emerald-400 border border-slate-700'
-                    }`}
-                  >
-                    {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                  </div>
-
-                  <div
-                    className={`max-w-2xl rounded-2xl p-4 text-xs leading-relaxed ${
-                      isUser
-                        ? 'bg-emerald-600/20 border border-emerald-500/30 text-white'
-                        : 'bg-slate-900 border border-slate-800 text-slate-200'
-                    }`}
-                  >
-                    {/* Assistant Metadata Badges */}
-                    {!isUser && (
-                      <div className="flex flex-wrap items-center gap-2 mb-2 pb-2 border-b border-slate-800/80">
-                        {/* Query Classification (FR-09) */}
-                        {msg.query_type && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-                            {msg.query_type === 'structured' ? '⚡ Structured Fact Lookup' : '🔍 Semantic Vector Search'}
-                          </span>
-                        )}
-
-                        {/* Confidence Level (FR-12) */}
-                        {msg.confidence_level && (
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                              msg.confidence_level === 'high'
-                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                : msg.confidence_level === 'medium'
-                                ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                                : 'bg-rose-950 text-rose-300 border border-rose-800'
-                            }`}
-                          >
-                            Confidence: {msg.confidence_level}
-                          </span>
-                        )}
-
-                        {/* Self-Verification Status (FR-11) */}
-                        {msg.verification_passed !== null && msg.verification_passed !== undefined && (
-                          <span className="flex items-center text-[10px] text-emerald-400">
-                            <ShieldCheck className="w-3 h-3 mr-1" />
-                            Passage Self-Verified
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Content */}
-                    <div className="whitespace-pre-line text-[13px] leading-relaxed">
-                      {plainLanguageMode && msg.plain_language ? msg.plain_language : msg.content}
-                    </div>
-
-                    {/* Citations Footer (FR-10) */}
-                    {!isUser && msg.citations && msg.citations.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-slate-800/80">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
-                          <BookOpen className="w-3 h-3 text-emerald-400" />
-                          <span>Document Citations & Traceability (FR-10)</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {msg.citations.map((cite, cIdx) => (
-                            <div
-                              key={cIdx}
-                              className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-emerald-300"
-                            >
-                              <span className="font-semibold text-white">Page {cite.page_number || 'N/A'}:</span>{' '}
-                              <span className="text-slate-400">{cite.section_heading || 'Policy Clause'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+            <>
+              {messages.map((msg, i) => (
+                <MessageBubble
+                  key={msg.message_id || i}
+                  msg={msg}
+                  plainLanguageMode={plainLanguageMode}
+                />
+              ))}
+              {loading && !messages.some(m => m.streaming) && (
+                <TypingIndicator statusMsg={statusMsg} />
+              )}
+              {loading && statusMsg && !messages.some(m => m.streaming) && (
+                <TypingIndicator statusMsg={statusMsg} />
+              )}
+            </>
           )}
-
-          {loading && (
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-xl bg-slate-800 text-emerald-400 border border-slate-700 flex items-center justify-center">
-                <Bot className="w-4 h-4" />
-              </div>
-              <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center space-x-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span>Classifying query and running vector search across policy facts...</span>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Bar */}
-        <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-800 bg-slate-950/60">
-          <div className="flex items-center space-x-2">
-            <input
-              type="text"
-              value={inputQuestion}
-              onChange={(e) => setInputQuestion(e.target.value)}
-              placeholder="Ask anything about your policy (e.g. room rent limit, waiting periods, ICU caps)..."
-              disabled={loading}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+        {/* Scroll to bottom button */}
+        {showScrollBtn && (
+          <button
+            onClick={() => scrollToBottom()}
+            className="absolute bottom-20 right-6 p-2 rounded-full bg-[#1e1e23] border border-white/[0.10] text-zinc-400 hover:text-zinc-200 shadow-md transition-all animate-fade-in"
+          >
+            <ChevronDown size={15} />
+          </button>
+        )}
+
+        {/* Error bar */}
+        {error && (
+          <div className="px-4 pb-2">
+            <ErrorBanner message={error} onDismiss={() => setError(null)} />
+          </div>
+        )}
+
+        {/* Input area */}
+        <form
+          onSubmit={handleSend}
+          className="px-4 pb-4 pt-3 border-t border-white/[0.06] bg-[#0a0a0c]/60"
+        >
+          {/* Mobile: plain language toggle */}
+          <div className="lg:hidden flex items-center gap-3 mb-3">
+            <Toggle
+              checked={plainLanguageMode}
+              onChange={setPlainLanguageMode}
+              label="Plain language mode"
             />
+          </div>
+
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                rows={1}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+                placeholder="Ask about coverage, exclusions, waiting periods…"
+                className="
+                  input-field resize-none py-3 pr-12 leading-relaxed
+                  max-h-32 overflow-y-auto
+                "
+                style={{ height: 'auto' }}
+                onInput={e => {
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+                }}
+              />
+            </div>
             <button
               type="submit"
-              disabled={loading || !inputQuestion.trim()}
-              className="p-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-md shadow-emerald-500/20"
+              disabled={loading || !input.trim()}
+              className="btn btn-primary h-11 w-11 p-0 rounded-xl flex-shrink-0"
+              aria-label="Send message"
             >
-              <Send className="w-4 h-4" />
+              {loading ? <Spinner size={15} className="text-black" /> : <Send size={15} />}
             </button>
           </div>
+          <p className="text-2xs text-zinc-700 mt-2 text-center">
+            {wsConnected ? 'Streaming via WebSocket' : 'REST API mode'}
+            {selectedPolicyId ? '' : ' · All policies'}
+          </p>
         </form>
       </div>
     </div>

@@ -1,45 +1,122 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, ArrowRight, ShieldCheck, AlertCircle, RefreshCw, Layers, TrendingDown } from 'lucide-react';
+import { Calculator, RefreshCw, TrendingDown, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../../services/api';
+import { Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
+
+const TREATMENTS = [
+  { value: 'Knee Replacement',           label: 'Knee Replacement (Orthopedic)' },
+  { value: 'Angioplasty',                label: 'Angioplasty / Stent (Cardiology)' },
+  { value: 'Cataract Surgery',           label: 'Cataract Surgery (Daycare)' },
+  { value: 'Appendectomy',               label: 'Appendectomy (General Surgery)' },
+  { value: 'Gallbladder Removal',        label: 'Gallbladder Removal (Laparoscopic)' },
+  { value: 'Cardiac Bypass (CABG)',      label: 'Cardiac Bypass CABG' },
+  { value: 'Chemotherapy (per cycle)',   label: 'Chemotherapy (per cycle)' },
+];
+
+const HOSPITAL_TIERS = [
+  { value: 'tier_1', label: 'Tier 1 — Metro Super Specialty' },
+  { value: 'tier_2', label: 'Tier 2 — Non-Metro Private' },
+  { value: 'tier_3', label: 'Tier 3 — District / Semi-Urban' },
+];
+
+const WHATIF_VARS = [
+  { value: 'hospital_tier', label: 'Change Hospital Tier' },
+  { value: 'rider',         label: 'Add Zero-Copay Rider' },
+  { value: 'sum_insured',   label: 'Simulate Higher Sum Insured' },
+];
+
+const WHATIF_VALUES = {
+  hospital_tier: [
+    { value: 'tier_2', label: 'Tier 2 Hospital' },
+    { value: 'tier_3', label: 'Tier 3 Hospital' },
+  ],
+  rider: [
+    { value: 'zero_copay_rider', label: 'Enable Zero Co-Pay Rider' },
+  ],
+  sum_insured: [
+    { value: '2000000', label: '₹20 Lakh' },
+    { value: '5000000', label: '₹50 Lakh' },
+  ],
+};
+
+// ─── Currency formatter ────────────────────────────────────
+const fmt = (n) => n !== undefined && n !== null ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
+const pct = (a, b) => b ? `${Math.round((a / b) * 100)}%` : '—';
+
+// ─── Custom tooltip for bar chart ─────────────────────────
+const ChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-[#1e1e23] border border-white/[0.10] rounded-xl px-3 py-2.5 text-xs shadow-md">
+      <p className="text-zinc-400 mb-1">{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: p.color }} className="font-medium">
+          {p.name}: {fmt(p.value)}
+        </p>
+      ))}
+    </div>
+  );
+};
+
+// ─── Breakdown row ─────────────────────────────────────────
+function BreakdownRow({ label, value, accent, note, deduction }) {
+  return (
+    <div className={`flex items-start justify-between py-3 border-b border-white/[0.05] last:border-0 gap-4 ${accent ? 'border-0 pt-3' : ''}`}>
+      <div className="flex-1">
+        <p className={`text-sm ${accent ? 'font-semibold text-zinc-100' : 'text-zinc-400'}`}>{label}</p>
+        {note && <p className="text-xs text-zinc-600 mt-0.5">{note}</p>}
+      </div>
+      <p className={`text-sm font-mono font-semibold flex-shrink-0 ${
+        accent === 'green' ? 'text-brand-500' :
+        accent === 'red'   ? 'text-red-400' :
+        deduction          ? 'text-amber-400' :
+        'text-zinc-200'
+      }`}>
+        {deduction ? '-' : ''}{value}
+      </p>
+    </div>
+  );
+}
 
 export default function CostEstimatorView({ policies }) {
   const [selectedPolicyId, setSelectedPolicyId] = useState(policies[0]?._id || '');
-  const [treatmentName, setTreatmentName] = useState('Knee Replacement');
-  const [hospitalTier, setHospitalTier] = useState('tier_1');
-  const [roomRentPerDay, setRoomRentPerDay] = useState(12000);
-  const [stayDays, setStayDays] = useState(4);
-  const [loading, setLoading] = useState(false);
-  const [currentEstimate, setCurrentEstimate] = useState(null);
-  const [estimateHistory, setEstimateHistory] = useState([]);
+  const [treatmentName, setTreatmentName]     = useState('Knee Replacement');
+  const [hospitalTier, setHospitalTier]       = useState('tier_1');
+  const [roomRentPerDay, setRoomRentPerDay]   = useState(12000);
+  const [stayDays, setStayDays]               = useState(4);
+  const [loading, setLoading]                 = useState(false);
+  const [estimate, setEstimate]               = useState(null);
+  const [history, setHistory]                 = useState([]);
+  const [error, setError]                     = useState(null);
 
-  // What-If Scenario State (FR-15, FR-17)
-  const [whatIfVariable, setWhatIfVariable] = useState('hospital_tier');
-  const [whatIfNewValue, setWhatIfNewValue] = useState('tier_2');
+  // What-if
+  const [whatIfVar, setWhatIfVar]     = useState('hospital_tier');
+  const [whatIfVal, setWhatIfVal]     = useState('tier_2');
   const [whatIfLoading, setWhatIfLoading] = useState(false);
+  const [showWhatIf, setShowWhatIf]   = useState(false);
 
   useEffect(() => {
     if (policies.length > 0 && !selectedPolicyId) {
       setSelectedPolicyId(policies[0]._id);
     }
-    fetchEstimateHistory();
+    fetchHistory();
   }, [policies]);
 
-  const fetchEstimateHistory = async () => {
+  const fetchHistory = async () => {
     try {
       const res = await api.get('/cost/history');
-      setEstimateHistory(res.data.estimates || []);
-      if (res.data.estimates && res.data.estimates.length > 0) {
-        setCurrentEstimate(res.data.estimates[0]);
-      }
+      setHistory(res.data.estimates || []);
+      if (res.data.estimates?.length > 0) setEstimate(res.data.estimates[0]);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleCalculateEstimate = async (e) => {
+  const handleCalculate = async (e) => {
     e.preventDefault();
     if (!selectedPolicyId || !treatmentName) return;
-
+    setError(null);
     try {
       setLoading(true);
       const res = await api.post('/cost/estimate', {
@@ -49,335 +126,323 @@ export default function CostEstimatorView({ policies }) {
         room_rent_per_day: roomRentPerDay,
         stay_days: stayDays,
       });
-
-      setCurrentEstimate(res.data.estimate);
-      fetchEstimateHistory();
+      setEstimate(res.data.estimate);
+      fetchHistory();
     } catch (err) {
-      console.error(err);
+      setError(err.response?.data?.error || 'Calculation failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApplyWhatIf = async () => {
-    if (!currentEstimate) return;
+  const handleWhatIf = async () => {
+    if (!estimate) return;
+    setError(null);
     try {
       setWhatIfLoading(true);
-      const res = await api.post(`/cost/estimate/${currentEstimate._id}/what-if`, {
-        changed_variable: whatIfVariable,
-        new_value: whatIfNewValue,
+      const res = await api.post(`/cost/estimate/${estimate._id}/what-if`, {
+        changed_variable: whatIfVar,
+        new_value: whatIfVal,
       });
-
-      setCurrentEstimate(res.data.estimate);
-      fetchEstimateHistory();
+      setEstimate(res.data.estimate);
     } catch (err) {
-      console.error(err);
+      setError(err.response?.data?.error || 'What-if simulation failed.');
     } finally {
       setWhatIfLoading(false);
     }
   };
 
-  const breakdown = currentEstimate?.cost_breakdown || {};
+  const breakdown = estimate?.cost_breakdown || {};
+  const variants  = estimate?.what_if_variants || [];
+
+  const policyOptions = policies.map(p => ({
+    value: p._id,
+    label: `${p.insurer_name} (₹${p.sum_insured ? (p.sum_insured / 100000).toFixed(1) + 'L' : 'N/A'})`,
+  }));
+
+  // Chart data for covered vs out-of-pocket
+  const chartData = estimate ? [
+    { name: 'Insurer Pays', value: estimate.covered_amount },
+    { name: 'Your Share',   value: estimate.out_of_pocket_amount },
+  ] : [];
+
+  const COLORS = ['#30d158', '#ff453a'];
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="glass-panel rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white font-['Space_Grotesk'] flex items-center space-x-2">
-            <Calculator className="w-6 h-6 text-emerald-400" />
-            <span>Treatment Cost Estimator & What-If Simulator</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Calculates exact out-of-pocket expenses based on your policy's extracted room-rent limits, copay clauses, deductibles, and hospital tiers (FR-14).
-          </p>
-        </div>
+      {/* Page header */}
+      <div>
+        <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Cost Estimator</h1>
+        <p className="text-sm text-zinc-500 mt-0.5">
+          Calculate out-of-pocket expenses based on room-rent limits, co-pay, and deductibles
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Form: Inputs */}
-        <div className="lg:col-span-5 glass-panel rounded-2xl p-6">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">
-            Estimation Inputs
-          </h3>
+      <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
-          <form onSubmit={handleCalculateEstimate} className="space-y-4">
-            {/* Policy Selector */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Select Policy</label>
-              <select
-                value={selectedPolicyId}
-                onChange={(e) => setSelectedPolicyId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                {policies.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.insurer_name} (Sum Insured: ₹{p.sum_insured?.toLocaleString('en-IN') || 'N/A'})
-                  </option>
-                ))}
-              </select>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        {/* ─── Input form ─────────────────────────────── */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="surface p-5 space-y-4">
+            <p className="text-sm font-semibold text-zinc-200 pb-3 border-b border-white/[0.06]">
+              Estimation Inputs
+            </p>
 
-            {/* Treatment Selector */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Medical Procedure / Treatment</label>
-              <select
+            <form onSubmit={handleCalculate} className="space-y-4">
+              {policies.length > 0 ? (
+                <Select
+                  label="Policy"
+                  value={selectedPolicyId}
+                  onChange={setSelectedPolicyId}
+                  options={policyOptions}
+                />
+              ) : (
+                <div className="text-xs text-zinc-500 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  Upload a policy first to calculate costs.
+                </div>
+              )}
+
+              <Select
+                label="Medical Procedure"
                 value={treatmentName}
-                onChange={(e) => setTreatmentName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                <option value="Knee Replacement">Knee Replacement (Orthopedic)</option>
-                <option value="Angioplasty">Angioplasty / Stent (Cardiology)</option>
-                <option value="Cataract Surgery">Cataract Surgery (Daycare/Ophthalmic)</option>
-                <option value="Appendectomy">Appendectomy (General Surgery)</option>
-                <option value="Gallbladder Removal">Gallbladder Removal (Laparoscopic)</option>
-                <option value="Cardiac Bypass (CABG)">Cardiac Bypass - CABG (Cardiology)</option>
-                <option value="Chemotherapy (per cycle)">Chemotherapy per cycle (Oncology)</option>
-              </select>
-            </div>
+                onChange={setTreatmentName}
+                options={TREATMENTS}
+              />
 
-            {/* Hospital Tier */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Hospital Tier / City Category</label>
-              <select
+              <Select
+                label="Hospital Tier"
                 value={hospitalTier}
-                onChange={(e) => setHospitalTier(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                onChange={setHospitalTier}
+                options={HOSPITAL_TIERS}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-xs block mb-2">Room Rent/Day (₹)</label>
+                  <input
+                    type="number"
+                    value={roomRentPerDay}
+                    onChange={e => setRoomRentPerDay(Number(e.target.value))}
+                    min={1000}
+                    step={500}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-xs block mb-2">Stay (Days)</label>
+                  <input
+                    type="number"
+                    value={stayDays}
+                    onChange={e => setStayDays(Number(e.target.value))}
+                    min={1}
+                    max={90}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !selectedPolicyId}
+                className="btn btn-primary w-full py-2.5 font-semibold"
               >
-                <option value="tier_1">Tier 1 — Metro Super Specialty (Max, Apollo, Fortis)</option>
-                <option value="tier_2">Tier 2 — Non-Metro Private Multi-Specialty</option>
-                <option value="tier_3">Tier 3 — District Healthcare / Semi-Urban</option>
-              </select>
-            </div>
-
-            {/* Hospital Room Rent & Stay Duration */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Room Rent/Day (₹)</label>
-                <input
-                  type="number"
-                  value={roomRentPerDay}
-                  onChange={(e) => setRoomRentPerDay(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Stay Duration (Days)</label>
-                <input
-                  type="number"
-                  value={stayDays}
-                  onChange={(e) => setStayDays(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all"
-            >
-              {loading ? 'Recalculating...' : 'Calculate Cost Breakdown'}
-            </button>
-          </form>
-
-          {/* Past Estimates mini history */}
-          <div className="mt-6 pt-4 border-t border-slate-800">
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Previous Estimates
-            </div>
-            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-              {estimateHistory.map((est) => (
-                <button
-                  key={est._id}
-                  onClick={() => setCurrentEstimate(est)}
-                  className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                    currentEstimate?._id === est._id
-                      ? 'bg-slate-800 text-emerald-300 border border-emerald-500/30'
-                      : 'text-slate-400 hover:bg-slate-900'
-                  }`}
-                >
-                  <span className="truncate">{est.treatment_name} ({est.hospital_tier})</span>
-                  <span className="font-mono text-slate-300 text-[11px]">
-                    ₹{(est.out_of_pocket_amount / 1000).toFixed(0)}k out of pocket
-                  </span>
-                </button>
-              ))}
-            </div>
+                {loading ? <><Spinner size={14} className="text-black" /> Calculating…</> : <>
+                  <Calculator size={14} /> Calculate Breakdown
+                </>}
+              </button>
+            </form>
           </div>
+
+          {/* History */}
+          {history.length > 0 && (
+            <div className="surface p-4">
+              <p className="label-xs mb-3">Previous Estimates</p>
+              <div className="space-y-1 max-h-44 overflow-y-auto scroll-area">
+                {history.map(est => (
+                  <button
+                    key={est._id}
+                    onClick={() => setEstimate(est)}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all ${
+                      estimate?._id === est._id
+                        ? 'bg-white/[0.07] text-zinc-200'
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <span className="truncate mr-2">{est.treatment_name}</span>
+                    <span className="font-mono text-zinc-400 flex-shrink-0">
+                      {fmt(est.out_of_pocket_amount)} OOP
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right Section: Results & What-If Simulator */}
-        <div className="lg:col-span-7 space-y-6">
-          {currentEstimate ? (
+        {/* ─── Results ─────────────────────────────────── */}
+        <div className="lg:col-span-3 space-y-4">
+          {estimate ? (
             <>
-              {/* Cost Summary Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="glass-panel rounded-2xl p-4 border border-slate-800">
-                  <div className="text-xs text-slate-400">Total Hospital Bill</div>
-                  <div className="text-xl font-bold text-white mt-1">
-                    ₹{currentEstimate.estimated_total_cost?.toLocaleString('en-IN')}
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-1 capitalize">{currentEstimate.hospital_tier.replace('_', ' ')} Hospital</div>
+              {/* Summary metrics */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="surface p-4">
+                  <p className="label-xs mb-2">Total Bill</p>
+                  <p className="text-xl font-semibold text-zinc-100 tracking-tight">{fmt(estimate.estimated_total_cost)}</p>
+                  <p className="text-xs text-zinc-500 mt-1 capitalize">{estimate.hospital_tier?.replace('_', ' ')}</p>
                 </div>
-
-                <div className="glass-panel rounded-2xl p-4 border border-emerald-900/60 bg-emerald-950/20">
-                  <div className="text-xs text-emerald-400 font-medium">Covered by Insurer</div>
-                  <div className="text-xl font-bold text-emerald-300 mt-1">
-                    ₹{currentEstimate.covered_amount?.toLocaleString('en-IN')}
-                  </div>
-                  <div className="text-[10px] text-emerald-500 mt-1">
-                    {Math.round((currentEstimate.covered_amount / currentEstimate.estimated_total_cost) * 100)}% of Bill
-                  </div>
+                <div className="surface p-4 border-brand-500/20">
+                  <p className="label-xs mb-2 text-brand-500">Insurer Pays</p>
+                  <p className="text-xl font-semibold text-brand-500 tracking-tight">{fmt(estimate.covered_amount)}</p>
+                  <p className="text-xs text-brand-500/60 mt-1">{pct(estimate.covered_amount, estimate.estimated_total_cost)} covered</p>
                 </div>
-
-                <div className="glass-panel rounded-2xl p-4 border border-rose-900/60 bg-rose-950/20">
-                  <div className="text-xs text-rose-400 font-medium">Your Out-Of-Pocket</div>
-                  <div className="text-xl font-bold text-rose-300 mt-1">
-                    ₹{currentEstimate.out_of_pocket_amount?.toLocaleString('en-IN')}
-                  </div>
-                  <div className="text-[10px] text-rose-400/80 mt-1">Direct Patient Payment</div>
+                <div className="surface p-4 border-red-500/20">
+                  <p className="label-xs mb-2 text-red-400">Your Share</p>
+                  <p className="text-xl font-semibold text-red-400 tracking-tight">{fmt(estimate.out_of_pocket_amount)}</p>
+                  <p className="text-xs text-red-400/60 mt-1">Out-of-pocket</p>
                 </div>
               </div>
 
-              {/* Detailed Breakdown Accordion / List */}
-              <div className="glass-panel rounded-2xl p-5 border border-slate-800">
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">
-                  Detailed Cost Audit & Deductions (FR-14)
-                </h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/80 text-slate-300">
-                    <span>Base Hospital & Surgical Charges</span>
-                    <span className="font-mono text-white">₹{breakdown.base_hospital_charges?.toLocaleString('en-IN')}</span>
-                  </div>
+              {/* Bar chart */}
+              <div className="surface p-5">
+                <p className="text-sm font-medium text-zinc-300 mb-4">Cost Breakdown</p>
+                <ResponsiveContainer width="100%" height={120}>
+                  <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 20, top: 0, bottom: 0 }}>
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={90}
+                      tick={{ fill: '#71717a', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={32}>
+                      {chartData.map((entry, i) => (
+                        <Cell key={i} fill={COLORS[i]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
 
+              {/* Detailed breakdown */}
+              <div className="surface p-5">
+                <p className="text-sm font-medium text-zinc-300 mb-2">Detailed Audit</p>
+                <div>
+                  <BreakdownRow label="Base Hospital & Surgical Charges" value={fmt(breakdown.base_hospital_charges)} />
                   {breakdown.room_rent_copay_penalty > 0 && (
-                    <div className="flex justify-between py-1.5 border-b border-slate-800/80 text-amber-300">
-                      <span>Room Rent Proportionate Deduction Penalty (Cap: ₹{breakdown.room_rent_cap_per_day}/day)</span>
-                      <span className="font-mono font-semibold">-₹{breakdown.room_rent_copay_penalty?.toLocaleString('en-IN')}</span>
-                    </div>
+                    <BreakdownRow
+                      label="Room Rent Proportionate Deduction"
+                      note={`Policy cap: ₹${breakdown.room_rent_cap_per_day?.toLocaleString('en-IN')}/day`}
+                      value={fmt(breakdown.room_rent_copay_penalty)}
+                      deduction
+                    />
                   )}
-
                   {breakdown.copay_percentage > 0 && (
-                    <div className="flex justify-between py-1.5 border-b border-slate-800/80 text-amber-300">
-                      <span>Co-payment Applied ({breakdown.copay_percentage}%)</span>
-                      <span className="font-mono font-semibold">-₹{breakdown.copay_amount?.toLocaleString('en-IN')}</span>
-                    </div>
+                    <BreakdownRow
+                      label={`Co-Payment (${breakdown.copay_percentage}%)`}
+                      value={fmt(breakdown.copay_amount)}
+                      deduction
+                    />
                   )}
-
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/80 text-slate-400">
-                    <span>Non-Medical Consumables & PPE (Excluded by IRDAI)</span>
-                    <span className="font-mono">-₹{breakdown.excluded_items_cost?.toLocaleString('en-IN')}</span>
-                  </div>
-
-                  <div className="flex justify-between py-2 text-emerald-400 font-bold text-sm">
-                    <span>Net Admissible Claim Payable</span>
-                    <span className="font-mono">₹{breakdown.final_payable_by_insurer?.toLocaleString('en-IN')}</span>
+                  <BreakdownRow
+                    label="Excluded Items (IRDAI non-payables)"
+                    value={fmt(breakdown.excluded_items_cost)}
+                    deduction
+                  />
+                  <div className="border-t border-white/[0.08] pt-3">
+                    <BreakdownRow
+                      label="Net Admissible Claim"
+                      value={fmt(breakdown.final_payable_by_insurer)}
+                      accent="green"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* What-If Simulation Box (FR-15, FR-17) */}
-              <div className="glass-panel-glow rounded-2xl p-5 border border-emerald-500/20 bg-slate-900/90">
-                <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
-                  <RefreshCw className="w-4 h-4 text-emerald-400" />
-                  <span>Interactive What-If Scenario Simulator (FR-15)</span>
-                </div>
-                <p className="text-xs text-slate-400 mb-4">
-                  Simulate alternative decisions: see how choosing a different hospital tier or adding a zero-copay rider impacts your out-of-pocket costs.
-                </p>
+              {/* What-If simulator */}
+              <div className="surface overflow-hidden">
+                <button
+                  onClick={() => setShowWhatIf(v => !v)}
+                  className="w-full px-5 py-4 flex items-center justify-between text-sm font-medium text-zinc-300 hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <RefreshCw size={14} className="text-brand-500" />
+                    What-If Simulator
+                  </div>
+                  {showWhatIf ? <ChevronUp size={15} className="text-zinc-500" /> : <ChevronDown size={15} className="text-zinc-500" />}
+                </button>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <select
-                    value={whatIfVariable}
-                    onChange={(e) => {
-                      setWhatIfVariable(e.target.value);
-                      if (e.target.value === 'hospital_tier') setWhatIfNewValue('tier_2');
-                      if (e.target.value === 'rider') setWhatIfNewValue('zero_copay_rider');
-                      if (e.target.value === 'sum_insured') setWhatIfNewValue('2000000');
-                    }}
-                    className="w-full sm:w-1/2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200"
-                  >
-                    <option value="hospital_tier">Change Hospital Tier</option>
-                    <option value="rider">Add Zero-Copay Rider</option>
-                    <option value="sum_insured">Simulate Higher Sum Insured</option>
-                  </select>
+                {showWhatIf && (
+                  <div className="px-5 pb-5 border-t border-white/[0.06] pt-4 space-y-4">
+                    <p className="text-xs text-zinc-500">
+                      Simulate alternative scenarios to see how decisions affect your out-of-pocket cost.
+                    </p>
 
-                  {whatIfVariable === 'hospital_tier' && (
-                    <select
-                      value={whatIfNewValue}
-                      onChange={(e) => setWhatIfNewValue(e.target.value)}
-                      className="w-full sm:w-1/2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200"
-                    >
-                      <option value="tier_2">Switch to Tier 2 Hospital</option>
-                      <option value="tier_3">Switch to Tier 3 Hospital</option>
-                    </select>
-                  )}
-
-                  {whatIfVariable === 'rider' && (
-                    <select
-                      value={whatIfNewValue}
-                      onChange={(e) => setWhatIfNewValue(e.target.value)}
-                      className="w-full sm:w-1/2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200"
-                    >
-                      <option value="zero_copay_rider">Enable Zero Co-Payment Rider</option>
-                    </select>
-                  )}
-
-                  {whatIfVariable === 'sum_insured' && (
-                    <select
-                      value={whatIfNewValue}
-                      onChange={(e) => setWhatIfNewValue(e.target.value)}
-                      className="w-full sm:w-1/2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200"
-                    >
-                      <option value="2000000">₹20 Lakh Sum Insured</option>
-                      <option value="5000000">₹50 Lakh Sum Insured</option>
-                    </select>
-                  )}
-
-                  <button
-                    onClick={handleApplyWhatIf}
-                    disabled={whatIfLoading}
-                    className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl whitespace-nowrap transition-colors"
-                  >
-                    {whatIfLoading ? 'Simulating...' : 'Simulate'}
-                  </button>
-                </div>
-
-                {/* Display Embedded What-If Variants */}
-                {currentEstimate.what_if_variants && currentEstimate.what_if_variants.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
-                    <div className="text-[11px] font-semibold text-slate-300">Scenario Variations:</div>
-                    {currentEstimate.what_if_variants.map((v) => (
-                      <div
-                        key={v.variant_id}
-                        className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs"
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Select
+                        value={whatIfVar}
+                        onChange={(v) => {
+                          setWhatIfVar(v);
+                          setWhatIfVal(WHATIF_VALUES[v][0].value);
+                        }}
+                        options={WHATIF_VARS}
+                        className="flex-1"
+                      />
+                      <Select
+                        value={whatIfVal}
+                        onChange={setWhatIfVal}
+                        options={WHATIF_VALUES[whatIfVar] || []}
+                        className="flex-1"
+                      />
+                      <button
+                        onClick={handleWhatIf}
+                        disabled={whatIfLoading}
+                        className="btn btn-primary gap-2 whitespace-nowrap"
                       >
-                        <div>
-                          <div className="font-semibold text-white capitalize">
-                            Variant: {v.changed_variable.replace('_', ' ')} &rarr;{' '}
-                            <span className="text-emerald-400">{v.new_value}</span>
+                        {whatIfLoading ? <Spinner size={13} className="text-black" /> : <ArrowRight size={13} />}
+                        {whatIfLoading ? 'Simulating…' : 'Simulate'}
+                      </button>
+                    </div>
+
+                    {/* Variants */}
+                    {variants.length > 0 && (
+                      <div className="space-y-2 mt-2">
+                        <p className="label-xs">Scenario Results</p>
+                        {variants.map(v => (
+                          <div
+                            key={v.variant_id}
+                            className="surface-inset rounded-xl p-3.5 flex items-center justify-between gap-4"
+                          >
+                            <div>
+                              <p className="text-xs font-medium text-zinc-300 capitalize">
+                                {v.changed_variable?.replace(/_/g, ' ')}
+                                <span className="text-brand-500 ml-1">→ {v.new_value}</span>
+                              </p>
+                              <p className="text-2xs text-zinc-500 mt-0.5">
+                                Total: {fmt(v.recalculated_total_cost)} · Insurer: {fmt(v.recalculated_covered_amount)}
+                              </p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-2xs text-zinc-500 uppercase">New OOP</p>
+                              <p className="text-sm font-semibold text-brand-500">{fmt(v.recalculated_out_of_pocket)}</p>
+                            </div>
                           </div>
-                          <div className="text-[11px] text-slate-400">
-                            Total Bill: ₹{v.recalculated_total_cost?.toLocaleString('en-IN')} | Insurer Pays: ₹{v.recalculated_covered_amount?.toLocaleString('en-IN')}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[10px] text-slate-400 uppercase">New Out-Of-Pocket</div>
-                          <div className="text-sm font-bold text-emerald-300">
-                            ₹{v.recalculated_out_of_pocket?.toLocaleString('en-IN')}
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <div className="h-64 glass-panel rounded-2xl flex flex-col items-center justify-center text-slate-400 text-xs">
-              <Calculator className="w-8 h-8 text-slate-600 mb-2" />
-              <span>Select parameters on the left and click "Calculate Cost Breakdown"</span>
+            <div className="surface h-80 flex items-center justify-center">
+              <EmptyState
+                icon={Calculator}
+                title="No estimate yet"
+                description="Select a policy and treatment, then click Calculate to see the detailed cost breakdown."
+              />
             </div>
           )}
         </div>
