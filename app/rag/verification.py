@@ -131,7 +131,7 @@ def verify_answer(claim: str, passage: str) -> dict[str, Any]:
         {"role": "user", "content": user_message},
     ]
 
-    raw_response = llm.chat(messages, temperature=0.0)
+    raw_response = llm.chat(messages, temperature=0.0, format="json", max_tokens=512)
     result = _parse_verification_response(raw_response)
 
     # Normalize fields

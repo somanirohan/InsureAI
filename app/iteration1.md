@@ -59,8 +59,12 @@ app/
 │   ├── pdf_extract.py               # Page-by-page PDF extraction with PyMuPDF & OCR fallback
 │   └── chunking.py                  # Page-bound, structure-aware hierarchical chunker
 └── rag/
-    ├── extraction.py                # Chunk-then-merge structured facts extractor
-    └── router.py                    # Vector similarity question router (no LLM)
+    ├── extraction.py                # Targeted structured facts extractor with page anchoring
+    ├── router.py                    # Vector similarity question router (zero LLM generation)
+    ├── vectorstore.py               # Isolated per-policy ChromaDB persistent indexing & retrieval
+    ├── verification.py              # Independent quote-anchored self-verification pass
+    ├── confidence.py                # Calibrated confidence scoring (High / Medium / Low)
+    └── qa.py                        # Unified end-to-end question answering orchestrator
 ```
 
 ---
