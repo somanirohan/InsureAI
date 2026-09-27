@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import { Sidebar, MobileTopBar } from './components/common/Navbar';
-import AuthModal from './components/auth/AuthModal';
+import LandingPage from './components/landing/LandingPage';
 import DashboardView from './components/dashboard/DashboardView';
 import ChatBox from './components/chat/ChatBox';
 import CostEstimatorView from './components/cost/CostEstimatorView';
 import ComparisonView from './components/comparison/ComparisonView';
+import { LiquidBlob, Starfield } from './components/common/LiquidBlob';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [policies, setPolicies] = useState([]);
+  const [activeTab, setActiveTab]           = useState('dashboard');
+  const [policies, setPolicies]             = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [chatTargetPolicy, setChatTargetPolicy] = useState(null);
 
@@ -52,18 +53,27 @@ export default function App() {
   // ── Auth loading ───────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-2xl bg-zinc-100 border border-zinc-200 flex items-center justify-center">
-            <Spinner size={18} className="text-zinc-500" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a12' }}>
+        <Starfield count={60} />
+        <div className="flex flex-col items-center gap-4 relative z-10">
+          <div className="relative w-20 h-20">
+            <div className="animate-blob-float w-20 h-20" style={{
+              borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
+              background: 'radial-gradient(ellipse at 40% 35%, rgba(240,200,100,0.4) 0%, rgba(60,40,160,0.5) 100%)',
+              filter: 'blur(2px)',
+            }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner size={20} className="text-white/60" />
+            </div>
           </div>
-          <p className="text-sm text-zinc-500">Loading MedShield...</p>
+          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>Loading MedShield...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) return <AuthModal />;
+  // ── Not logged in → Landing Page ───────────────────────
+  if (!user) return <LandingPage />;
 
   // ── Render view ────────────────────────────────────────
   const renderView = () => {
@@ -92,16 +102,44 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f5f5f7]">
-      {/* Desktop Sidebar */}
+    <div className="flex min-h-screen" style={{ background: '#0a0a12' }}>
+      <Starfield count={70} />
+
+      {/* Ambient nebula */}
+      <div
+        aria-hidden
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(ellipse at 15% 50%, rgba(60,40,160,0.12) 0%, transparent 50%),
+            radial-gradient(ellipse at 85% 20%, rgba(100,70,20,0.10) 0%, transparent 45%),
+            radial-gradient(ellipse at 50% 100%, rgba(30,20,80,0.20) 0%, transparent 60%)
+          `,
+        }}
+      />
+
+      {/* Liquid blob hero (dashboard only) */}
+      {activeTab === 'dashboard' && (
+        <div
+          aria-hidden
+          className="fixed pointer-events-none"
+          style={{
+            right: '-5%',
+            bottom: '-15%',
+            width: 'clamp(360px, 55vw, 760px)',
+            height: 'clamp(360px, 55vw, 760px)',
+            zIndex: 0,
+            opacity: 0.85,
+          }}
+        >
+          <LiquidBlob className="w-full h-full" />
+        </div>
+      )}
+
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Main column */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
+      <div className="flex-1 flex flex-col min-w-0 relative z-10">
         <MobileTopBar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        {/* Page content */}
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-6xl w-full mx-auto">
           <div key={activeTab} className="animate-fade-in">
             {renderView()}

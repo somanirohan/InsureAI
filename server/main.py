@@ -59,6 +59,12 @@ allowed_origins = settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGIN
 if not allowed_origins:
     allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+# ── CORS Security ─────────────────────────────────────────────────────────────
+# Only allow explicitly configured frontend origins with credentials
+allowed_origins = settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGINS, list) else [settings.CLIENT_URL]
+if not allowed_origins:
+    allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,

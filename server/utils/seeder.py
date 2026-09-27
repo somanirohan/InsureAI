@@ -25,7 +25,11 @@ from app.rag.vectorstore import index_chunks, delete_policy_index
 
 
 def seed_data():
-    print("[Python Seeder] Connecting to database...")
+    print("\n" + "="*50)
+    print(" INSURAI / MEDSHIELD DATABASE SEEDER (MONGODB ATLAS) ")
+    print("="*50)
+
+    print("\n[Seeder] Connecting to MongoDB Atlas...")
     db = get_sync_db()
 
     print("[Python Seeder] Clearing existing demo collections...")
@@ -36,24 +40,54 @@ def seed_data():
     db.cost_estimates.delete_many({})
     db.policy_comparisons.delete_many({})
 
+    # ── 1. Create Users ───────────────────────────────────────────────────────
     user_id = ObjectId()
+    rohan_user_id = ObjectId()
+    priya_user_id = ObjectId()
     pwd_hash = hash_password("password123")
-    user_doc = {
-        "_id": user_id,
-        "full_name": "Dr. Arjun Verma",
-        "email": "demo@medshield.ai",
-        "password_hash": pwd_hash,
-        "phone": "+91 98765 43210",
-        "is_active": True,
-        "created_at": datetime.utcnow(),
-        "last_login_at": datetime.utcnow()
-    }
-    db.users.insert_one(user_doc)
-    print(f"[Python Seeder] Created User: {user_doc['email']} (ID: {user_id})")
 
+    users_docs = [
+        {
+            "_id": user_id,
+            "full_name": "Dr. Arjun Verma",
+            "email": "demo@medshield.ai",
+            "password_hash": pwd_hash,
+            "phone": "+91 98765 43210",
+            "is_active": True,
+            "created_at": datetime.utcnow() - timedelta(days=30),
+            "last_login_at": datetime.utcnow()
+        },
+        {
+            "_id": rohan_user_id,
+            "full_name": "Rohan Somani",
+            "email": "rohan@insurai.com",
+            "password_hash": pwd_hash,
+            "phone": "+91 98111 22334",
+            "is_active": True,
+            "created_at": datetime.utcnow() - timedelta(days=20),
+            "last_login_at": datetime.utcnow()
+        },
+        {
+            "_id": priya_user_id,
+            "full_name": "Priya Sharma",
+            "email": "priya.sharma@example.com",
+            "password_hash": pwd_hash,
+            "phone": "+91 98222 33445",
+            "is_active": True,
+            "created_at": datetime.utcnow() - timedelta(days=10),
+            "last_login_at": datetime.utcnow()
+        }
+    ]
+    db.users.insert_many(users_docs)
+    print(f"[Seeder] Created {len(users_docs)} Users: demo@medshield.ai, rohan@insurai.com, priya.sharma@example.com")
+
+    # ── 2. Create Policies & Embedded Facts ───────────────────────────────────
     star_policy_id = ObjectId()
     hdfc_policy_id = ObjectId()
+    care_policy_id = ObjectId()
+    icici_policy_id = ObjectId()
 
+    # Star Health Facts
     star_facts = [
         {
             "fact_id": str(uuid.uuid4()),
@@ -163,11 +197,12 @@ def seed_data():
             "claim_conditions": ["Pre-authorization required within 48 hours for planned hospitalization"]
         },
         "facts": star_facts,
-        "uploaded_at": datetime.utcnow() - timedelta(days=5),
-        "indexed_at": datetime.utcnow() - timedelta(days=5),
+        "uploaded_at": datetime.utcnow() - timedelta(days=7),
+        "indexed_at": datetime.utcnow() - timedelta(days=7),
         "updated_at": datetime.utcnow()
     }
 
+    # HDFC ERGO Facts
     hdfc_facts = [
         {
             "fact_id": str(uuid.uuid4()),
@@ -247,43 +282,238 @@ def seed_data():
             "claim_conditions": ["Notify company within 24 hours of emergency hospitalization"]
         },
         "facts": hdfc_facts,
+        "uploaded_at": datetime.utcnow() - timedelta(days=4),
+        "indexed_at": datetime.utcnow() - timedelta(days=4),
+        "updated_at": datetime.utcnow()
+    }
+
+    # Care Health Facts
+    care_facts = [
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "sum_insured",
+            "fact_key": "base_sum_insured",
+            "fact_value": "INR 25,00,000",
+            "fact_value_numeric": 2500000.0,
+            "unit": "INR",
+            "source_page": 1,
+            "source_section": "Schedule of Benefits & Coverage",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "room_rent_limit",
+            "fact_key": "room_rent_cap_per_day",
+            "fact_value": "Single Private AC Room up to INR 15,000 per day",
+            "fact_value_numeric": 15000.0,
+            "unit": "INR/day",
+            "source_page": 2,
+            "source_section": "Section 1: Hospitalization & Room Eligibility",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "co_payment",
+            "fact_key": "co_payment_clause",
+            "fact_value": "0% co-payment for ages under 61; 20% co-payment for ages 61 and above",
+            "fact_value_numeric": 0.0,
+            "unit": "%",
+            "source_page": 3,
+            "source_section": "Section 2: Co-payment & Age Limits",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "waiting_period",
+            "fact_key": "pre_existing_disease_waiting_period",
+            "fact_value": "36 months waiting period for Pre-Existing Diseases",
+            "fact_value_numeric": 36.0,
+            "unit": "months",
+            "source_page": 4,
+            "source_section": "Section 3: Waiting Periods & Exclusions",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "claim_condition",
+            "fact_key": "unlimited_recharge",
+            "fact_value": "Unlimited automatic recharge of Sum Insured upon total exhaustion",
+            "fact_value_numeric": 2500000.0,
+            "unit": "INR",
+            "source_page": 2,
+            "source_section": "Section 1.3: Unlimited Automatic Recharge",
+            "extraction_confidence": "high"
+        }
+    ]
+
+    care_policy = {
+        "_id": care_policy_id,
+        "user_id": str(user_id),
+        "file_name": "Care_Health_Advantage.pdf",
+        "file_path": "uploads/policies/demo_care_health.pdf",
+        "file_size_bytes": 2890000,
+        "insurer_name": "Care Health Insurance",
+        "policy_type": "individual_health",
+        "policy_number": "CARE-ADV-2024-31908",
+        "sum_insured": 2500000.0,
+        "premium_amount": 31200.0,
+        "status": "ready",
+        "ocr_used": False,
+        "red_flag_summary": {
+            "waiting_periods": [
+                "36 months PED waiting period",
+                "24 months specific illnesses (cataract, joint replacement, kidney stones)",
+                "30 days initial waiting period"
+            ],
+            "major_exclusions": [
+                "Fertility and infertility treatments",
+                "Psychiatric conditions without physical manifestation",
+                "Experimental stem cell and hormone therapies"
+            ],
+            "room_rent_cap": "Single Private AC Room up to INR 15,000/day.",
+            "copay_percentage": "0% for age < 61; 20% for age 61+.",
+            "notes": ["Unlimited automatic recharge of INR 25 Lakhs sum insured."]
+        },
+        "facts": care_facts,
         "uploaded_at": datetime.utcnow() - timedelta(days=2),
         "indexed_at": datetime.utcnow() - timedelta(days=2),
         "updated_at": datetime.utcnow()
     }
 
-    db.policies.insert_many([star_policy, hdfc_policy])
-    print(f"[Python Seeder] Created 2 Policies: {star_policy['insurer_name']} and {hdfc_policy['insurer_name']}")
+    # ICICI Lombard Facts
+    icici_facts = [
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "sum_insured",
+            "fact_key": "base_sum_insured",
+            "fact_value": "INR 5,00,000",
+            "fact_value_numeric": 500000.0,
+            "unit": "INR",
+            "source_page": 1,
+            "source_section": "Schedule of Insurance Policy",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "room_rent_limit",
+            "fact_key": "room_rent_cap_per_day",
+            "fact_value": "Twin Sharing AC Room or 1% of Sum Insured per day (INR 5,000/day)",
+            "fact_value_numeric": 5000.0,
+            "unit": "INR/day",
+            "source_page": 2,
+            "source_section": "Section 1: Room Rent & ICU Terms",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "sub_limit",
+            "fact_key": "cataract_procedure_cap",
+            "fact_value": "INR 40,000 per eye procedure cap",
+            "fact_value_numeric": 40000.0,
+            "unit": "INR",
+            "source_page": 3,
+            "source_section": "Section 3.1: Sub-Limits & Exclusions",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "co_payment",
+            "fact_key": "co_payment_clause",
+            "fact_value": "20% co-payment for treatment in non-preferred Zone 1 network hospitals",
+            "fact_value_numeric": 20.0,
+            "unit": "%",
+            "source_page": 3,
+            "source_section": "Section 2.1: Co-Payment Clause",
+            "extraction_confidence": "high"
+        },
+        {
+            "fact_id": str(uuid.uuid4()),
+            "category": "waiting_period",
+            "fact_key": "pre_existing_disease_waiting_period",
+            "fact_value": "48 months waiting period for Pre-Existing Conditions",
+            "fact_value_numeric": 48.0,
+            "unit": "months",
+            "source_page": 3,
+            "source_section": "Section 2.2: Waiting Periods",
+            "extraction_confidence": "high"
+        }
+    ]
 
+    icici_policy = {
+        "_id": icici_policy_id,
+        "user_id": str(user_id),
+        "file_name": "ICICI_Lombard_Complete_Health.pdf",
+        "file_path": "uploads/policies/demo_icici_lombard.pdf",
+        "file_size_bytes": 1950000,
+        "insurer_name": "ICICI Lombard General Insurance",
+        "policy_type": "family_floater",
+        "policy_number": "IL-CHI-2024-77412",
+        "sum_insured": 500000.0,
+        "premium_amount": 9800.0,
+        "status": "ready",
+        "ocr_used": False,
+        "red_flag_summary": {
+            "waiting_periods": [
+                "48 months PED waiting period",
+                "24 months specific elective procedures",
+                "30 days initial waiting period"
+            ],
+            "major_exclusions": [
+                "Dental outpatient procedures",
+                "Aesthetic and cosmetic surgery",
+                "Experimental therapies"
+            ],
+            "room_rent_cap": "Twin Sharing AC Room or 1% of Sum Insured (INR 5,000/day). Proportionate deduction applies if exceeded.",
+            "copay_percentage": "20% co-payment for non-preferred Zone 1 hospitals.",
+            "notes": ["Cumulative bonus 10% per claim-free year up to max 50%."]
+        },
+        "facts": icici_facts,
+        "uploaded_at": datetime.utcnow() - timedelta(days=1),
+        "indexed_at": datetime.utcnow() - timedelta(days=1),
+        "updated_at": datetime.utcnow()
+    }
+
+    # Clone two policies for secondary user Rohan Somani
+    rohan_star_id = ObjectId()
+    rohan_hdfc_id = ObjectId()
+    rohan_star = dict(star_policy, _id=rohan_star_id, user_id=str(rohan_user_id))
+    rohan_hdfc = dict(hdfc_policy, _id=rohan_hdfc_id, user_id=str(rohan_user_id))
+
+    all_policies = [star_policy, hdfc_policy, care_policy, icici_policy, rohan_star, rohan_hdfc]
+    db.policies.insert_many(all_policies)
+    print(f"[Seeder] Created {len(all_policies)} Policies across users (Star, HDFC ERGO, Care Health, ICICI Lombard)")
+
+    # ── 3. Create Policy Chunks & Vectors ─────────────────────────────────────
     raw_chunks = [
+        # Star Health Chunks
         {
             "policy_id": star_policy_id,
             "user_id": user_id,
             "chunk_index": 0,
-            "chunk_text": "Section 1: The insured is entitled to hospital room boarding, nursing, doctor consultation fees up to Sum Insured INR 10,00,000 for all medically necessary inpatient treatments.",
-            "page_number": 2,
-            "section_heading": "Section 1 - Schedule of Benefits",
-            "token_count": 35,
+            "chunk_text": "Schedule of Benefits: Insured person Dr. Arjun Verma, Policy No SH-IND-2024-89214. Base Sum Insured is INR 10,00,000. Annual premium is INR 14,500. Cashless treatment is valid across 14,000+ approved partner hospitals.",
+            "page_number": 1,
+            "section_heading": "Schedule of Benefits & Coverage",
+            "token_count": 45,
             "vector_id": str(uuid.uuid4()),
         },
         {
             "policy_id": star_policy_id,
             "user_id": user_id,
             "chunk_index": 1,
-            "chunk_text": "Section 3: Room rent cap is strictly set at Single Private AC Room or 1% of Sum Insured per day. ICU charges are capped at 2% of Sum Insured per day. Proportionate deductions apply if a higher room category is occupied.",
-            "page_number": 4,
-            "section_heading": "Section 3 - Room Rent & ICU Caps",
-            "token_count": 42,
+            "chunk_text": "Section 1: Inpatient Hospitalization Room Rent Cap is strictly set at Single Private AC Room or 1% of Sum Insured per day (INR 10,000/day). ICU charges are capped at 2% of Sum Insured per day (INR 20,000/day). Proportionate deduction applies to all associate doctor and procedure charges if a higher room category is chosen.",
+            "page_number": 2,
+            "section_heading": "Section 1: Inpatient Hospitalization & Room Rent Limits",
+            "token_count": 58,
             "vector_id": str(uuid.uuid4()),
         },
         {
             "policy_id": star_policy_id,
             "user_id": user_id,
             "chunk_index": 2,
-            "chunk_text": "Section 5: A 10% co-payment is mandatory for claims processed at Tier 1 non-network hospitals. In network hospitals, no co-payment applies. Cashless claims must be intimating 48 hours prior to planned admission.",
-            "page_number": 7,
-            "section_heading": "Section 5 - Co-Payment Terms",
-            "token_count": 38,
+            "chunk_text": "Section 2: Co-payment terms. In network hospitals, 0% co-payment applies. For non-network metro hospitals, a mandatory 10% co-payment is deducted from the final admitted claim amount. Cashless pre-authorization must be submitted at least 48 hours prior to planned hospital admission.",
+            "page_number": 3,
+            "section_heading": "Section 2: Co-Payment Terms & Network Tiers",
+            "token_count": 48,
             "vector_id": str(uuid.uuid4()),
         }
     ]

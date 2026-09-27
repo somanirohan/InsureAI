@@ -8,22 +8,22 @@ export default {
     extend: {
       colors: {
         brand: {
-          50:  '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#1a8917', // Adjusted for light-mode contrast
-          600: '#166514',
-          700: '#14532d',
-          800: '#166534',
-          900: '#14532d',
+          50:  '#fdf8ed',
+          100: '#f7e9c4',
+          200: '#f0d898',
+          300: '#e8c97e',
+          400: '#d8b060',
+          500: '#c8a96e', // primary gold accent
+          600: '#a07840',
+          700: '#7a5a28',
+          800: '#553e18',
+          900: '#33250c',
         },
         surface: {
-          DEFAULT: '#f5f5f7',  // page bg
-          card:    '#ffffff',  // card bg
-          inset:   '#f0f0f5',  // inset bg
-          modal:   '#ffffff',  // modal bg
+          DEFAULT: '#0a0a12',  // page bg
+          card:    'rgba(12,12,24,0.85)',
+          inset:   'rgba(255,255,255,0.03)',
+          modal:   'rgba(10,10,22,0.97)',
         },
       },
       fontFamily: {
