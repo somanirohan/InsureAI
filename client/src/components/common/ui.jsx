@@ -34,10 +34,13 @@ export function MetricCard({ label, value, sub, accent }) {
   return (
     <div className="surface p-5 flex flex-col gap-1">
       <p className="label-xs">{label}</p>
-      <p className={`text-2xl font-semibold tracking-tight leading-none mt-1 ${accent ? 'text-brand-500' : 'text-zinc-100'}`}>
+      <p
+        className="text-2xl font-semibold tracking-tight leading-none mt-1"
+        style={{ color: accent ? '#e8c97e' : '#f0f0f8' }}
+      >
         {value}
       </p>
-      {sub && <p className="text-xs text-zinc-500 mt-1">{sub}</p>}
+      {sub && <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{sub}</p>}
     </div>
   );
 }
@@ -132,9 +135,12 @@ export function Toggle({ checked, onChange, label, description, disabled }) {
         <div
           className={`
             w-9 h-5 rounded-full transition-all duration-200
-            peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-zinc-900
-            ${checked ? 'bg-brand-500' : 'bg-white/10 border border-white/10'}
+            peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-zinc-900
           `}
+          style={{
+            background: checked ? 'rgba(200,169,110,0.85)' : 'rgba(255,255,255,0.10)',
+            border: checked ? 'none' : '1px solid rgba(255,255,255,0.10)',
+          }}
         />
         <div
           className={`
