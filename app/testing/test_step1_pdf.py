@@ -20,7 +20,7 @@ import logging
 from pathlib import Path
 
 # Make sure Python can find the app/ package regardless of working directory
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 logging.basicConfig(
     level=logging.INFO,

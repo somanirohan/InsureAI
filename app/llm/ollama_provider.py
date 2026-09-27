@@ -56,6 +56,10 @@ class OllamaProvider(LLMProvider):
             },
         }
 
+        # Enable constrained JSON grammar decoding if requested
+        if kwargs.get("format") == "json" or kwargs.get("json_mode"):
+            payload["format"] = "json"
+
         response = requests.post(
             f"{self.base_url}/api/chat",
             json=payload,
