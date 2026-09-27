@@ -56,20 +56,40 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      setTimeout(() => setPipelineStep('extracting'), 800);
-      setTimeout(() => setPipelineStep('indexed'), 2000);
-      setTimeout(() => {
-        setPipelineStep('ready');
-        setTimeout(() => {
-          setUploading(false);
-          setPipelineStep(null);
-          setFile(null);
-          onUploadSuccess(res.data.policy);
-          onClose();
-        }, 600);
-      }, 3000);
+      const uploadedPolicy = res.data.policy;
+      const policyId = uploadedPolicy._id;
+      setPipelineStep(uploadedPolicy.status || 'uploading');
+
+      // Poll real backend status every 1.5 seconds until ready or failed
+      const pollInterval = setInterval(async () => {
+        try {
+          const pollRes = await api.get(`/policies/${policyId}`);
+          const pol = pollRes.data.policy;
+          const currentStatus = pol.status;
+
+          setPipelineStep(currentStatus);
+
+          if (currentStatus === 'ready') {
+            clearInterval(pollInterval);
+            setTimeout(() => {
+              setUploading(false);
+              setPipelineStep(null);
+              setFile(null);
+              onUploadSuccess(pol);
+              onClose();
+            }, 500);
+          } else if (currentStatus === 'failed') {
+            clearInterval(pollInterval);
+            setError(pol.processing_error || 'Policy extraction failed on server.');
+            setUploading(false);
+            setPipelineStep(null);
+          }
+        } catch (pollErr) {
+          console.error('Error polling policy status:', pollErr);
+        }
+      }, 1500);
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed. Please try again.');
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Upload failed. Please try again.');
       setUploading(false);
       setPipelineStep(null);
     }

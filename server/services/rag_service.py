@@ -1,205 +1,182 @@
-import re
-from typing import Dict, Any, Optional, List
+"""
+FastAPI adapter for the advanced RAG system under app/.
+Orchestrates policy lookup, access control, fact mapping, and asynchronous execution
+of app.rag.qa.answer_question.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import Any, Dict, Optional
 from bson import ObjectId
+from fastapi import HTTPException, status
 
 try:
-    from db import get_async_db
-    from services.chroma_service import chroma_service
+    from db import get_async_db, to_object_id
+    from services.fact_mapper import mongo_facts_to_rag_facts
 except ImportError:
-    from server.db import get_async_db
-    from server.services.chroma_service import chroma_service
+    from server.db import get_async_db, to_object_id
+    from server.services.fact_mapper import mongo_facts_to_rag_facts
+
+from app.rag.qa import answer_question, AnswerResult
+
+logger = logging.getLogger("insureai.rag")
+
 
 class RagService:
-    def classify_query(self, question: str) -> str:
-        q = question.lower()
-        structured_triggers = [
-            "room rent", "icu", "copay", "co-pay", "co payment",
-            "deductible", "sum insured", "waiting period", "waiting time",
-            "limit", "cap", "sublimit", "sub-limit", "premium", "ped"
-        ]
-        is_structured = any(keyword in q for keyword in structured_triggers)
-        return "structured" if is_structured else "semantic"
+    """
+    Adapter around app.rag.qa.answer_question.
+    Adheres strictly to the target architecture:
+      - Validates user ownership of policy
+      - Rejects non-ready policies
+      - Maps MongoDB facts to app.rag structured_facts
+      - Runs blocking RAG work in a background worker thread via asyncio.to_thread
+      - Maps AnswerResult to frontend-compatible response
+    """
 
     async def answer_question(
         self,
         user_id: str,
         policy_id: Optional[str],
         question: str,
-        plain_language_requested: bool = False
+        plain_language_requested: bool = False,
     ) -> Dict[str, Any]:
+        """
+        Main RAG question-answering entrypoint for FastAPI.
+        """
+        if not question or not question.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Question cannot be empty.",
+            )
+
         db = get_async_db()
-        query_type = self.classify_query(question)
+        u_oid = to_object_id(user_id)
+        user_filter = {"$in": [u_oid, str(user_id)]} if u_oid else str(user_id)
 
         policy = None
         if policy_id:
-            try:
-                p_id = ObjectId(policy_id)
-            except Exception:
-                p_id = policy_id
-            policy = await db.policies.find_one({"_id": p_id, "user_id": str(user_id)})
+            p_oid = to_object_id(policy_id)
+            if not p_oid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid policy ID format: {policy_id}",
+                )
+            # Verify policy exists AND belongs to the user
+            policy = await db.policies.find_one({"_id": p_oid, "user_id": user_filter})
+            if not policy:
+                # Check if policy exists under another user to prevent cross-tenant access
+                existing = await db.policies.find_one({"_id": p_oid})
+                if existing:
+                    logger.warning("Access denied: user %s attempted to query policy %s", user_id, policy_id)
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied: you do not have permission to access this policy.",
+                    )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Policy {policy_id} not found.",
+                )
+        else:
+            # Pick latest ready policy for user
+            policy = await db.policies.find_one(
+                {"user_id": user_filter, "status": "ready"},
+                sort=[("uploaded_at", -1)],
+            )
+            if not policy:
+                # Check if there is any policy in extracting/uploading status
+                in_prog = await db.policies.find_one(
+                    {"user_id": user_filter},
+                    sort=[("uploaded_at", -1)],
+                )
+                if in_prog:
+                    status_val = in_prog.get("status", "unknown")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Your policy is currently in '{status_val}' status. Please wait for processing to complete.",
+                    )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No active policy found. Please upload a policy PDF first.",
+                )
 
-        if not policy:
-            policy = await db.policies.find_one({"user_id": str(user_id), "status": "ready"})
+        # 4. Reject policies that are not ready
+        pol_status = policy.get("status")
+        if pol_status != "ready":
+            err_msg = policy.get("processing_error") or f"Policy is in '{pol_status}' status and cannot be queried."
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=err_msg,
+            )
 
-        if not policy:
-            return {
-                "query_type": query_type,
-                "answer": "No active or processed insurance policy was found for your account. Please upload a policy PDF first.",
-                "plain_language": "You need to upload an insurance policy before I can answer your questions.",
-                "confidence_level": "low",
-                "verification_passed": False,
-                "verification_notes": "No policy document found for current user.",
-                "citations": []
-            }
+        # 5. Convert MongoDB policy.facts into structured_facts format expected by app.rag.qa
+        mongo_facts = policy.get("facts", [])
+        structured_facts = mongo_facts_to_rag_facts(mongo_facts)
 
-        if query_type == "structured":
-            structured_res = self.answer_from_structured_facts(policy, question)
-            if structured_res["found"]:
-                verification_passed = structured_res["verification_passed"]
-                confidence = "high" if verification_passed else "medium"
+        actual_policy_id = str(policy["_id"])
 
-                return {
-                    "query_type": "structured",
-                    "answer": structured_res["answer"],
-                    "plain_language": self.simplify_to_plain_language(structured_res["answer"]),
-                    "confidence_level": confidence,
-                    "verification_passed": verification_passed,
-                    "verification_notes": "Verified against authoritative extracted policy facts table.",
-                    "citations": structured_res["citations"]
-                }
-
-        vector_chunks = chroma_service.query_policy_chunks(
-            user_id=user_id,
-            policy_id=str(policy["_id"]),
-            query_text=question,
-            n_results=3
+        # 6. Call answer_question in a worker thread so we do NOT block the event loop
+        logger.info(
+            "Running RAG query for user %s, policy %s: '%s'",
+            user_id,
+            actual_policy_id,
+            question[:50],
+        )
+        answer_result: AnswerResult = await asyncio.to_thread(
+            answer_question,
+            policy_id=actual_policy_id,
+            question=question,
+            structured_facts=structured_facts,
         )
 
-        if not vector_chunks:
-            return {
-                "query_type": "semantic",
-                "answer": "I could not find information regarding this question in your policy document. Please verify with your insurer or refer to policy clauses.",
-                "plain_language": "This detail is not explicitly mentioned in your uploaded policy paperwork.",
-                "confidence_level": "low",
-                "verification_passed": False,
-                "verification_notes": "No relevant semantic vector chunks matched in vector store.",
-                "citations": []
-            }
+        # 7. Convert AnswerResult to frontend-compatible response schema
+        query_type = answer_result.source_path  # "structured" or "semantic"
+        confidence_level = answer_result.confidence.lower()  # "high", "medium", "low"
 
-        top_chunk = vector_chunks[0]
-        citations = [
-            {
-                "policy_id": str(policy["_id"]),
-                "chunk_vector_id": chunk["vector_id"],
-                "page_number": chunk["metadata"].get("page_number", 1),
-                "section_heading": chunk["metadata"].get("section_heading", "Policy Clause")
-            }
-            for chunk in vector_chunks
-        ]
-
-        has_relevance = self.verify_semantic_relevance(question, top_chunk["chunk_text"])
-        confidence = "high" if has_relevance else "medium"
-
-        sec_heading = top_chunk["metadata"].get("section_heading", "your policy")
-        if has_relevance:
-            answer_text = f"Based on {sec_heading}: {top_chunk['chunk_text']}"
+        if query_type == "structured":
+            verification_passed = True
+            verification_notes = (
+                answer_result.confidence_reason
+                or "Grounded directly in authoritative policy facts with zero generation risk."
+            )
         else:
-            answer_text = f"Information found in {sec_heading}: {top_chunk['chunk_text']} (Note: Verification confidence is reduced as the clause may only partially address your question)."
+            verif = answer_result.verification_result or {}
+            verif_status = verif.get("status")
+            verification_passed = verif_status in ("fully_supported", "partially_supported")
+            verification_notes = (
+                answer_result.confidence_reason
+                or (f"Self-verification status: {verif_status}")
+            )
+
+        # Citations mapping
+        citations = []
+        for cite in answer_result.citations:
+            chunk_vec_id = f"{actual_policy_id}_{cite.chunk_id}" if cite.chunk_id is not None else None
+            citations.append({
+                "policy_id": actual_policy_id,
+                "chunk_vector_id": chunk_vec_id,
+                "page_number": cite.page_number,
+                "section_heading": f"Page {cite.page_number} Clause",
+                "excerpt": cite.excerpt,
+            })
+
+        # Plain language transformation
+        plain_lang = answer_result.answer
+        if plain_language_requested:
+            # Clean up markdown asterisks for plain language readers if desired
+            clean_text = answer_result.answer.replace("**", "").replace("__", "")
+            plain_lang = f"In simple terms: {clean_text}"
 
         return {
-            "query_type": "semantic",
-            "answer": answer_text,
-            "plain_language": self.simplify_to_plain_language(answer_text),
-            "confidence_level": confidence,
-            "verification_passed": has_relevance,
-            "verification_notes": "Cited passage directly matches the requested policy query terms." if has_relevance else "Passage has partial keyword overlap; confidence lowered.",
-            "citations": citations
+            "query_type": query_type,
+            "answer": answer_result.answer,
+            "plain_language": plain_lang,
+            "confidence_level": confidence_level,
+            "verification_passed": verification_passed,
+            "verification_notes": verification_notes,
+            "citations": citations,
         }
 
-    def answer_from_structured_facts(self, policy: Dict[str, Any], question: str) -> Dict[str, Any]:
-        q = question.lower()
-        facts = policy.get("facts", [])
-        p_id = str(policy["_id"])
-
-        if "room rent" in q or "room limit" in q or "room charge" in q:
-            fact = next((f for f in facts if f.get("category") == "room_rent_limit"), None)
-            if fact:
-                return {
-                    "found": True,
-                    "answer": f"Your Room Rent Limit is: {fact['fact_value']}. Exceeding this limit will trigger proportionate deductions across all hospital billing items.",
-                    "verification_passed": True,
-                    "citations": [{
-                        "policy_id": p_id,
-                        "page_number": fact.get("source_page", 4),
-                        "section_heading": fact.get("source_section", "Room Rent Limits")
-                    }]
-                }
-
-        if "waiting" in q or "ped" in q or "pre-existing" in q:
-            waiting_facts = [f for f in facts if f.get("category") == "waiting_period"]
-            if waiting_facts:
-                lines = [f"• {f['fact_key'].replace('_', ' ')}: {f['fact_value']}" for f in waiting_facts]
-                text = "\n".join(lines)
-                return {
-                    "found": True,
-                    "answer": f"The applicable waiting periods in your policy are:\n{text}",
-                    "verification_passed": True,
-                    "citations": [{
-                        "policy_id": p_id,
-                        "page_number": f.get("source_page", 9),
-                        "section_heading": f.get("source_section", "Waiting Periods")
-                    } for f in waiting_facts]
-                }
-
-        if "copay" in q or "co-pay" in q or "co payment" in q:
-            fact = next((f for f in facts if f.get("category") == "co_payment"), None)
-            if fact:
-                return {
-                    "found": True,
-                    "answer": f"Co-payment terms: {fact['fact_value']}.",
-                    "verification_passed": True,
-                    "citations": [{
-                        "policy_id": p_id,
-                        "page_number": fact.get("source_page", 7),
-                        "section_heading": fact.get("source_section", "Co-Payment Terms")
-                    }]
-                }
-
-        if "sum insured" in q or "coverage amount" in q or "maximum coverage" in q:
-            fact = next((f for f in facts if f.get("category") == "sum_insured"), None)
-            if fact:
-                return {
-                    "found": True,
-                    "answer": f"Your total base Sum Insured coverage is {fact['fact_value']}.",
-                    "verification_passed": True,
-                    "citations": [{
-                        "policy_id": p_id,
-                        "page_number": fact.get("source_page", 2),
-                        "section_heading": fact.get("source_section", "Schedule of Benefits")
-                    }]
-                }
-
-        return {"found": False}
-
-    def verify_semantic_relevance(self, question: str, chunk_text: str) -> bool:
-        q_words = [
-            w for w in re.sub(r'[^\w\s]', '', question.lower()).split()
-            if len(w) > 3 and w not in ["what", "when", "does", "this", "have", "policy", "cover"]
-        ]
-        if not q_words:
-            return True
-        chunk_lower = chunk_text.lower()
-        matches = sum(1 for w in q_words if w in chunk_lower)
-        return matches >= min(2, len(q_words))
-
-    def simplify_to_plain_language(self, text: str) -> str:
-        simplified = text
-        simplified = re.sub(r'proportionate deduction', 'paying extra out of your own pocket for everything', simplified, flags=re.IGNORECASE)
-        simplified = re.sub(r'co-payment', 'your share of the bill (e.g. you pay a fixed percentage while insurance pays the rest)', simplified, flags=re.IGNORECASE)
-        simplified = re.sub(r'deductible', 'initial amount you must pay by yourself before insurance kicks in', simplified, flags=re.IGNORECASE)
-        simplified = re.sub(r'pre-existing disease|ped', 'health conditions you already had before buying this policy', simplified, flags=re.IGNORECASE)
-        simplified = re.sub(r'cashless claims', 'the hospital bills insurance directly so you do not pay upfront', simplified, flags=re.IGNORECASE)
-        simplified = re.sub(r'sum insured', 'maximum money insurance can pay in a year', simplified, flags=re.IGNORECASE)
-        return simplified
 
 rag_service = RagService()

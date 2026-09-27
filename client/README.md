@@ -1,6 +1,6 @@
-# MedShield — Frontend
+# InsureAI — Frontend Client
 
-React + Tailwind CSS frontend for the MedShield AI Insurance Policy Intelligence platform.
+React + Tailwind CSS frontend for the InsureAI Insurance Policy Intelligence platform.
 
 ## Tech Stack
 
@@ -9,7 +9,7 @@ React + Tailwind CSS frontend for the MedShield AI Insurance Policy Intelligence
 | Framework | React 19 (Vite) |
 | Styling | Tailwind CSS 3 + custom design system |
 | HTTP Client | Axios with JWT interceptors |
-| Real-time | WebSocket (streaming chat) |
+| Real-time | WebSocket (streaming chat via `/api/chat/ws`) |
 | Charts | Recharts |
 | Icons | Lucide React |
 
@@ -22,43 +22,18 @@ client/
 │   ├── main.jsx               # App entry point
 │   ├── App.jsx                # Root layout + routing
 │   ├── index.css              # Global design system (tokens, components)
-│   │
 │   ├── constants/
-│   │   └── index.js           # API URLs, policy types, treatments, etc.
-│   │
+│   │   └── index.js           # API URLs, policy types, treatments, WS endpoint
 │   ├── context/
 │   │   └── AuthContext.jsx    # JWT auth state (login, register, logout)
-│   │
 │   ├── services/
 │   │   └── api.js             # Axios instance with JWT interceptors
-│   │
-│   ├── hooks/
-│   │   ├── usePolicies.js     # Fetch / delete policies
-│   │   └── useWebSocket.js    # WebSocket connection + message sending
-│   │
-│   └── components/
-│       ├── common/
-│       │   ├── Navbar.jsx     # Sidebar (desktop) + mobile top bar + drawer
-│       │   └── ui.jsx         # Shared primitives (Button, Badge, Toggle, etc.)
-│       │
-│       ├── auth/
-│       │   └── AuthModal.jsx  # Login & Register forms
-│       │
-│       ├── dashboard/
-│       │   ├── DashboardView.jsx      # Overview metrics + policy grid
-│       │   ├── PolicyCard.jsx         # Individual policy card
-│       │   ├── PolicyFactsModal.jsx   # Extracted facts viewer
-│       │   └── UploadPolicyModal.jsx  # Drag-and-drop PDF upload + pipeline progress
-│       │
-│       ├── chat/
-│       │   └── ChatBox.jsx    # AI chat with WebSocket streaming + REST fallback
-│       │
-│       ├── cost/
-│       │   └── CostEstimatorView.jsx  # Treatment cost breakdown + what-if simulator
-│       │
-│       └── comparison/
-│           └── ComparisonView.jsx     # Side-by-side policy comparison table
-│
+│   ├── components/
+│   │   ├── auth/              # Login & Register forms
+│   │   ├── dashboard/         # Dashboard metrics, PolicyCard, UploadPolicyModal (real status polling)
+│   │   ├── chat/              # ChatBox (WebSocket streaming + REST fallback)
+│   │   ├── cost/              # CostEstimatorView (what-if simulator)
+│   │   └── comparison/        # ComparisonView (side-by-side policy diff)
 ├── .env.example               # Environment variable template
 ├── tailwind.config.js         # Tailwind design tokens
 ├── vite.config.js             # Vite build config
@@ -67,53 +42,29 @@ client/
 
 ## Getting Started
 
-### Prerequisites
-- Node.js 18+
-- Backend server running (see `../server/README.md`)
-
-### Setup
-
+### 1. Install Dependencies
 ```bash
-# 1. Install dependencies
 cd client
 npm install
+```
 
-# 2. Configure environment
-cp .env.example .env
-# Edit .env if backend runs on a different port
+### 2. Configure Environment
+Copy `.env.example` to `.env`:
+```env
+VITE_API_URL=http://localhost:5001/api
+VITE_WS_URL=ws://localhost:5001/api/chat/ws
+```
 
-# 3. Start development server
+### 3. Run Development Server
+```bash
 npm run dev
 ```
+The React frontend starts at **http://localhost:5173**.
 
-App runs at **http://localhost:5173**
-
-### Demo Credentials
-```
-Email:    demo@medshield.ai
-Password: password123
-```
-Run `npm run seed` from the project root first to create the demo user.
-
-## Key Design Decisions
-
-### Light Mode Design System
-- Page background: `#f5f5f7` (Apple light gray)
-- Cards: `#ffffff` with `rgba(0,0,0,0.08)` border
-- Primary text: `#1d1d1f` (Apple near-black)
-- Typography: Inter (Google Fonts)
-- Accent: Zinc-900 for primary actions
-
-### WebSocket Chat Architecture
-`ChatBox` connects to `ws://localhost:5001/ws/chat` on mount and streams AI responses token-by-token. If the WebSocket is unavailable, it automatically falls back to `POST /api/chat/message`.
-
-### API Integration
-All REST calls go through `src/services/api.js` which automatically attaches the JWT token from `localStorage` to every request via an Axios interceptor.
-
-## Scripts
+## Production Build & Linting
 
 ```bash
-npm run dev      # Start Vite dev server
+npm run lint     # Lint check (oxlint)
 npm run build    # Production build → dist/
-npm run preview  # Preview production build locally
+npm run preview  # Preview production build
 ```

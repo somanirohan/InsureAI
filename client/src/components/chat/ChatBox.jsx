@@ -25,8 +25,7 @@ import { Toggle, Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 //   { type: 'complete', queryType, confidenceLevel, verificationPassed, citations }
 //   { type: 'error',    message: string }
 //
-// TODO: Replace WS_URL with env var in production.
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5001/ws/chat';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5001/api/chat/ws';
 
 const SAMPLE_QUESTIONS = [
   "What's my room-rent limit per day?",
@@ -278,10 +277,12 @@ export default function ChatBox({ initialPolicy, policies }) {
                 ? {
                     ...m,
                     streaming: false,
-                    query_type: data.queryType,
-                    confidence_level: data.confidenceLevel,
-                    verification_passed: data.verificationPassed,
-                    citations: data.citations,
+                    query_type: data.query_type ?? data.queryType,
+                    confidence_level: data.confidence_level ?? data.confidenceLevel,
+                    verification_passed: data.verification_passed ?? data.verificationPassed,
+                    verification_notes: data.verification_notes,
+                    plain_language: data.plain_language,
+                    citations: data.citations || [],
                   }
                 : m
             ));

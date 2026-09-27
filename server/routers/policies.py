@@ -1,24 +1,36 @@
+"""
+Policy management router for InsureAI.
+Handles secure PDF file upload with MIME/size/extension validation,
+policy retrieval, status polling, and cascaded deletion.
+"""
+
+from __future__ import annotations
+
+import logging
 import os
-import shutil
+import uuid
 from datetime import datetime
 from typing import Optional
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, BackgroundTasks, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 
 try:
+    from config import settings
+    from db import get_async_db, serialize_doc, to_object_id
     from services.auth_service import get_current_user
     from services.policy_service import policy_service
-    from db import get_async_db
-    from config import settings
 except ImportError:
+    from server.config import settings
+    from server.db import get_async_db, serialize_doc, to_object_id
     from server.services.auth_service import get_current_user
     from server.services.policy_service import policy_service
-    from server.db import get_async_db
-    from server.config import settings
+
+logger = logging.getLogger("insureai.policies")
 
 router = APIRouter(prefix="/api/policies", tags=["Policies"])
 
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_policy(
@@ -26,25 +38,80 @@ async def upload_policy(
     file: UploadFile = File(...),
     insurer_name: Optional[str] = Form("Star Health & Allied Insurance"),
     policy_type: Optional[str] = Form("individual_health"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No policy file uploaded")
+    """
+    Securely upload a policy PDF document:
+      - Validates filename and .pdf extension
+      - Validates application/pdf MIME type
+      - Generates safe unique server-side filename (prevents path traversal)
+      - Enforces max upload size limit
+      - Queues background extraction and vector indexing
+    """
+    if not file or not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No file provided.",
+        )
 
-    user_id = str(current_user["_id"])
-    saved_filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
-    file_path = os.path.join(settings.UPLOAD_DIR, saved_filename)
+    # 1. Validate file extension
+    orig_filename = os.path.basename(file.filename)
+    if not orig_filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file format. Only PDF documents (.pdf) are supported.",
+        )
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # 2. Validate MIME type
+    if file.content_type and file.content_type.lower() != "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid MIME type '{file.content_type}'. Must be application/pdf.",
+        )
 
-    file_size = os.path.getsize(file_path)
+    # 3. Prevent path traversal by generating a safe unique server-side filename
+    safe_filename = f"{uuid.uuid4().hex}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.pdf"
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    file_path = os.path.join(settings.UPLOAD_DIR, safe_filename)
+
+    max_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+    total_written = 0
+
+    try:
+        with open(file_path, "wb") as buffer:
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1MB buffer
+                if not chunk:
+                    break
+                total_written += len(chunk)
+                if total_written > max_bytes:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"File exceeds maximum allowed size of {settings.MAX_FILE_SIZE_MB}MB.",
+                    )
+                buffer.write(chunk)
+    except HTTPException:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise
+    except Exception as exc:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        logger.exception("Error saving uploaded file: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save uploaded file on server.",
+        )
+
+    # 4. Create policy record in MongoDB
+    u_oid = to_object_id(current_user["_id"])
+    now = datetime.utcnow()
 
     policy_doc = {
-        "user_id": user_id,
-        "file_name": file.filename,
+        "user_id": u_oid,
+        "file_name": orig_filename,
         "file_path": file_path,
-        "file_size_bytes": file_size,
+        "file_size_bytes": total_written,
         "insurer_name": insurer_name,
         "policy_type": policy_type,
         "policy_number": None,
@@ -54,57 +121,81 @@ async def upload_policy(
         "ocr_used": False,
         "red_flag_summary": None,
         "facts": [],
-        "uploaded_at": datetime.utcnow(),
+        "processing_error": None,
+        "uploaded_at": now,
         "indexed_at": None,
-        "updated_at": datetime.utcnow()
+        "updated_at": now,
     }
 
     db = get_async_db()
     res = await db.policies.insert_one(policy_doc)
-    policy_id = str(res.inserted_id)
-    policy_doc["_id"] = policy_id
+    p_oid = res.inserted_id
+    policy_doc["_id"] = str(p_oid)
+    policy_doc["user_id"] = str(u_oid)
 
-    background_tasks.add_task(policy_service.process_policy_document, policy_id, user_id)
+    # 5. Dispatch background extraction & indexing task
+    background_tasks.add_task(
+        policy_service.process_policy_document,
+        str(p_oid),
+        str(u_oid),
+    )
 
     return {
         "success": True,
-        "message": "Policy uploaded successfully. Extraction pipeline queued in background.",
-        "policy": policy_doc
+        "message": "Policy uploaded successfully. AI extraction pipeline started.",
+        "policy": serialize_doc(policy_doc),
     }
 
+
 @router.get("/")
+@router.get("")
 async def get_user_policies(current_user: dict = Depends(get_current_user)):
+    """Retrieve all policies belonging to the authenticated user."""
+    u_oid = to_object_id(current_user["_id"])
     db = get_async_db()
-    user_id = str(current_user["_id"])
 
-    policies = await db.policies.find({"user_id": user_id}).sort("uploaded_at", -1).to_list(length=100)
-    for p in policies:
-        p["_id"] = str(p["_id"])
+    policies = (
+        await db.policies.find({"user_id": u_oid})
+        .sort("uploaded_at", -1)
+        .to_list(length=100)
+    )
 
-    return {"policies": policies}
+    return {"policies": [serialize_doc(p) for p in policies]}
+
 
 @router.get("/{policy_id}")
 async def get_policy_by_id(policy_id: str, current_user: dict = Depends(get_current_user)):
+    """Retrieve a single policy document by ID with verification of user ownership."""
+    u_oid = to_object_id(current_user["_id"])
+    p_oid = to_object_id(policy_id)
+    if not p_oid:
+        raise HTTPException(status_code=400, detail="Invalid policy ID format.")
+
     db = get_async_db()
-    user_id = str(current_user["_id"])
-
-    try:
-        p_id = ObjectId(policy_id)
-    except Exception:
-        p_id = policy_id
-
-    policy = await db.policies.find_one({"_id": p_id, "user_id": user_id})
+    policy = await db.policies.find_one({"_id": p_oid, "user_id": u_oid})
     if not policy:
-        raise HTTPException(status_code=404, detail="Policy document not found")
+        # Check if policy belongs to another user
+        existing = await db.policies.find_one({"_id": p_oid})
+        if existing:
+            raise HTTPException(status_code=403, detail="Access denied to this policy.")
+        raise HTTPException(status_code=404, detail="Policy document not found.")
 
-    policy["_id"] = str(policy["_id"])
-    return {"policy": policy}
+    return {"policy": serialize_doc(policy)}
+
 
 @router.delete("/{policy_id}")
 async def delete_policy(policy_id: str, current_user: dict = Depends(get_current_user)):
-    user_id = str(current_user["_id"])
+    """Cascade delete a policy and its isolated Chroma collection."""
+    u_oid = to_object_id(current_user["_id"])
+    p_oid = to_object_id(policy_id)
+    if not p_oid:
+        raise HTTPException(status_code=400, detail="Invalid policy ID format.")
+
     try:
-        result = await policy_service.delete_policy_cascade(user_id, policy_id)
+        result = await policy_service.delete_policy_cascade(str(u_oid), str(p_oid))
         return result
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Access denied or policy not found.")
+    except Exception as exc:
+        logger.exception("Error deleting policy: %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc))

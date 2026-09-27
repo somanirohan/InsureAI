@@ -1,152 +1,168 @@
-# MedShield — AI-Powered Insurance Policy Intelligence Assistant
+# InsureAI — AI-Powered Health Insurance Policy Intelligence Assistant
 
-MedShield is a full-stack AI-driven web application built with **React**, **Tailwind CSS**, **FastAPI (Python)**, **MongoDB (Motor)**, and **ChromaDB**. It allows users to upload health insurance policy PDFs and receive grounded AI assistance: automated fact extraction, red-flag detection, citation-backed natural-language Q&A, multi-policy comparisons, and treatment cost estimation with what-if scenario simulations.
+InsureAI is a full-stack AI-driven web application built with **React**, **Tailwind CSS**, **FastAPI (Python 3.11)**, **MongoDB**, and **Advanced persistent ChromaDB**. It allows users to upload health insurance policy PDFs and receive grounded AI assistance: automated structured fact extraction, red-flag detection, citation-backed natural-language Q&A, multi-policy comparisons, and treatment cost estimation with what-if scenario simulations.
 
 ---
 
-## 🏗️ Architecture Overview
+## 🏗️ System Architecture
 
 ```
-                        ┌──────────────────────────────────────────────┐
-                        │              React + Tailwind CSS            │
-                        │        (Dashboard, Chat, Cost, Compare)      │
-                        └──────────────────────┬───────────────────────┘
-                                               │ REST API + WebSocket
-                                               ▼
-                        ┌──────────────────────────────────────────────┐
-                        │          FastAPI Backend (:5001)             │
-                        │    (JWT Auth, Policy Pipeline, RAG, Cost)    │
-                        └──────────────┬───────────────────────────────┘
-                                       │
-                ┌──────────────────────┴──────────────────────┐
-                ▼                                             ▼
-┌───────────────────────────────┐             ┌───────────────────────────────┐
-│     MongoDB (Motor Async)     │             │      ChromaDB (Vector Store)  │
-│  - users                      │             │  - policy_chunks collection   │
-│  - policies (+ embedded facts)│             │    • metadata.user_id         │
-│  - policy_chunks              │             │    • metadata.policy_id       │
-│  - conversations (+ messages) │             │    • metadata.page_number     │
-│  - cost_estimates (+ variants)│             │    • metadata.section_heading │
-│  - policy_comparisons         │             └───────────────────────────────┘
-└───────────────────────────────┘
+                          ┌──────────────────────────────────────────────┐
+                          │              React + Tailwind CSS            │
+                          │        (Dashboard, Chat, Cost, Compare)      │
+                          └──────────────────────┬───────────────────────┘
+                                                 │ REST API + WebSocket (/api/chat/ws)
+                                                 ▼
+                          ┌──────────────────────────────────────────────┐
+                          │          FastAPI Backend (:5001)             │
+                          │   (Auth, Document Pipeline, RAG, Cost, Comp) │
+                          └──────────────┬───────────────────────────────┘
+                                         │
+                 ┌───────────────────────┴───────────────────────┐
+                 │                                               │
+                 ▼                                               ▼
+  ┌───────────────────────────────┐               ┌───────────────────────────────┐
+  │     MongoDB (Application DB)  │               │   Advanced RAG Engine (app/)  │
+  │  - users (bcrypt auth)        │               │  - pdf_extract.py (PyMuPDF)   │
+  │  - policies (+ facts array)   │               │  - chunking.py (Page-bound)   │
+  │  - policy_chunks (metadata)   │               │  - extraction.py (3-pass LLM) │
+  │  - conversations (+ messages) │               │  - router.py (Cosine router)  │
+  │  - cost_estimates (+ variants)│               │  - verification.py (Quote ver)│
+  │  - policy_comparisons         │               │  - confidence.py (Calibrated) │
+  └───────────────────────────────┘               │  - qa.py (End-to-End Orchest) │
+                                                  └──────────────┬────────────────┘
+                                                                 │
+                                                                 ▼
+                                                  ┌───────────────────────────────┐
+                                                  │  ChromaDB (Isolated Collections)
+                                                  │  - policy_{policy_id}         │
+                                                  │  - nomic-embed-text / API     │
+                                                  │  - page numbers & chunk IDs   │
+                                                  └───────────────────────────────┘
 ```
+
+### Core Architecture Principles:
+- **FastAPI is the only active backend:** All routing, authentication, request validation, and persistence orchestrate through FastAPI under `server/`.
+- **`app/` is the authoritative RAG engine:** All PDF ingestion, chunking, 3-pass LLM extraction, vector routing, ChromaDB querying, answer drafting, and self-verification logic reside solely in `app/`. No duplicate RAG or vector retrieval code exists in FastAPI.
+- **Zero Hallucination Guarantee:** Policy facts come exclusively from the uploaded PDF content. No fake values, no hardcoded defaults, and no filename-based guessing.
+- **Isolated Vector Collections:** Every uploaded policy receives its own dedicated ChromaDB collection (`policy_{policy_id}`), preventing cross-policy and cross-tenant retrieval contamination.
+- **Reliable Processing Lifecycle:** Policies transition strictly through `uploading` $\rightarrow$ `extracting` $\rightarrow$ `ready`. If extraction or indexing encounters any error, the policy status transitions to `failed` with an explicit `processing_error`. Failed policies cannot be marked ready and cannot be queried.
 
 ---
 
 ## 🗄️ Database Schemas & Data Model
 
-The data layer uses **MongoDB** as the system of record and **ChromaDB** as the semantic vector store.
+The data layer uses **MongoDB** as the system of record and **ChromaDB** as the isolated semantic vector store.
 
 ### 1. MongoDB Collections (6 Collections)
 
-| Collection | Schema Model | Storage Strategy | Key Indexes |
+| Collection | Model / Location | Storage Strategy | Key Indexes |
 |---|---|---|---|
-| `users` | [`user.py`](file:///server/models/user.py) | Primary account collection | Unique index on `email` |
-| `policies` | [`policy.py`](file:///server/models/policy.py) | Policy records + **embedded** `facts` array | `user_id`, `status`, `facts.category` |
-| `policy_chunks` | Managed in policy service | Text chunks referencing policy and vector store | Compound unique `(policy_id, chunk_index)`, `vector_id`, `user_id` |
-| `conversations` | [`chat.py`](file:///server/models/chat.py) | Chat sessions + **embedded** `messages` array with citations | `user_id`, `policy_id`, `updated_at` (desc) |
-| `cost_estimates` | [`cost.py`](file:///server/models/cost.py) | Base estimates + **embedded** `what_if_variants` array | `user_id`, `policy_id`, `created_at` (desc) |
-| `policy_comparisons`| [`comparison.py`](file:///server/models/comparison.py)| Multi-policy diff snapshots | `user_id` |
+| `users` | [`server/models/user.py`](file:///Users/palak/InsureAI/server/models/user.py) | Primary account collection (bcrypt password hashes) | Unique index on `email` |
+| `policies` | [`server/models/policy.py`](file:///Users/palak/InsureAI/server/models/policy.py) | Policy records + embedded extracted `facts` array | `user_id`, `status` |
+| `policy_chunks` | Managed in policy service | Text chunks referencing policy and vector store | `policy_id`, `user_id`, compound unique `(policy_id, chunk_index)` |
+| `conversations` | [`server/models/chat.py`](file:///Users/palak/InsureAI/server/models/chat.py) | Chat sessions + embedded `messages` array with citations | `user_id`, `updated_at` |
+| `cost_estimates` | [`server/models/cost.py`](file:///Users/palak/InsureAI/server/models/cost.py) | Base estimates + embedded `what_if_variants` array | `user_id`, `created_at` |
+| `policy_comparisons`| [`server/models/comparison.py`](file:///Users/palak/InsureAI/server/models/comparison.py)| Multi-policy diff snapshots | `user_id` |
 
-#### Embedded Facts Shape (`policies.facts`):
+#### MongoDB Facts Schema (`policies.facts`):
 - `fact_id` (UUID)
-- `category` (enum: `coverage_category`, `sum_insured`, `sub_limit`, `waiting_period`, `exclusion`, `room_rent_limit`, `co_payment`, `deductible`, `claim_condition`)
-- `fact_key` (e.g. `room_rent_cap_per_day`)
-- `fact_value` (normalized text value)
-- `fact_value_numeric` (number for cost engine calculations)
-- `unit` (`INR`, `%`, `days`, etc.)
-- `source_page` & `source_section` (traceability back to original document)
+- `category` (`sum_insured`, `room_rent_limit`, `co_payment`, `deductible`, `waiting_period`, `exclusion`, `claim_condition`)
+- `fact_key` (Stable key e.g. `sum_insured`, `room_rent_limit`, `waiting_period_1`)
+- `fact_value` (Exact extracted text value from policy)
+- `fact_value_numeric` (Reliably parsed number for cost engine calculations; preserves explicit `0.0` for 0% co-pay)
+- `unit` (`INR`, `%`, `days`, `months`)
+- `source_page` & `source_section` (Traceability back to physical PDF page)
 - `extraction_confidence` (`high`, `medium`, `low`)
 
-#### Embedded Messages Shape (`conversations.messages`):
-- `message_id` (UUID)
-- `role` (`user` / `assistant`)
-- `content` (text)
-- `query_type` (`structured` / `semantic` via [FR-09])
-- `plain_language` (simplified variant via [FR-13])
-- `confidence_level` (`high` / `medium` / `low` via [FR-12])
-- `verification_passed` & `verification_notes` (FR-11 self-verification)
-- `citations` (`[{ policy_id, chunk_vector_id, page_number, section_heading }]`)
+---
+
+## ⚡ API & WebSocket Contracts
+
+### REST Endpoints:
+- `POST /api/auth/register` — Register account with bcrypt hash
+- `POST /api/auth/login` — Login & receive JWT access token
+- `GET /api/auth/me` — Authenticated user profile (never returns `password_hash`)
+- `POST /api/policies/upload` — Upload policy PDF with MIME/size validation
+- `GET /api/policies` — List user policies
+- `GET /api/policies/{policy_id}` — Get policy status and extracted facts
+- `DELETE /api/policies/{policy_id}` — Cascade delete policy, chunks, and Chroma vector collection
+- `POST /api/chat/message` — REST Q&A endpoint
+- `GET /api/chat/conversations` — User conversations list
+- `POST /api/cost/estimate` — Request-driven medical cost breakdown
+- `POST /api/cost/estimate/{id}/what-if` — What-if simulation preserving original room rent & stay days
+- `POST /api/comparisons` — Compare 2+ policies
+- `GET /api/health` — Health check verifying MongoDB connectivity
+
+### Canonical WebSocket Endpoint:
+- **URL:** `ws://localhost:5001/api/chat/ws`
+
+**Client message format:**
+```json
+{
+  "token": "<jwt>",
+  "question": "What is my room rent limit per day?",
+  "policy_id": "6ab979ce4023234b0c5ae4cf",
+  "conversation_id": null,
+  "plain_language_mode": false
+}
+```
+
+**Server event sequence:**
+1. `{"type": "connected"}`
+2. `{"type": "status", "message": "Consulting policy intelligence engine..."}`
+3. `{"type": "chunk", "token": "The "}` ... (streamed token by token)
+4. `{"type": "complete", "query_type": "structured", "confidence_level": "high", "verification_passed": true, "verification_notes": "...", "citations": [...], "plain_language": "..."}`
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start & Running Tests
 
-### Prerequisites
-- **Python 3.10+**
-- **Node.js** (v18+ or v20+ for React frontend)
-- **MongoDB** running locally (`mongodb://127.0.0.1:27017/medshield`) or MongoDB Atlas URI
+### Prerequisites:
+- Python 3.11+
+- Node.js 18+
+- MongoDB running on `mongodb://127.0.0.1:27017/medshield`
+- Ollama running locally on `http://localhost:11434` with `mistral:7b` and `nomic-embed-text` (or API keys in `.env`)
+- Tesseract OCR (optional fallback for scanned PDFs)
 
-### 1. Install Dependencies
+### 1. Environment Configuration:
+Create `.env` in the project root:
+```env
+PORT=5001
+MONGO_URI=mongodb://127.0.0.1:27017/medshield
+JWT_SECRET=insureai_super_secret_jwt_key_2026_secure_key
+JWT_EXPIRES_IN=7d
+CLIENT_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+UPLOAD_DIR=server/uploads
+
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=mistral:7b
+
+EMBEDDING_PROVIDER=ollama
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+CHROMA_PERSIST_DIR=./chroma_store
+```
+
+### 2. Run the Test Suites:
 ```bash
-# Server & RAG dependencies
-pip install -r server/requirements.txt
+# Run unit test suites
+python3.11 -m pytest server/tests/test_unit_fact_mapper.py \
+                     server/tests/test_unit_cost.py \
+                     server/tests/test_unit_object_id_and_db.py \
+                     server/tests/test_unit_vectorstore.py \
+                     server/tests/test_unit_processing_failure.py -v
 
-# Client dependencies
-cd client && npm install
+# Run complete end-to-end integration lifecycle test (19 steps)
+python3.11 -m pytest server/tests/test_integration_flow.py -v
 ```
 
-### 2. Seed Demo Data (Optional but Recommended)
-Populates MongoDB with demo policies (Star Health Premier, HDFC ERGO Optima Secure), extracted facts, chunks, ChromaDB vectors, a chat conversation, and cost estimates:
+### 3. Run Development Servers:
 ```bash
-npm run seed
-```
-Demo Credentials:
-- **Email:** `demo@medshield.ai`
-- **Password:** `password123`
+# Start FastAPI backend
+python3.11 server/main.py
 
-### 3. Run the Development Servers
-In separate terminals or from root:
-
-**Terminal 1 (FastAPI Backend API & WebSocket):**
-```bash
-npm run server
-# Runs on http://localhost:5001
-```
-
-**Terminal 2 (React + Tailwind Client):**
-```bash
-npm run client
-# Runs on http://localhost:5173
-```
-
----
-
-## 📁 Project Directory Structure
-
-```
-InsurAI/
-├── package.json                   # Root scripts
-├── app/                           # Core RAG, Chunking, Extraction, Embeddings & LLMs
-│   ├── config.py                  # Pydantic settings
-│   ├── embeddings/                # Ollama & OpenAI-compatible embeddings
-│   ├── ingestion/                 # PyMuPDF page extraction & chunking
-│   ├── llm/                       # Ollama, OpenRouter, NVIDIA NIM providers
-│   └── rag/                       # Router, Extraction, ChromaDB, Verification, QA
-├── server/                        # FastAPI Backend (:5001)
-│   ├── .env                       # Environment variables
-│   ├── requirements.txt           # Python dependencies
-│   ├── main.py                    # FastAPI entry point & WebSocket
-│   ├── config.py                  # Server configuration
-│   ├── db.py                      # MongoDB Motor connection & Chroma client
-│   ├── models/                    # Pydantic schemas (user, policy, chat, cost, comparison)
-│   ├── routers/                   # Modular FastAPI routers
-│   ├── services/                  # Business logic (policy, rag, cost, comparison, chroma)
-│   └── utils/                     # Seeder script
-└── client/                        # React 19 + Tailwind CSS Frontend (:5173)
-    ├── src/
-    │   ├── components/
-    │   │   ├── common/Navbar.jsx
-    │   │   ├── dashboard/         # Policy cards, upload modal, facts table
-    │   │   ├── chat/              # RAG chat, plain language toggle, citations
-    │   │   ├── cost/              # Treatment cost estimator & what-if simulator
-    │   │   ├── comparison/        # Side-by-side policy diff table
-    │   │   └── auth/AuthModal.jsx # Login & registration
-    │   ├── context/AuthContext.jsx
-    │   ├── services/api.js        # Axios instance with JWT interceptor
-    │   ├── App.jsx
-    │   ├── main.jsx
-    │   └── index.css              # Tailwind + Glassmorphism styles
-    ├── tailwind.config.js
-    └── vite.config.js
+# Start React frontend
+cd client && npm run dev
 ```

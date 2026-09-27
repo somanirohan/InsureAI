@@ -1,13 +1,53 @@
+"""
+Central configuration for FastAPI server using pydantic-settings.
+Unified with app/config.py settings.
+"""
+
+from __future__ import annotations
+
 import os
+from typing import Any, List, Union
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class Settings:
-    PORT: int = int(os.getenv("PORT", 5001))
-    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://127.0.0.1:27017/medshield")
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "medshield_super_secret_jwt_key_2026")
-    JWT_EXPIRES_IN: str = os.getenv("JWT_EXPIRES_IN", "7d")
-    CHROMA_HOST: str = os.getenv("CHROMA_HOST", "localhost")
-    CHROMA_PORT: int = int(os.getenv("CHROMA_PORT", 8000))
-    CHROMA_COLLECTION_NAME: str = os.getenv("CHROMA_COLLECTION_NAME", "policy_chunks")
-    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads/policies")
+try:
+    from app.config import settings as app_settings
+except ImportError:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from app.config import settings as app_settings
 
-settings = Settings()
+
+class ServerSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    PORT: int = 5001
+    MONGO_URI: str = "mongodb://127.0.0.1:27017/medshield"
+    JWT_SECRET: str = "insureai_super_secret_jwt_key_2026_secure_key"
+    JWT_EXPIRES_IN: str = "7d"
+    CLIENT_URL: str = "http://localhost:5173"
+    ALLOWED_ORIGINS: Union[list[str], str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    UPLOAD_DIR: str = "server/uploads"
+    MAX_FILE_SIZE_MB: int = 25
+    ENVIRONMENT: str = "development"
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [orig.strip() for orig in v.split(",") if orig.strip()]
+        if isinstance(v, list):
+            return v
+        return ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    @property
+    def chroma_persist_dir(self) -> str:
+        return app_settings.chroma_persist_dir
+
+
+settings = ServerSettings()

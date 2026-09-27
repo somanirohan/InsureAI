@@ -19,7 +19,6 @@ server/.env
 !*.env.example
 .env.example
 
-
 # Uploaded Files
 server/uploads/*
 !server/uploads/.gitkeep
@@ -46,3 +45,6 @@ fastapi_server/uploads/
 Thumbs.db
 *.swp
 *.swo
+
+# Vector Store
+chroma_store/

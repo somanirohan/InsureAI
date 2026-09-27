@@ -9,7 +9,7 @@ export const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 export const WS_CHAT_URL =
-  import.meta.env.VITE_WS_URL || 'ws://localhost:5001/ws/chat';
+  import.meta.env.VITE_WS_URL || 'ws://localhost:5001/api/chat/ws';
 
 // ─── Auth ──────────────────────────────────────────────────
 export const TOKEN_KEY = 'medshield_token';

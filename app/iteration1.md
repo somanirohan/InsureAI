@@ -118,9 +118,13 @@ The factory functions [`get_llm()`](file:///Users/palak/InsureAI/app/llm/factory
 
 ---
 
-### Update 2: Streamlined Single-Pass Factual Extraction with Page Markers ([`app/rag/extraction.py`](file:///Users/palak/InsureAI/app/rag/extraction.py))
-- **1-Pass Holistic Context:** Eliminates 13 redundant LLM calls and context fragmentation by processing the policy in a single LLM call with explicit `=== PAGE N ===` markers.
-- **Fast Execution:** Drops extraction runtime from ~8 minutes down to ~25–35 seconds total.
+### Update 2: Targeted 3-Pass Factual Extraction with Page Markers ([`app/rag/extraction.py`](file:///Users/palak/InsureAI/app/rag/extraction.py))
+- **Targeted 3-Pass Architecture:** Instead of dumping an entire multi-page document into a single oversized prompt (causing context rot and attention dilution on 7B models) or calling the LLM on every single chunk (13+ redundant calls), extraction executes three focused, specialized calls:
+  1. *Call 1 (Scalars):* `sum_insured`, `room_rent_limit`, `co_pay`, `deductible` (targeted to pages containing schedule/limits terms).
+  2. *Call 2 (Waiting & Exclusions):* `waiting_periods`, `exclusions` (targeted to waiting and general exclusion clauses).
+  3. *Call 3 (Claims):* `claim_conditions` and procedures (targeted to claims and notice clauses).
+- **Intelligent Page Pre-Filtering:** `_filter_pages()` scores and ranks pages using keyword density, sending only 1–3 highly relevant pages (<4,000 chars) per call with explicit `=== PAGE N ===` markers.
+- **Fast Execution & Guaranteed JSON:** Drops extraction runtime to ~10–15s per call with strict constrained JSON grammar (`format="json"`).
 - **Precise Page Attribution:** The LLM cites the exact physical 1-based page number for every extracted field directly from the page markers.
 - **7 Target Fields Extracted with Zero Hallucination:**
   1. `sum_insured`
