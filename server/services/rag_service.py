@@ -28,11 +28,12 @@ class RagService:
     """
     Adapter around app.rag.qa.answer_question.
     Adheres strictly to the target architecture:
-      - Validates user ownership of policy
-      - Rejects non-ready policies
+      - Validates non-empty question (HTTP 400)
+      - Validates user ownership of policy and ObjectId format (HTTP 400 / 403 / 404)
+      - Rejects non-ready policies with stored error or status (HTTP 400)
       - Maps MongoDB facts to app.rag structured_facts
       - Runs blocking RAG work in a background worker thread via asyncio.to_thread
-      - Maps AnswerResult to frontend-compatible response
+      - Maps AnswerResult verification_status, confidence, citations, and plain language
     """
 
     async def answer_question(
@@ -45,6 +46,7 @@ class RagService:
         """
         Main RAG question-answering entrypoint for FastAPI.
         """
+        # 1. Validate the question: Reject empty or whitespace-only questions
         if not question or not question.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,68 +57,80 @@ class RagService:
         u_oid = to_object_id(user_id)
         user_filter = {"$in": [u_oid, str(user_id)]} if u_oid else str(user_id)
 
+        # 2. Validate the user and policy
         policy = None
-        if policy_id:
-            p_oid = to_object_id(policy_id)
+        clean_policy_id = str(policy_id).strip() if policy_id is not None and str(policy_id).strip() != "" else None
+
+        if clean_policy_id:
+            p_oid = to_object_id(clean_policy_id)
             if not p_oid:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid policy ID format: {policy_id}",
+                    detail=f"Invalid policy ID format: {clean_policy_id}",
                 )
-            # Verify policy exists AND belongs to the user
+
+            # Query by both policy ID and user ownership
             policy = await db.policies.find_one({"_id": p_oid, "user_id": user_filter})
             if not policy:
-                # Check if policy exists under another user to prevent cross-tenant access
+                # Check if the policy exists under another user (cross-tenant access)
                 existing = await db.policies.find_one({"_id": p_oid})
                 if existing:
-                    logger.warning("Access denied: user %s attempted to query policy %s", user_id, policy_id)
+                    logger.warning("Access denied: user %s attempted to query policy %s belonging to another user", user_id, clean_policy_id)
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Access denied: you do not have permission to access this policy.",
                     )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Policy {policy_id} not found.",
+                    detail=f"Policy {clean_policy_id} not found.",
                 )
         else:
-            # Pick latest ready policy for user
+            # When policy_id is not provided:
+            # Select the latest ready policy belonging to the current user
             policy = await db.policies.find_one(
                 {"user_id": user_filter, "status": "ready"},
                 sort=[("uploaded_at", -1)],
             )
             if not policy:
-                # Check if there is any policy in extracting/uploading status
-                in_prog = await db.policies.find_one(
+                # Check if the user has any policy that is still processing or in another status
+                latest_user_policy = await db.policies.find_one(
                     {"user_id": user_filter},
                     sort=[("uploaded_at", -1)],
                 )
-                if in_prog:
-                    status_val = in_prog.get("status", "unknown")
+                if latest_user_policy:
+                    curr_status = latest_user_policy.get("status", "unknown")
+                    err_msg = (
+                        latest_user_policy.get("processing_error")
+                        or f"Policy is currently in '{curr_status}' status. Please wait for processing to complete."
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Your policy is currently in '{status_val}' status. Please wait for processing to complete.",
+                        detail=err_msg,
                     )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No active policy found. Please upload a policy PDF first.",
+                    detail="No policy found for user. Please upload a policy PDF first.",
                 )
 
-        # 4. Reject policies that are not ready
+        # 3. Reject policies that are not ready
         pol_status = policy.get("status")
         if pol_status != "ready":
-            err_msg = policy.get("processing_error") or f"Policy is in '{pol_status}' status and cannot be queried."
+            err_msg = (
+                policy.get("processing_error")
+                or f"Policy is in '{pol_status}' status and cannot be queried."
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=err_msg,
             )
 
-        # 5. Convert MongoDB policy.facts into structured_facts format expected by app.rag.qa
+        # 4. Convert stored facts
         mongo_facts = policy.get("facts", [])
         structured_facts = mongo_facts_to_rag_facts(mongo_facts)
 
         actual_policy_id = str(policy["_id"])
 
-        # 6. Call answer_question in a worker thread so we do NOT block the event loop
+        # 5. Call the advanced RAG orchestrator in a worker thread via asyncio.to_thread
         logger.info(
             "Running RAG query for user %s, policy %s: '%s'",
             user_id,
@@ -130,44 +144,56 @@ class RagService:
             structured_facts=structured_facts,
         )
 
-        # 7. Convert AnswerResult to frontend-compatible response schema
+        # 6. Map verification correctly
         query_type = answer_result.source_path  # "structured" or "semantic"
-        confidence_level = answer_result.confidence.lower()  # "high", "medium", "low"
 
         if query_type == "structured":
             verification_passed = True
             verification_notes = (
                 answer_result.confidence_reason
-                or "Grounded directly in authoritative policy facts with zero generation risk."
+                or "Authoritative policy fact extracted from document schedule."
             )
         else:
             verif = answer_result.verification_result or {}
-            verif_status = verif.get("status")
-            verification_passed = verif_status in ("fully_supported", "partially_supported")
+            verif_status = verif.get("verification_status")
+            verification_passed = verif_status in (
+                "fully_supported",
+                "partially_supported",
+            )
             verification_notes = (
-                answer_result.confidence_reason
-                or (f"Self-verification status: {verif_status}")
+                verif.get("reasoning")
+                or answer_result.confidence_reason
+                or f"Self-verification status: {verif_status or 'unverified'}"
             )
 
-        # Citations mapping
+        # 7. Map confidence ("High" -> "high", "Medium" -> "medium", "Low" -> "low")
+        confidence_level = (answer_result.confidence or "low").lower()
+        if confidence_level not in ("high", "medium", "low"):
+            confidence_level = "low"
+
+        # 8. Map citations without inventing metadata
         citations = []
         for cite in answer_result.citations:
-            chunk_vec_id = f"{actual_policy_id}_{cite.chunk_id}" if cite.chunk_id is not None else None
+            chunk_vec_id = (
+                f"{actual_policy_id}_{cite.chunk_id}"
+                if getattr(cite, "chunk_id", None) is not None
+                else None
+            )
             citations.append({
                 "policy_id": actual_policy_id,
                 "chunk_vector_id": chunk_vec_id,
                 "page_number": cite.page_number,
-                "section_heading": f"Page {cite.page_number} Clause",
+                "section_heading": getattr(cite, "section_heading", None),
                 "excerpt": cite.excerpt,
             })
 
-        # Plain language transformation
+        # 9. Plain-language response
         plain_lang = answer_result.answer
         if plain_language_requested:
-            # Clean up markdown asterisks for plain language readers if desired
-            clean_text = answer_result.answer.replace("**", "").replace("__", "")
+            clean_text = answer_result.answer.replace("**", "").replace("__", "").strip()
             plain_lang = f"In simple terms: {clean_text}"
 
+        # 10. Preserve API response format
         return {
             "query_type": query_type,
             "answer": answer_result.answer,
