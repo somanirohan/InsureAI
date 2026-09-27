@@ -4,12 +4,10 @@
   "description": "MedShield — AI-Powered Insurance Policy Intelligence Assistant",
   "scripts": {
     "server": "python -m uvicorn server.main:app --port 5001 --reload",
-    "server:node": "npm --prefix server run dev",
     "client": "npm --prefix client run dev",
-    "seed": "python -m server.utils.seeder",
-    "seed:node": "npm --prefix server run seed"
+    "seed": "python -m server.utils.seeder"
   },
-  "keywords": ["insurance", "rag", "mongodb", "chromadb", "react", "express", "tailwind"],
+  "keywords": ["insurance", "rag", "mongodb", "chromadb", "react", "fastapi", "tailwind"],
   "author": "MedShield Team",
   "license": "MIT"
 }

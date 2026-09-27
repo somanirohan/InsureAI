@@ -1,6 +1,6 @@
 # MedShield — AI-Powered Insurance Policy Intelligence Assistant
 
-MedShield is a full-stack AI-driven web application built with **React**, **Tailwind CSS**, **Express (Node.js)**, **MongoDB (Mongoose)**, and **ChromaDB**. It allows users to upload health insurance policy PDFs and receive grounded AI assistance: automated fact extraction, red-flag detection, citation-backed natural-language Q&A, multi-policy comparisons, and treatment cost estimation with what-if scenario simulations.
+MedShield is a full-stack AI-driven web application built with **React**, **Tailwind CSS**, **FastAPI (Python)**, **MongoDB (Motor)**, and **ChromaDB**. It allows users to upload health insurance policy PDFs and receive grounded AI assistance: automated fact extraction, red-flag detection, citation-backed natural-language Q&A, multi-policy comparisons, and treatment cost estimation with what-if scenario simulations.
 
 ---
 
@@ -14,14 +14,14 @@ MedShield is a full-stack AI-driven web application built with **React**, **Tail
                                                │ REST API + WebSocket
                                                ▼
                         ┌──────────────────────────────────────────────┐
-                        │             Express.js Backend               │
+                        │          FastAPI Backend (:5001)             │
                         │    (JWT Auth, Policy Pipeline, RAG, Cost)    │
                         └──────────────┬───────────────────────────────┘
                                        │
                 ┌──────────────────────┴──────────────────────┐
                 ▼                                             ▼
 ┌───────────────────────────────┐             ┌───────────────────────────────┐
-│       MongoDB (Mongoose)      │             │      ChromaDB (Vector Store)  │
+│     MongoDB (Motor Async)     │             │      ChromaDB (Vector Store)  │
 │  - users                      │             │  - policy_chunks collection   │
 │  - policies (+ embedded facts)│             │    • metadata.user_id         │
 │  - policy_chunks              │             │    • metadata.policy_id       │
@@ -41,12 +41,12 @@ The data layer uses **MongoDB** as the system of record and **ChromaDB** as the 
 
 | Collection | Schema Model | Storage Strategy | Key Indexes |
 |---|---|---|---|
-| `users` | [`User.js`](file:///server/src/models/User.js) | Primary account collection | Unique index on `email` |
-| `policies` | [`Policy.js`](file:///server/src/models/Policy.js) | Policy records + **embedded** `facts` array | `user_id`, `status`, `facts.category` |
-| `policy_chunks` | [`PolicyChunk.js`](file:///server/src/models/PolicyChunk.js) | Text chunks referencing policy and vector store | Compound unique `(policy_id, chunk_index)`, `vector_id`, `user_id` |
-| `conversations` | [`Conversation.js`](file:///server/src/models/Conversation.js) | Chat sessions + **embedded** `messages` array with citations | `user_id`, `policy_id`, `updated_at` (desc) |
-| `cost_estimates` | [`CostEstimate.js`](file:///server/src/models/CostEstimate.js) | Base estimates + **embedded** `what_if_variants` array | `user_id`, `policy_id`, `created_at` (desc) |
-| `policy_comparisons`| [`PolicyComparison.js`](file:///server/src/models/PolicyComparison.js)| Multi-policy diff snapshots | `user_id` |
+| `users` | [`user.py`](file:///server/models/user.py) | Primary account collection | Unique index on `email` |
+| `policies` | [`policy.py`](file:///server/models/policy.py) | Policy records + **embedded** `facts` array | `user_id`, `status`, `facts.category` |
+| `policy_chunks` | Managed in policy service | Text chunks referencing policy and vector store | Compound unique `(policy_id, chunk_index)`, `vector_id`, `user_id` |
+| `conversations` | [`chat.py`](file:///server/models/chat.py) | Chat sessions + **embedded** `messages` array with citations | `user_id`, `policy_id`, `updated_at` (desc) |
+| `cost_estimates` | [`cost.py`](file:///server/models/cost.py) | Base estimates + **embedded** `what_if_variants` array | `user_id`, `policy_id`, `created_at` (desc) |
+| `policy_comparisons`| [`comparison.py`](file:///server/models/comparison.py)| Multi-policy diff snapshots | `user_id` |
 
 #### Embedded Facts Shape (`policies.facts`):
 - `fact_id` (UUID)
@@ -70,43 +70,20 @@ The data layer uses **MongoDB** as the system of record and **ChromaDB** as the 
 
 ---
 
-### 2. ChromaDB Vector Store
-
-- **Collection Name:** `policy_chunks`
-- **Join Key:** `id` matches `policy_chunks.vector_id` in MongoDB.
-- **Metadata Fields:** `user_id`, `policy_id`, `chunk_index`, `page_number`, `section_heading`, `insurer_name`, `policy_type`, `created_at`.
-- **Data Isolation:** Every vector query filters strictly on `user_id` and `policy_id`.
-- **Fallback:** Includes a built-in memory vector store fallback for local development when standalone ChromaDB is not yet spun up.
-
----
-
-### 3. Data Isolation & Cascade Delete Rules
-
-1. **Data Isolation (NFR 5.3):** Every query against `policies`, `policy_chunks`, `conversations`, `cost_estimates`, and `policy_comparisons` strictly enforces `req.user._id` scoping in the service layer.
-2. **Cascade Deletes (Section 8):** Deleting a policy document via `DELETE /api/policies/:id` triggers:
-   - Deletion of matching `policy_chunks` in MongoDB
-   - Deletion of corresponding vectors from ChromaDB
-   - Nulling out / deletion of references in `conversations` and `cost_estimates`.
-
----
-
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
-- **Node.js** (v18+ or v20+)
+- **Python 3.10+**
+- **Node.js** (v18+ or v20+ for React frontend)
 - **MongoDB** running locally (`mongodb://127.0.0.1:27017/medshield`) or MongoDB Atlas URI
 
 ### 1. Install Dependencies
-Dependencies are already installed. If running on a fresh clone:
 ```bash
-# Root
-npm install
+# Server & RAG dependencies
+pip install -r server/requirements.txt
 
-# Server
-cd server && npm install
-
-# Client
-cd ../client && npm install
+# Client dependencies
+cd client && npm install
 ```
 
 ### 2. Seed Demo Data (Optional but Recommended)
@@ -121,10 +98,10 @@ Demo Credentials:
 ### 3. Run the Development Servers
 In separate terminals or from root:
 
-**Terminal 1 (Backend API & WebSocket):**
+**Terminal 1 (FastAPI Backend API & WebSocket):**
 ```bash
 npm run server
-# Runs on http://localhost:5000
+# Runs on http://localhost:5001
 ```
 
 **Terminal 2 (React + Tailwind Client):**
@@ -140,36 +117,23 @@ npm run client
 ```
 InsurAI/
 ├── package.json                   # Root scripts
-├── server/
+├── app/                           # Core RAG, Chunking, Extraction, Embeddings & LLMs
+│   ├── config.py                  # Pydantic settings
+│   ├── embeddings/                # Ollama & OpenAI-compatible embeddings
+│   ├── ingestion/                 # PyMuPDF page extraction & chunking
+│   ├── llm/                       # Ollama, OpenRouter, NVIDIA NIM providers
+│   └── rag/                       # Router, Extraction, ChromaDB, Verification, QA
+├── server/                        # FastAPI Backend (:5001)
 │   ├── .env                       # Environment variables
-│   ├── src/
-│   │   ├── config/
-│   │   │   ├── config.js          # App configurations
-│   │   │   ├── db.js              # MongoDB Mongoose connection
-│   │   │   └── chroma.js          # ChromaDB connection & in-memory fallback
-│   │   ├── models/
-│   │   │   ├── User.js            # Collection: users
-│   │   │   ├── Policy.js          # Collection: policies (+ embedded facts)
-│   │   │   ├── PolicyChunk.js     # Collection: policy_chunks (vector join)
-│   │   │   ├── Conversation.js    # Collection: conversations (+ embedded messages)
-│   │   │   ├── CostEstimate.js    # Collection: cost_estimates (+ what-if variants)
-│   │   │   └── PolicyComparison.js# Collection: policy_comparisons
-│   │   ├── middleware/
-│   │   │   ├── auth.js            # JWT auth & NFR 5.3 data isolation
-│   │   │   ├── errorHandler.js    # Centralized error responses
-│   │   │   └── upload.js          # Multer for policy PDF uploads
-│   │   ├── services/
-│   │   │   ├── policyService.js   # Pipeline lifecycle & cascade delete
-│   │   │   ├── chromaService.js   # Vector store indexing & querying
-│   │   │   ├── ragService.js      # Structured vs Semantic RAG, verification & citations
-│   │   │   ├── costEstimatorService.js # Hospital tier cost calculation & what-if
-│   │   │   └── comparisonService.js # Multi-policy comparison diff snapshot
-│   │   ├── controllers/           # REST endpoint handlers
-│   │   ├── routes/                # Modular Express routers
-│   │   ├── utils/
-│   │   │   └── seedDemoData.js    # Database seeder
-│   │   └── server.js              # Server entry point + WebSocket
-└── client/
+│   ├── requirements.txt           # Python dependencies
+│   ├── main.py                    # FastAPI entry point & WebSocket
+│   ├── config.py                  # Server configuration
+│   ├── db.py                      # MongoDB Motor connection & Chroma client
+│   ├── models/                    # Pydantic schemas (user, policy, chat, cost, comparison)
+│   ├── routers/                   # Modular FastAPI routers
+│   ├── services/                  # Business logic (policy, rag, cost, comparison, chroma)
+│   └── utils/                     # Seeder script
+└── client/                        # React 19 + Tailwind CSS Frontend (:5173)
     ├── src/
     │   ├── components/
     │   │   ├── common/Navbar.jsx

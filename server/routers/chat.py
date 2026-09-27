@@ -135,27 +135,42 @@ async def get_conversation_by_id(conversation_id: str, current_user: dict = Depe
     return {"conversation": conversation}
 
 @router.websocket("/ws")
+@router.websocket("/ws/chat")
 async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
     await websocket.accept()
     try:
-        if not token:
-            await websocket.send_json({"error": "Unauthorized: Token missing"})
-            await websocket.close(code=1008)
-            return
-
         try:
             from services.auth_service import settings, jwt
         except ImportError:
             from server.services.auth_service import settings, jwt
 
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-        user_id = payload.get("user_id")
+        user_id = None
+        if token:
+            try:
+                payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+                user_id = payload.get("user_id")
+            except Exception:
+                pass
 
         await websocket.send_json({"type": "connected", "message": "Connected to MedShield WebSocket RAG Stream"})
 
         while True:
             data = await websocket.receive_text()
             req = json.loads(data)
+
+            msg_token = req.get("token") or token
+            if not user_id and msg_token:
+                try:
+                    payload = jwt.decode(msg_token, settings.JWT_SECRET, algorithms=["HS256"])
+                    user_id = payload.get("user_id")
+                except Exception:
+                    await websocket.send_json({"type": "error", "message": "Invalid or expired authentication token"})
+                    continue
+
+            if not user_id:
+                await websocket.send_json({"type": "error", "message": "Authentication required"})
+                continue
+
             question = req.get("question", "")
             policy_id = req.get("policy_id")
             plain_language = req.get("plain_language_mode", False)
@@ -171,22 +186,39 @@ async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Q
             await websocket.send_json({
                 "type": "start",
                 "query_type": rag_response["query_type"],
+                "queryType": rag_response["query_type"],
                 "confidence_level": rag_response["confidence_level"],
+                "confidenceLevel": rag_response["confidence_level"],
                 "verification_passed": rag_response["verification_passed"],
+                "verificationPassed": rag_response["verification_passed"],
                 "citations": rag_response["citations"]
             })
 
             for word in words:
-                await websocket.send_json({"type": "chunk", "text": word + " "})
-                await asyncio.sleep(0.02)
+                await websocket.send_json({
+                    "type": "chunk",
+                    "token": word + " ",
+                    "text": word + " "
+                })
+                await asyncio.sleep(0.015)
 
             await websocket.send_json({
                 "type": "complete",
-                "plain_language": rag_response["plain_language"]
+                "plain_language": rag_response["plain_language"],
+                "query_type": rag_response["query_type"],
+                "queryType": rag_response["query_type"],
+                "confidence_level": rag_response["confidence_level"],
+                "confidenceLevel": rag_response["confidence_level"],
+                "verification_passed": rag_response["verification_passed"],
+                "verificationPassed": rag_response["verification_passed"],
+                "citations": rag_response["citations"]
             })
 
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        await websocket.send_json({"type": "error", "message": str(e)})
-        await websocket.close()
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+            await websocket.close()
+        except Exception:
+            pass

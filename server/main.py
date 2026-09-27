@@ -32,6 +32,9 @@ app.include_router(cost.router)
 app.include_router(comparisons.router)
 app.include_router(dashboard.router)
 
+# WebSocket endpoint alias for root /ws/chat
+app.add_api_websocket_route("/ws/chat", chat.websocket_chat_endpoint)
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
