@@ -54,14 +54,12 @@ async def send_message(
     u_oid = to_object_id(user_id_str)
     db = get_async_db()
 
-    # 1. Resolve and validate policy ownership & readiness
-    p_oid = to_object_id(payload.policy_id) if payload.policy_id else None
-
+    # 1. Resolve and validate policy ownership & readiness via RAG adapter
     # Call adapter which validates ownership, checks status=='ready', loads facts, and queries app.rag
     try:
         rag_response = await rag_service.answer_question(
             user_id=user_id_str,
-            policy_id=str(p_oid) if p_oid else None,
+            policy_id=payload.policy_id,
             question=question,
             plain_language_requested=payload.plain_language_mode,
         )
@@ -75,6 +73,13 @@ async def send_message(
         )
 
     # 2. Manage conversation
+    resolved_policy_id = payload.policy_id or (
+        rag_response.get("citations", [{}])[0].get("policy_id")
+        if rag_response.get("citations")
+        else None
+    )
+    p_oid = to_object_id(resolved_policy_id) if resolved_policy_id else None
+
     conv_id = payload.conversation_id
     c_oid = to_object_id(conv_id) if conv_id else None
     conversation = None

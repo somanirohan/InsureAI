@@ -87,12 +87,40 @@ The data layer uses **MongoDB** as the system of record and **ChromaDB** as the 
 - `GET /api/policies` — List user policies
 - `GET /api/policies/{policy_id}` — Get policy status and extracted facts
 - `DELETE /api/policies/{policy_id}` — Cascade delete policy, chunks, and Chroma vector collection
-- `POST /api/chat/message` — REST Q&A endpoint
+- `POST /api/chat/message` — REST Q&A endpoint powered by `app.rag`
 - `GET /api/chat/conversations` — User conversations list
 - `POST /api/cost/estimate` — Request-driven medical cost breakdown
 - `POST /api/cost/estimate/{id}/what-if` — What-if simulation preserving original room rent & stay days
 - `POST /api/comparisons` — Compare 2+ policies
 - `GET /api/health` — Health check verifying MongoDB connectivity
+
+### Chat REST & WebSocket Response Contract:
+
+Both `POST /api/chat/message` and WebSocket `/api/chat/ws` return the standardized RAG response:
+
+```json
+{
+  "query_type": "structured",
+  "answer": "The Sum Insured under this policy is **INR 10,00,000** (found on Page 2).",
+  "plain_language": "In simple terms: The Sum Insured under this policy is INR 10,00,000 (found on Page 2).",
+  "confidence_level": "high",
+  "verification_passed": true,
+  "verification_notes": "Authoritative policy fact extracted from document schedule.",
+  "citations": [
+    {
+      "policy_id": "673f8b0e7c5a2b1f8e9a0123",
+      "chunk_vector_id": "673f8b0e7c5a2b1f8e9a0123_0",
+      "page_number": 2,
+      "section_heading": null,
+      "excerpt": "Sum Insured: INR 10,00,000"
+    }
+  ]
+}
+```
+
+- **Confidence Mapping:** Lowercase API standard (`"high"`, `"medium"`, `"low"`).
+- **Verification:** Evaluated against `verification_status` (`"fully_supported"` and `"partially_supported"` $\rightarrow$ `true`; `"unsupported"` or missing $\rightarrow$ `false`; structured $\rightarrow$ `true`).
+- **Citation Metadata:** Authentic metadata only (physical `page_number`, `chunk_vector_id`, `excerpt`, and `section_heading` if genuinely supplied). No fabricated section headings.
 
 ### Canonical WebSocket Endpoint:
 - **URL:** `ws://localhost:5001/api/chat/ws`
@@ -147,14 +175,18 @@ CHROMA_PERSIST_DIR=./chroma_store
 
 ### 2. Run the Test Suites:
 ```bash
-# Run unit test suites
-python3.11 -m pytest server/tests/test_unit_fact_mapper.py \
+# Run all unit test suites (fast, mocked DB & RAG, runs in ~2s with no external services required):
+python3.11 -m pytest server/tests/test_unit_rag_adapter.py \
+                     server/tests/test_unit_fact_mapper.py \
                      server/tests/test_unit_cost.py \
                      server/tests/test_unit_object_id_and_db.py \
                      server/tests/test_unit_vectorstore.py \
                      server/tests/test_unit_processing_failure.py -v
 
-# Run complete end-to-end integration lifecycle test (19 steps)
+# Or run all unit tests in one command:
+python3.11 -m pytest server/tests/ -k "not test_full_application_lifecycle" -v
+
+# Run the complete end-to-end integration lifecycle test (19 steps against live MongoDB & RAG):
 python3.11 -m pytest server/tests/test_integration_flow.py -v
 ```
 
