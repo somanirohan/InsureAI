@@ -1,7 +1,7 @@
 import os
 
 class Settings:
-    PORT: int = int(os.getenv("PORT", 5000))
+    PORT: int = int(os.getenv("PORT", 5001))
     MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://127.0.0.1:27017/medshield")
     JWT_SECRET: str = os.getenv("JWT_SECRET", "medshield_super_secret_jwt_key_2026")
     JWT_EXPIRES_IN: str = os.getenv("JWT_EXPIRES_IN", "7d")

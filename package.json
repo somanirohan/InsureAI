@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "MedShield — AI-Powered Insurance Policy Intelligence Assistant",
   "scripts": {
-    "server": "python -m uvicorn server.main:app --port 5000 --reload",
+    "server": "python -m uvicorn server.main:app --port 5001 --reload",
     "server:node": "npm --prefix server run dev",
     "client": "npm --prefix client run dev",
     "seed": "python -m server.utils.seeder",
