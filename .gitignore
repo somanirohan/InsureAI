@@ -17,6 +17,8 @@ build/
 .env.production.local
 server/.env
 !*.env.example
+.env.example
+
 
 # Uploaded Files
 server/uploads/*
