@@ -16,8 +16,10 @@ build/
 .env.test.local
 .env.production.local
 server/.env
+client/.env
+*.env
 !*.env.example
-.env.example
+!**/.env.example
 
 
 # Uploaded Files
@@ -38,6 +40,7 @@ __pycache__/
 *$py.class
 uploads/
 fastapi_server/uploads/
+chroma_store/
 
 # Editor and OS files
 .vscode/
