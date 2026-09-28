@@ -7,7 +7,7 @@ const api = axios.create({
 // Interceptor to inject JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('medshield_token');
+    const token = localStorage.getItem('insurai_token') || localStorage.getItem('medshield_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,6 +22,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+        localStorage.removeItem('insurai_token');
+        localStorage.removeItem('insurai_user');
         localStorage.removeItem('medshield_token');
         localStorage.removeItem('medshield_user');
       }

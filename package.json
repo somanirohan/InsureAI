@@ -1,13 +1,13 @@
 {
-  "name": "medshield",
+  "name": "insurai",
   "version": "1.0.0",
-  "description": "MedShield — AI-Powered Insurance Policy Intelligence Assistant",
+  "description": "InsurAI — AI-Powered Insurance Policy Intelligence Assistant",
   "scripts": {
     "server": "python -m uvicorn server.main:app --port 5001 --reload",
     "client": "npm --prefix client run dev",
     "seed": "python -m server.utils.seeder"
   },
   "keywords": ["insurance", "rag", "mongodb", "chromadb", "react", "fastapi", "tailwind"],
-  "author": "MedShield Team",
+  "author": "InsurAI Team",
   "license": "MIT"
 }

@@ -48,10 +48,10 @@ export function Sidebar({ activeTab, setActiveTab }) {
               boxShadow: '0 0 16px rgba(200,169,110,0.20)',
             }}
           >
-            <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-lg" />
+            <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>MedShield</p>
+            <p className="text-sm font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>InsurAI</p>
             <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.30)' }}>Policy Intelligence</p>
           </div>
         </button>
@@ -161,9 +161,9 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
               border: '1px solid rgba(200,169,110,0.35)',
             }}
           >
-            <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-md" />
+            <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-md" />
           </div>
-          <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>MedShield</span>
+          <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>InsurAI</span>
         </div>
         <button
           onClick={() => setOpen(!open)}
@@ -201,9 +201,9 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
                     border: '1px solid rgba(200,169,110,0.35)',
                   }}
                 >
-                  <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-md" />
+                  <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-md" />
                 </div>
-                <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>MedShield</span>
+                <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>InsurAI</span>
               </div>
               <button onClick={() => setOpen(false)} style={{ color: 'rgba(255,255,255,0.40)' }}>
                 <X size={16} />

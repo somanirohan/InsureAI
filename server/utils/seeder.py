@@ -26,7 +26,7 @@ from app.rag.vectorstore import index_chunks, delete_policy_index
 
 def seed_data():
     print("\n" + "="*50)
-    print(" INSURAI / MEDSHIELD DATABASE SEEDER (MONGODB ATLAS) ")
+    print(" INSURAI DATABASE SEEDER (MONGODB ATLAS) ")
     print("="*50)
 
     print("\n[Seeder] Connecting to MongoDB Atlas...")
@@ -50,7 +50,7 @@ def seed_data():
         {
             "_id": user_id,
             "full_name": "Dr. Arjun Verma",
-            "email": "demo@medshield.ai",
+            "email": "demo@insurai.com",
             "password_hash": pwd_hash,
             "phone": "+91 98765 43210",
             "is_active": True,
@@ -79,7 +79,7 @@ def seed_data():
         }
     ]
     db.users.insert_many(users_docs)
-    print(f"[Seeder] Created {len(users_docs)} Users: demo@medshield.ai, rohan@insurai.com, priya.sharma@example.com")
+    print(f"[Seeder] Created {len(users_docs)} Users: demo@insurai.com, rohan@insurai.com, priya.sharma@example.com")
 
     # ── 2. Create Policies & Embedded Facts ───────────────────────────────────
     star_policy_id = ObjectId()
@@ -614,7 +614,7 @@ def seed_data():
     print("\n=============================================")
     print(" PYTHON SEEDING COMPLETED SUCCESSFULLY! ")
     print(" Credentials:")
-    print(" Email:    demo@medshield.ai")
+    print(" Email:    demo@insurai.com")
     print(" Password: password123")
     print("=============================================\n")
 

@@ -8,7 +8,7 @@ def setup_accounts():
 
     accounts = [
         {
-            "email": "demo@medshield.ai",
+            "email": "demo@insurai.com",
             "full_name": "Dr. Arjun Verma",
             "phone": "+91 98765 43210",
             "password": "password123",

@@ -46,7 +46,7 @@ echo " InsureAI is running!"
 echo " • Frontend : http://localhost:5173"
 echo " • Backend  : http://localhost:5001"
 echo " • API Docs : http://localhost:5001/docs"
-echo " • Demo Login: demo@medshield.ai / password123"
+echo " • Demo Login: demo@insurai.com / password123"
 echo " Press Ctrl+C to stop both servers."
 echo "================================================================"
 

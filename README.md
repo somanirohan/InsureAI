@@ -149,7 +149,7 @@ Both `POST /api/chat/message` and WebSocket `/api/chat/ws` return the standardiz
 ### Prerequisites:
 - Python 3.11+
 - Node.js 18+
-- MongoDB running on `mongodb://127.0.0.1:27017/medshield`
+- MongoDB running on `mongodb://127.0.0.1:27017/insurai`
 - Ollama running locally on `http://localhost:11434` with `mistral:7b` and `nomic-embed-text` (or API keys in `.env`)
 - Tesseract OCR (optional fallback for scanned PDFs)
 
@@ -157,7 +157,7 @@ Both `POST /api/chat/message` and WebSocket `/api/chat/ws` return the standardiz
 Create `.env` in the project root:
 ```env
 PORT=5001
-MONGO_URI=mongodb://127.0.0.1:27017/medshield
+MONGO_URI=mongodb://127.0.0.1:27017/insurai
 JWT_SECRET=insureai_super_secret_jwt_key_2026_secure_key
 JWT_EXPIRES_IN=7d
 CLIENT_URL=http://localhost:5173

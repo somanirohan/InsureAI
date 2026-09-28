@@ -12,8 +12,8 @@ export const WS_CHAT_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:5001/api/chat/ws';
 
 // ─── Auth ──────────────────────────────────────────────────
-export const TOKEN_KEY = 'medshield_token';
-export const USER_KEY  = 'medshield_user';
+export const TOKEN_KEY = 'insurai_token';
+export const USER_KEY  = 'insurai_user';
 
 // ─── Policy ────────────────────────────────────────────────
 export const POLICY_STATUSES = {

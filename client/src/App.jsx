@@ -63,10 +63,10 @@ export default function App() {
               filter: 'blur(2px)',
             }} />
             <div className="absolute inset-0 flex items-center justify-center">
-              <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-10 h-10 object-contain rounded-xl animate-pulse shadow-lg" />
+              <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-10 h-10 object-contain rounded-xl animate-pulse shadow-lg" />
             </div>
           </div>
-          <p className="text-sm font-medium tracking-tight" style={{ color: 'rgba(255,255,255,0.45)' }}>Loading MedShield...</p>
+          <p className="text-sm font-medium tracking-tight" style={{ color: 'rgba(255,255,255,0.45)' }}>Loading InsurAI...</p>
         </div>
       </div>
     );

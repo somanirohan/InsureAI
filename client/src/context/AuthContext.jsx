@@ -5,10 +5,10 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('medshield_user');
+    const saved = localStorage.getItem('insurai_user') || localStorage.getItem('medshield_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem('medshield_token'));
+  const [token, setToken] = useState(() => localStorage.getItem('insurai_token') || localStorage.getItem('medshield_token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
         try {
           const res = await api.get('/auth/me');
           setUser(res.data.user);
-          localStorage.setItem('medshield_user', JSON.stringify(res.data.user));
+          localStorage.setItem('insurai_user', JSON.stringify(res.data.user));
         } catch (err) {
           logout();
         }
@@ -31,8 +31,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     const { token: newToken, user: newUser } = res.data;
-    localStorage.setItem('medshield_token', newToken);
-    localStorage.setItem('medshield_user', JSON.stringify(newUser));
+    localStorage.setItem('insurai_token', newToken);
+    localStorage.setItem('insurai_user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
     return res.data;
@@ -46,14 +46,16 @@ export const AuthProvider = ({ children }) => {
       phone,
     });
     const { token: newToken, user: newUser } = res.data;
-    localStorage.setItem('medshield_token', newToken);
-    localStorage.setItem('medshield_user', JSON.stringify(newUser));
+    localStorage.setItem('insurai_token', newToken);
+    localStorage.setItem('insurai_user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
     return res.data;
   };
 
   const logout = () => {
+    localStorage.removeItem('insurai_token');
+    localStorage.removeItem('insurai_user');
     localStorage.removeItem('medshield_token');
     localStorage.removeItem('medshield_user');
     setToken(null);

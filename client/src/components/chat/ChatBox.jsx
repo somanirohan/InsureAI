@@ -244,7 +244,7 @@ export default function ChatBox({ initialPolicy, policies }) {
         reject(new Error('WebSocket not open'));
         return;
       }
-      const token = localStorage.getItem('medshield_token');
+      const token = localStorage.getItem('insurai_token') || localStorage.getItem('medshield_token');
       let streamingMsgId = `stream-${Date.now()}`;
 
       // Add placeholder streaming message

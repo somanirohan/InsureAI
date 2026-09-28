@@ -7,7 +7,7 @@ import { LiquidBlob, Starfield } from '../common/LiquidBlob';
 export default function AuthModal() {
   const [isLogin, setIsLogin]   = useState(true);
   const [fullName, setFullName] = useState('');
-  const [email, setEmail]       = useState('demo@medshield.ai');
+  const [email, setEmail]       = useState('demo@insurai.com');
   const [password, setPassword] = useState('password123');
   const [phone, setPhone]       = useState('');
   const [error, setError]       = useState(null);
@@ -42,7 +42,7 @@ export default function AuthModal() {
 
   const fillDemo = () => {
     setIsLogin(true);
-    setEmail('demo@medshield.ai');
+    setEmail('demo@insurai.com');
     setPassword('password123');
     setError(null);
   };
@@ -162,10 +162,10 @@ export default function AuthModal() {
                 boxShadow: '0 0 24px rgba(200,169,110,0.18)',
               }}
             >
-              <img src="/favicon_io/android-chrome-192x192.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src="/favicon_io/android-chrome-192x192.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>
-              MedShield
+              InsurAI
             </h2>
             <p className="text-[13px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
               AI Insurance Policy Intelligence
@@ -189,7 +189,7 @@ export default function AuthModal() {
                 Quick Demo Access
               </div>
               <p className="text-[11px] leading-tight" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                demo@medshield.ai · password123
+                demo@insurai.com · password123
               </p>
             </div>
             <button
