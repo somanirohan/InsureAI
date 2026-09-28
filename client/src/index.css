@@ -198,6 +198,12 @@ body {
     box-shadow: 0 0 0 3px rgba(200,169,110,0.10);
   }
   .input-field:hover:not(:focus) { border-color: rgba(255,255,255,0.16); }
+  select.input-field option,
+  select option {
+    background-color: #12121c;
+    color: #f0f0f8;
+    padding: 8px 12px;
+  }
 
   /* ── Divider ────────────────────────────────────────── */
   .divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); }

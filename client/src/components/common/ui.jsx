@@ -2,7 +2,9 @@
  * Shared UI primitive components — Apple HIG-inspired, minimal.
  * Import from here to keep design consistent across all views.
  */
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronDown, Check } from 'lucide-react';
 
 // ─── Status Badge ──────────────────────────────────────────
 export function StatusBadge({ status }) {
@@ -159,21 +161,153 @@ export function Toggle({ checked, onChange, label, description, disabled }) {
   );
 }
 
-// ─── Select ────────────────────────────────────────────────
-export function Select({ label, value, onChange, options, disabled, className = '' }) {
+// ─── Select (Portal-based, never clipped by overflow-hidden) ─
+export function Select({ label, value, onChange, options = [], disabled, placeholder = 'Select an option', className = '' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, bottom: undefined, left: 0, width: 0, maxHeight: 220 });
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
+
+    setMenuPos({
+      top: openUp ? undefined : rect.bottom + 6,
+      bottom: openUp ? window.innerHeight - rect.top + 6 : undefined,
+      left: rect.left,
+      width: rect.width,
+      maxHeight: Math.min(220, Math.max(120, (openUp ? spaceAbove : spaceBelow) - 16)),
+    });
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    updatePosition();
+
+    const handleScrollOrResize = (e) => {
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
+      updatePosition();
+    };
+
+    const handleOutsideClick = (e) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const selectedOption = options.find(opt => String(opt.value) === String(value));
+  const displayText = selectedOption ? selectedOption.label : placeholder;
+
   return (
-    <div className={className}>
+    <div className={`relative ${className}`}>
       {label && <label className="label-xs block mb-2">{label}</label>}
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
+
+      <button
+        ref={triggerRef}
+        type="button"
         disabled={disabled}
-        className="input-field cursor-pointer"
+        onClick={() => {
+          if (!disabled) {
+            updatePosition();
+            setIsOpen(prev => !prev);
+          }
+        }}
+        className="input-field cursor-pointer flex items-center justify-between gap-2 text-left"
+        style={{
+          borderColor: isOpen ? 'rgba(200, 169, 110, 0.50)' : undefined,
+          boxShadow: isOpen ? '0 0 0 3px rgba(200, 169, 110, 0.12)' : undefined,
+          userSelect: 'none',
+        }}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
+        <span className={`truncate text-xs ${selectedOption ? 'text-zinc-100 font-medium' : 'text-zinc-500'}`}>
+          {displayText}
+        </span>
+        <ChevronDown
+          size={14}
+          className={`text-zinc-400 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-amber-300' : ''}`}
+        />
+      </button>
+
+      {/* Portal Dropdown Menu attached to document.body */}
+      {isOpen && createPortal(
+        <div
+          ref={menuRef}
+          role="listbox"
+          className="fixed z-[9999] p-1 rounded-xl shadow-2xl overflow-y-auto scroll-area animate-fade-in"
+          style={{
+            top: menuPos.top !== undefined ? `${menuPos.top}px` : undefined,
+            bottom: menuPos.bottom !== undefined ? `${menuPos.bottom}px` : undefined,
+            left: `${menuPos.left}px`,
+            width: `${menuPos.width}px`,
+            maxHeight: `${menuPos.maxHeight}px`,
+            background: 'rgba(18, 18, 28, 0.98)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.15)',
+          }}
+        >
+          {options.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-zinc-500 text-center">
+              No options available
+            </div>
+          ) : (
+            options.map((opt) => {
+              const isSelected = String(opt.value) === String(value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between gap-2 transition-colors ${
+                    isSelected
+                      ? 'bg-amber-400/15 text-amber-200 font-semibold'
+                      : 'text-zinc-300 hover:bg-white/[0.06] hover:text-white font-normal'
+                  }`}
+                >
+                  <span className="truncate">{opt.label}</span>
+                  {isSelected && (
+                    <Check size={13} className="text-amber-300 flex-shrink-0" />
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
