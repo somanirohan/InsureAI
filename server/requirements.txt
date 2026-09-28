@@ -16,3 +16,5 @@ Pillow>=10.0.0
 pytesseract>=0.3.10
 httpx>=0.25.0
 requests>=2.30.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

@@ -6,6 +6,7 @@ Unified with app/config.py settings.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any, List, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,9 +20,14 @@ except ImportError:
     from app.config import settings as app_settings
 
 
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+_ROOT_ENV = str(_ROOT_DIR / ".env")
+_SERVER_ENV = str(_ROOT_DIR / "server" / ".env")
+
+
 class ServerSettings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env", "server/.env"),
+        env_file=(_ROOT_ENV, _SERVER_ENV, ".env", "server/.env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
