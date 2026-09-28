@@ -179,7 +179,7 @@ CHROMA_PERSIST_DIR=./chroma_store
 python3.11 server/utils/seeder.py
 ```
 **Default Demo Credentials:**
-- Email: `demo@medshield.ai`
+- Email: `demo@insurai.com`
 - Password: `password123`
 
 ### 3. Run the Test Suites:
