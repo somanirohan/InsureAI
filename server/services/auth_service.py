@@ -58,6 +58,8 @@ def _parse_duration(duration_str: str) -> timedelta:
     return timedelta(days=7)
 
 
+import hashlib
+
 def hash_password(password: str) -> str:
     """Hash password using industry-standard bcrypt with a fresh random salt."""
     salt = bcrypt.gensalt()
@@ -65,13 +67,29 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify plain text password against bcrypt hash."""
+    """Verify plain text password against bcrypt hash with legacy sha256 compatibility."""
     if not plain_password or not hashed_password:
         return False
+
+    # Check bcrypt hash first
+    try:
+        if hashed_password.startswith("$2b$") or hashed_password.startswith("$2a$"):
+            return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        pass
+
+    # Legacy sha256 fallback
+    try:
+        salted = f"{plain_password}_{settings.JWT_SECRET}".encode("utf-8")
+        if hashlib.sha256(salted).hexdigest() == hashed_password:
+            return True
+    except Exception:
+        pass
+
+    # Generic bcrypt fallback
     try:
         return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
-    except Exception as exc:
-        logger.warning("Password verification failed with exception: %s", exc)
+    except Exception:
         return False
 
 
