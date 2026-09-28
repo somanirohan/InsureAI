@@ -104,14 +104,14 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
         >
           <div className="flex items-center gap-3">
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
               style={{
-                background: 'linear-gradient(135deg, rgba(240,200,100,0.20), rgba(80,60,200,0.26))',
+                background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(200,169,110,0.30)',
                 boxShadow: '0 0 16px rgba(200,169,110,0.15)',
               }}
             >
-              <Shield size={15} style={{ color: '#c8a96e' }} strokeWidth={2.5} />
+              <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-lg" />
             </div>
             <div>
               <p style={{ fontSize: '14px', fontWeight: 600, color: '#f0f0f8', letterSpacing: '-0.02em' }}>MedShield</p>
@@ -497,18 +497,20 @@ export default function LandingPage() {
               style={{
                 width: scrolled ? '30px' : '32px',
                 height: scrolled ? '30px' : '32px',
-                borderRadius: scrolled ? '999px' : '11px',
+                borderRadius: scrolled ? '999px' : '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, rgba(240,200,100,0.22), rgba(80,60,200,0.28))',
+                background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(200,169,110,0.35)',
                 boxShadow: '0 0 14px rgba(200,169,110,0.18)',
                 transition: 'all 0.5s cubic-bezier(0.34,1.56,0.64,1)',
                 flexShrink: 0,
+                overflow: 'hidden',
+                padding: '2px',
               }}
             >
-              <Shield size={scrolled ? 12 : 14} style={{ color: '#c8a96e' }} strokeWidth={2.5} />
+              <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: scrolled ? '999px' : '7px' }} />
             </div>
             <span
               style={{
@@ -1338,15 +1340,17 @@ export default function LandingPage() {
               style={{
                 width: '24px',
                 height: '24px',
-                borderRadius: '8px',
+                borderRadius: '7px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, rgba(240,200,100,0.20), rgba(80,60,200,0.25))',
+                background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(200,169,110,0.30)',
+                overflow: 'hidden',
+                padding: '2px',
               }}
             >
-              <Shield size={10} style={{ color: '#c8a96e' }} strokeWidth={2.5} />
+              <img src="/favicon_io/favicon-32x32.png" alt="MedShield Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.45)' }}>
               MedShield

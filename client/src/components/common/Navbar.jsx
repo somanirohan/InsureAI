@@ -41,14 +41,14 @@ export function Sidebar({ activeTab, setActiveTab }) {
           className="flex items-center gap-3 group"
         >
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
             style={{
-              background: 'linear-gradient(135deg, rgba(240,200,100,0.25), rgba(80,60,200,0.30))',
+              background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(200,169,110,0.35)',
               boxShadow: '0 0 16px rgba(200,169,110,0.20)',
             }}
           >
-            <Shield size={14} className="text-gold" style={{ color: '#c8a96e' }} strokeWidth={2.5} />
+            <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-lg" />
           </div>
           <div>
             <p className="text-sm font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>MedShield</p>
@@ -155,13 +155,13 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
       >
         <div className="flex items-center gap-2.5">
           <div
-            className="w-7 h-7 rounded-xl flex items-center justify-center"
+            className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
             style={{
-              background: 'linear-gradient(135deg, rgba(240,200,100,0.25), rgba(80,60,200,0.30))',
+              background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(200,169,110,0.35)',
             }}
           >
-            <Shield size={13} style={{ color: '#c8a96e' }} strokeWidth={2.5} />
+            <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-md" />
           </div>
           <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>MedShield</span>
         </div>
@@ -195,13 +195,13 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
             <div className="flex items-center justify-between mb-8 px-2">
               <div className="flex items-center gap-2.5">
                 <div
-                  className="w-7 h-7 rounded-xl flex items-center justify-center"
+                  className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(240,200,100,0.25), rgba(80,60,200,0.30))',
+                    background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(200,169,110,0.35)',
                   }}
                 >
-                  <Shield size={13} style={{ color: '#c8a96e' }} strokeWidth={2.5} />
+                  <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-md" />
                 </div>
                 <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>MedShield</span>
               </div>

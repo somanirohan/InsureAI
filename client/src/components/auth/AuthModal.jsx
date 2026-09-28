@@ -155,14 +155,14 @@ export default function AuthModal() {
           {/* Brand */}
           <div className="flex flex-col items-center mb-8">
             <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3"
+              className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center mb-3 p-1"
               style={{
-                background: 'linear-gradient(135deg, rgba(240,200,100,0.22), rgba(80,60,200,0.28))',
+                background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(200,169,110,0.35)',
                 boxShadow: '0 0 24px rgba(200,169,110,0.18)',
               }}
             >
-              <Shield size={20} style={{ color: '#c8a96e' }} strokeWidth={2.5} />
+              <img src="/favicon_io/android-chrome-192x192.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>
               MedShield

@@ -143,15 +143,9 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
-            {extractedPolicy ? (
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                <ShieldCheck size={18} />
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
-                <UploadCloud size={18} />
-              </div>
-            )}
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5 border border-white/10 bg-white/[0.04]">
+              <img src="/favicon_io/apple-touch-icon.png" alt="Logo" className="w-full h-full object-contain rounded-md" />
+            </div>
             <div>
               <h2 className="text-base font-semibold text-zinc-100">
                 {extractedPolicy ? 'Policy Extracted Successfully' : 'Upload Policy'}
