@@ -1107,13 +1107,7 @@ export default function LandingPage() {
                             <strong className="text-[#e8c97e]">Clause 4.2.1:</strong> "Modern robotic procedures indemnifiable up to Sum Insured..."
                           </span>
                         </div>
-                        <span
-                          className="shrink-0 text-[10px] font-mono font-medium px-2 py-0.5 rounded-md"
-                          style={{
-                            background: 'rgba(255,255,255,0.08)',
-                            color: '#f0f0f8',
-                          }}
-                        >
+                        <span className="shrink-0 text-[10px] font-mono text-gray-400">
                           Page 19 · Clause 4.2
                         </span>
                       </div>
@@ -1141,11 +1135,8 @@ export default function LandingPage() {
                   borderColor: 'rgba(239,68,68,0.22)',
                 }}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1">
                   <span className="text-xs font-semibold text-red-200">1% Room Rent Cap</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                    Critical Risk
-                  </span>
                 </div>
                 <p className="text-[11px] text-gray-400 leading-normal">
                   Hospital rooms &gt; ₹10k/day trigger up to 35% proportionate deduction across total bill.
@@ -1159,11 +1150,8 @@ export default function LandingPage() {
                   borderColor: 'rgba(245,158,11,0.22)',
                 }}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1">
                   <span className="text-xs font-semibold text-amber-200">24-Mo PED Waiting</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    2 Year Wait
-                  </span>
                 </div>
                 <p className="text-[11px] text-gray-400 leading-normal">
                   Pre-existing diabetes & hypertension claims barred until policy month 25.
@@ -1177,11 +1165,8 @@ export default function LandingPage() {
                   borderColor: 'rgba(16,185,129,0.22)',
                 }}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1">
                   <span className="text-xs font-semibold text-emerald-200">Zero Co-Payment</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Verified Safe
-                  </span>
                 </div>
                 <p className="text-[11px] text-gray-400 leading-normal">
                   100% claim settlement across 14,000+ cashless network hospitals.
@@ -1279,7 +1264,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-xl border border-purple-500/20 bg-purple-500/10 text-[11px] text-purple-200">
+            <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-purple-300/80">
               <Zap size={12} className="text-purple-400 shrink-0" />
               <span>42 clauses parsed in 1.4s · 100% OCR fidelity</span>
             </div>
@@ -1301,18 +1286,13 @@ export default function LandingPage() {
                 borderColor: 'rgba(6,182,212,0.2)',
               }}
             >
-              <div className="flex items-baseline justify-between">
-                <div>
-                  <div className="text-2xl font-black tracking-tight text-white font-mono bg-gradient-to-r from-cyan-400 to-[#c8a96e] bg-clip-text text-transparent">
-                    99.4%
-                  </div>
-                  <div className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">
-                    Grounding Certainty
-                  </div>
+              <div>
+                <div className="text-2xl font-black tracking-tight text-white font-mono bg-gradient-to-r from-cyan-400 to-[#c8a96e] bg-clip-text text-transparent">
+                  99.4%
                 </div>
-                <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-full">
-                  ● Multi-Agent Pass
-                </span>
+                <div className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">
+                  Grounding Certainty
+                </div>
               </div>
 
               <div className="space-y-1.5 pt-1 text-[11px] text-gray-300">
