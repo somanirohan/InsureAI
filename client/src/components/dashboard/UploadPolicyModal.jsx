@@ -192,11 +192,6 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/[0.04] rounded-full blur-2xl pointer-events-none" />
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <Check size={10} /> Auto-Detected Insurer
-                      </span>
-                    </div>
                     <h3 className="text-base font-bold text-zinc-100 truncate">
                       {extractedPolicy.insurer_name || 'Insurance Provider'}
                     </h3>

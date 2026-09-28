@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Shield, ArrowRight, Zap, Lock, CheckCircle, ChevronRight,
+  Shield, ArrowRight, Lock, CheckCircle, ChevronRight,
   FileText, Brain, TrendingUp, AlertTriangle, X, Mail,
   User, Phone, Menu, DollarSign, GitCompare,
 } from 'lucide-react';
@@ -740,38 +740,6 @@ export default function LandingPage() {
           }}
         >
           <div className="animate-slide-up" style={{ maxWidth: '580px' }}>
-
-            {/* Status badge */}
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '7px 16px',
-                borderRadius: '999px',
-                fontSize: '12px',
-                fontWeight: 500,
-                letterSpacing: '0.01em',
-                color: '#c8a96e',
-                background: 'rgba(200,169,110,0.09)',
-                border: '1px solid rgba(200,169,110,0.26)',
-                marginBottom: '36px',
-              }}
-            >
-              <Zap size={10} />
-              RAG-Powered Health Insurance AI
-              <span
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: '#5cc85c',
-                  boxShadow: '0 0 6px #5cc85c',
-                  animation: 'pulseDot 1.6s ease-in-out infinite',
-                }}
-              />
-            </div>
-
             {/* Main headline */}
             <h1
               style={{
@@ -895,27 +863,8 @@ export default function LandingPage() {
           margin: '0 auto',
         }}
       >
-        {/* Section eyebrow */}
+        {/* Section header */}
         <div style={{ textAlign: 'center', marginBottom: '72px' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              padding: '6px 16px',
-              borderRadius: '999px',
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: '#c8a96e',
-              background: 'rgba(200,169,110,0.07)',
-              border: '1px solid rgba(200,169,110,0.18)',
-              marginBottom: '22px',
-            }}
-          >
-            <Zap size={10} /> Features
-          </div>
           <h2
             style={{
               fontSize: 'clamp(2rem, 3.5vw, 3.2rem)',
@@ -998,25 +947,6 @@ export default function LandingPage() {
         >
           {/* Left — steps */}
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '7px',
-                padding: '6px 16px',
-                borderRadius: '999px',
-                fontSize: '11px',
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: '#c8a96e',
-                background: 'rgba(200,169,110,0.07)',
-                border: '1px solid rgba(200,169,110,0.18)',
-                marginBottom: '24px',
-              }}
-            >
-              How it works
-            </div>
             <h2
               style={{
                 fontSize: 'clamp(1.9rem, 3vw, 3rem)',
