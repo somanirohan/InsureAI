@@ -173,7 +173,16 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 CHROMA_PERSIST_DIR=./chroma_store
 ```
 
-### 2. Run the Test Suites:
+### 2. Seed Demo Data:
+```bash
+# Populate MongoDB with demo policies, realistic facts, and indexed Chroma vectors:
+python3.11 server/utils/seeder.py
+```
+**Default Demo Credentials:**
+- Email: `demo@medshield.ai`
+- Password: `password123`
+
+### 3. Run the Test Suites:
 ```bash
 # Run all unit test suites (fast, mocked DB & RAG, runs in ~2s with no external services required):
 python3.11 -m pytest server/tests/test_unit_rag_adapter.py \
@@ -190,11 +199,26 @@ python3.11 -m pytest server/tests/ -k "not test_full_application_lifecycle" -v
 python3.11 -m pytest server/tests/test_integration_flow.py -v
 ```
 
-### 3. Run Development Servers:
+### 4. Run Development Servers:
+
+**Option A — One-Command Startup (Recommended):**
 ```bash
-# Start FastAPI backend
+./run.sh
+```
+This automatically verifies MongoDB and Ollama connectivity and launches both the FastAPI backend (`:5001`) and Vite React frontend (`:5173`). Press `Ctrl+C` to stop both.
+
+**Option B — Run in Separate Terminals:**
+```bash
+# Terminal 1: FastAPI Backend
 python3.11 server/main.py
 
-# Start React frontend
-cd client && npm run dev
+# Terminal 2: React Frontend
+cd client
+npm run dev
 ```
+
+- **Frontend Application:** `http://localhost:5173`
+- **Backend API:** `http://localhost:5001`
+- **Swagger Interactive API Docs:** `http://localhost:5001/docs`
+- **Health Check Endpoint:** `http://localhost:5001/api/health`
+
