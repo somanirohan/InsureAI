@@ -26,6 +26,9 @@ class QuestionRequest(BaseModel):
     question: str
     plain_language_mode: bool = False
 
+class RenameConversationRequest(BaseModel):
+    title: str
+
 class ConversationResponse(BaseModel):
     id: str = Field(alias="_id")
     user_id: str
@@ -37,3 +40,4 @@ class ConversationResponse(BaseModel):
 
     class Config:
         populate_by_name = True
+
