@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   UploadCloud,
   X,
@@ -134,9 +135,9 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
 
   const currentIdx = stepOrder.indexOf(pipelineStep);
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
       onClick={e => { if (!uploading && e.target === e.currentTarget) handleClose(); }}
     >
       <div className={`w-full ${extractedPolicy ? 'max-w-xl' : 'max-w-md'} bg-[#1e1e23] border border-white/[0.10] rounded-2xl shadow-2xl transition-all duration-300 animate-slide-up overflow-hidden`}>
@@ -396,6 +397,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

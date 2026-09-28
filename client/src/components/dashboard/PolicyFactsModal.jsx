@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, BookOpen, Tag, Percent, Clock, AlertTriangle, ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 const CATEGORY_META = {
@@ -30,9 +31,9 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
     return acc;
   }, {});
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="w-full sm:max-w-2xl max-h-[90dvh] sm:max-h-[80vh] bg-[#1e1e23] border border-white/[0.10] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-lg animate-slide-up overflow-hidden">
@@ -111,6 +112,7 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
