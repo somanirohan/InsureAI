@@ -781,7 +781,7 @@ export default function LandingPage() {
   const navLinks = ['Features', 'How it works'];
 
   return (
-    <div className="min-h-screen" style={{ background: '#07070f', color: '#f0f0f8' }}>
+    <div className="min-h-screen relative overflow-x-clip" style={{ background: '#07070f', color: '#f0f0f8', overflowX: 'clip' }}>
       <Starfield count={110} />
 
       {/* Ambient nebula glow */}
@@ -810,7 +810,6 @@ export default function LandingPage() {
           minHeight: '100vh',
           display: 'flex',
           alignItems: 'center',
-          overflow: 'hidden',
           paddingTop: '80px',
         }}
       >
@@ -1414,12 +1413,10 @@ export default function LandingPage() {
         id="how-it-works"
         style={{
           position: 'relative',
-          padding: '120px 24px',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
-          overflow: 'hidden',
+          padding: '140px 24px',
         }}
       >
-        {/* Side blob */}
+        {/* Side blob — seamless floating orb */}
         <div
           aria-hidden
           style={{
@@ -1427,10 +1424,11 @@ export default function LandingPage() {
             left: '-12%',
             top: '50%',
             transform: 'translateY(-50%)',
-            width: 'clamp(300px, 38vw, 560px)',
-            height: 'clamp(300px, 38vw, 560px)',
+            width: 'clamp(340px, 42vw, 620px)',
+            height: 'clamp(340px, 42vw, 620px)',
             opacity: 0.42,
             pointerEvents: 'none',
+            zIndex: 0,
           }}
         >
           <LiquidBlob className="w-full h-full" />
@@ -1627,24 +1625,23 @@ export default function LandingPage() {
       <section
         style={{
           position: 'relative',
-          padding: '140px 24px',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
-          overflow: 'hidden',
+          padding: '150px 24px 170px',
           textAlign: 'center',
         }}
       >
-        {/* Background blob */}
+        {/* Background blob — seamless floating orb */}
         <div
           aria-hidden
           style={{
             position: 'absolute',
-            right: '-20%',
+            right: '-12%',
             top: '50%',
             transform: 'translateY(-50%)',
-            width: '75vw',
-            height: '75vw',
-            opacity: 0.36,
+            width: 'clamp(400px, 50vw, 750px)',
+            height: 'clamp(400px, 50vw, 750px)',
+            opacity: 0.38,
             pointerEvents: 'none',
+            zIndex: 0,
           }}
         >
           <LiquidBlob className="w-full h-full" />
@@ -1719,10 +1716,11 @@ export default function LandingPage() {
           ════════════════════════════════════════════════ */}
       <footer
         style={{
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          position: 'relative',
           padding: '36px 24px',
         }}
       >
+        <div className="w-full max-w-6xl mx-auto h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-8" />
         <div
           style={{
             maxWidth: '1120px',
