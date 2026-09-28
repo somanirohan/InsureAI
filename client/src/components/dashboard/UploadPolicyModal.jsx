@@ -375,23 +375,9 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                     <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400 mx-auto mb-3 shadow-inner">
                       <UploadCloud size={24} />
                     </div>
-                    <p className="text-sm text-zinc-200 font-medium">Drop policy PDF here or click to browse</p>
-                    <p className="text-xs text-zinc-500 mt-1">Official insurance policy document · max 25 MB</p>
+                    <p className="text-sm text-zinc-200 font-medium">Drop policy PDF here</p>
                   </>
                 )}
-              </div>
-
-              {/* Automatic Extraction Info Callout */}
-              <div className="surface-inset p-3.5 rounded-xl border border-white/[0.06] flex items-start gap-3">
-                <div className="w-6 h-6 rounded-md bg-brand-500/10 text-brand-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Sparkles size={13} />
-                </div>
-                <div className="text-xs">
-                  <p className="font-semibold text-zinc-200">Zero Manual Entry Required</p>
-                  <p className="text-zinc-400 mt-0.5 leading-relaxed">
-                    Our AI automatically identifies the insurance provider, plan type, policy number, cover limits, and scans all waiting periods &amp; exclusions.
-                  </p>
-                </div>
               </div>
 
               {/* Submit CTA */}
