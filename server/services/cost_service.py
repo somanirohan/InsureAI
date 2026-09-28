@@ -1,6 +1,7 @@
 """
 Cost estimator and what-if simulation service for InsureAI.
-Uses authoritative policy facts from MongoDB, validates user inputs,
+Uses authoritative CGHS Rate Card data for treatment benchmarks,
+policy facts from MongoDB, validates user inputs,
 preserves explicit 0% copays, and preserves room rent and stay durations in what-if models.
 """
 
@@ -14,13 +15,16 @@ from bson import ObjectId
 
 try:
     from db import get_async_db, to_object_id
+    from services.rate_card_service import rate_card_service
 except ImportError:
     from server.db import get_async_db, to_object_id
+    from server.services.rate_card_service import rate_card_service
 
 logger = logging.getLogger("insureai.cost")
 
 VALID_HOSPITAL_TIERS = {"tier_1", "tier_2", "tier_3"}
 
+# Legacy fallback benchmarks (used only when rate card has no match)
 TREATMENT_BENCHMARKS = {
     "knee replacement": {"tier_1": 350000, "tier_2": 250000, "tier_3": 180000},
     "angioplasty": {"tier_1": 420000, "tier_2": 300000, "tier_3": 210000},
@@ -30,6 +34,33 @@ TREATMENT_BENCHMARKS = {
     "gallbladder removal": {"tier_1": 180000, "tier_2": 130000, "tier_3": 90000},
     "cardiac bypass (cabg)": {"tier_1": 600000, "tier_2": 450000, "tier_3": 320000},
 }
+
+
+def _resolve_treatment_cost(
+    treatment_name: str, hospital_tier: str
+) -> tuple[float, Optional[Dict[str, Any]]]:
+    """
+    Resolve the base treatment cost using the CGHS Rate Card first,
+    falling back to hardcoded TREATMENT_BENCHMARKS.
+    
+    Returns (base_cost, rate_card_info_or_None).
+    """
+    rate_card_info = None
+
+    # 1. Try the CGHS Rate Card (primary source)
+    if rate_card_service.is_loaded:
+        rc = rate_card_service.get_rate_for_treatment(treatment_name, hospital_tier)
+        if rc and rc["relevance_score"] >= 0.4:
+            rate_card_info = rc
+            return float(rc["rate"]), rate_card_info
+
+    # 2. Fallback to hardcoded benchmarks
+    t_key = treatment_name.lower().strip()
+    benchmark = TREATMENT_BENCHMARKS.get(
+        t_key, {"tier_1": 250000, "tier_2": 180000, "tier_3": 120000}
+    )
+    base_cost = float(benchmark.get(hospital_tier, benchmark.get("tier_1", 250000)))
+    return base_cost, None
 
 
 class CostEstimatorService:
@@ -45,7 +76,7 @@ class CostEstimatorService:
     ) -> Dict[str, Any]:
         """
         Calculate realistic out-of-pocket costs and insurer payable amounts
-        strictly using MongoDB policy facts.
+        using CGHS Rate Card data and MongoDB policy facts.
         """
         if hospital_tier not in VALID_HOSPITAL_TIERS:
             raise ValueError(f"Invalid hospital tier '{hospital_tier}'. Must be one of: {VALID_HOSPITAL_TIERS}")
@@ -56,15 +87,41 @@ class CostEstimatorService:
         if stay_days <= 0:
             raise ValueError(f"Stay duration must be positive. Received: {stay_days}")
 
-        t_key = treatment_name.lower().strip()
-        benchmark = TREATMENT_BENCHMARKS.get(t_key, {"tier_1": 250000, "tier_2": 180000, "tier_3": 120000})
-        base_cost = float(benchmark.get(hospital_tier, benchmark.get("tier_1", 250000)))
+        # ── Resolve base cost from Rate Card or fallback ────────────────
+        base_cost, rate_card_info = _resolve_treatment_cost(treatment_name, hospital_tier)
 
         sum_insured = float(policy.get("sum_insured") or 1000000.0) if policy else 1000000.0
 
         # Facts inspection
         citations = []
         assumptions = []
+
+        # Rate card source citation
+        if rate_card_info:
+            citations.append({
+                "category": "rate_card",
+                "page": rate_card_info.get("source_page"),
+                "text": (
+                    f"CGHS Rate Card: {rate_card_info['matched_treatment']} — "
+                    f"NABH: ₹{rate_card_info['nabh_rate']:,.0f}, "
+                    f"Non-NABH: ₹{rate_card_info['non_nabh_rate']:,.0f}"
+                ),
+            })
+            assumptions.append(
+                f"Treatment cost sourced from CGHS Rate Card (Page {rate_card_info.get('source_page', '?')}): "
+                f"'{rate_card_info['matched_treatment']}' — ₹{base_cost:,.0f} for {hospital_tier.replace('_', ' ')}."
+            )
+            logger.info(
+                "Rate card match for '%s': '%s' (score=%.2f, rate=%.0f)",
+                treatment_name,
+                rate_card_info["matched_treatment"],
+                rate_card_info["relevance_score"],
+                base_cost,
+            )
+        else:
+            assumptions.append(
+                f"Treatment cost from standard benchmarks (no rate card match): ₹{base_cost:,.0f}."
+            )
 
         # Room rent cap
         room_rent_cap = sum_insured * 0.01
@@ -95,6 +152,7 @@ class CostEstimatorService:
         # Sublimits
         sublimit_penalty = 0.0
         sublimits_applied = []
+        t_key = treatment_name.lower().strip()
         if "cataract" in t_key:
             cataract_cap = 40000.0
             if base_cost > cataract_cap:
@@ -144,15 +202,29 @@ class CostEstimatorService:
             "final_payable_by_user": out_of_pocket,
         }
 
-        return {
+        result = {
             "estimated_total_cost": base_cost,
             "covered_amount": payable_by_insurer,
             "out_of_pocket_amount": out_of_pocket,
             "cost_breakdown": breakdown,
             "assumptions": assumptions,
             "citations": citations,
-            "disclaimer": "These calculations are estimates based on standard IRDAI guidelines and extracted policy terms. Actual insurer claim settlement amounts are determined at claim processing time.",
+            "disclaimer": "These calculations are estimates based on CGHS Rate Card, standard IRDAI guidelines, and extracted policy terms. Actual insurer claim settlement amounts are determined at claim processing time.",
         }
+
+        # Include rate card metadata when available
+        if rate_card_info:
+            result["rate_card_match"] = {
+                "matched_treatment": rate_card_info["matched_treatment"],
+                "category": rate_card_info["category"],
+                "nabh_rate": rate_card_info["nabh_rate"],
+                "non_nabh_rate": rate_card_info["non_nabh_rate"],
+                "relevance_score": rate_card_info["relevance_score"],
+                "source": rate_card_info["rate_source"],
+                "source_page": rate_card_info["source_page"],
+            }
+
+        return result
 
     async def create_estimate(
         self,
@@ -196,6 +268,7 @@ class CostEstimatorService:
             "assumptions": calc["assumptions"],
             "citations": calc["citations"],
             "disclaimer": calc["disclaimer"],
+            "rate_card_match": calc.get("rate_card_match"),
             "what_if_variants": [],
             "created_at": datetime.utcnow(),
         }

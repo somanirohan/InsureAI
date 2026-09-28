@@ -1,23 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Calculator, RefreshCw, TrendingDown, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Calculator, RefreshCw, TrendingDown, ArrowRight, ChevronDown, ChevronUp, Search, BookOpen, FileText, X, Sparkles, Filter } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../../services/api';
 import { Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 
-const TREATMENTS = [
-  { value: 'Knee Replacement',           label: 'Knee Replacement (Orthopedic)' },
-  { value: 'Angioplasty',                label: 'Angioplasty / Stent (Cardiology)' },
-  { value: 'Cataract Surgery',           label: 'Cataract Surgery (Daycare)' },
-  { value: 'Appendectomy',               label: 'Appendectomy (General Surgery)' },
-  { value: 'Gallbladder Removal',        label: 'Gallbladder Removal (Laparoscopic)' },
-  { value: 'Cardiac Bypass (CABG)',      label: 'Cardiac Bypass CABG' },
-  { value: 'Chemotherapy (per cycle)',   label: 'Chemotherapy (per cycle)' },
+// Quick picks for common high-frequency procedures
+const QUICK_TREATMENTS = [
+  { value: 'Knee Replacement',           label: 'Total Knee Replacement (Orthopedic)' },
+  { value: 'Angioplasty',                label: 'Coronary Angioplasty / PTCA (Cardiology)' },
+  { value: 'Cataract Surgery',           label: 'Cataract Extraction with IOL (Eye Care)' },
+  { value: 'Appendectomy',               label: 'Appendicectomy (GI Surgery)' },
+  { value: 'Gallbladder Removal',        label: 'Cholecystectomy / Gallbladder (GI Surgery)' },
+  { value: 'Cardiac Bypass (CABG)',      label: 'Coronary Artery Bypass (CABG)' },
+  { value: 'Cesarean Section',           label: 'Cesarean Section / C-Section (Obstetrics)' },
+  { value: 'Normal Delivery',            label: 'Normal Delivery with Episiotomy' },
+  { value: 'Tonsillectomy',              label: 'Tonsillectomy (ENT)' },
+  { value: 'MRI Brain',                  label: 'MRI Brain / Head with/without Contrast' },
+  { value: 'Root Canal Treatment',       label: 'Root Canal Treatment (RCT Dental)' },
+  { value: 'Chemotherapy',               label: 'Chemotherapy Cycle (Oncology)' },
 ];
 
 const HOSPITAL_TIERS = [
-  { value: 'tier_1', label: 'Tier 1 — Metro Super Specialty' },
-  { value: 'tier_2', label: 'Tier 2 — Non-Metro Private' },
-  { value: 'tier_3', label: 'Tier 3 — District / Semi-Urban' },
+  { value: 'tier_1', label: 'Tier 1 — Metro / NABH Accredited Hospital' },
+  { value: 'tier_2', label: 'Tier 2 — Non-Metro Private Hospital' },
+  { value: 'tier_3', label: 'Tier 3 — District / Semi-Urban / Non-NABH' },
 ];
 
 const WHATIF_VARS = [
@@ -40,11 +46,11 @@ const WHATIF_VALUES = {
   ],
 };
 
-// ─── Currency formatter ────────────────────────────────────
+// Currency formatter
 const fmt = (n) => n !== undefined && n !== null ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
 const pct = (a, b) => b ? `${Math.round((a / b) * 100)}%` : '—';
 
-// ─── Custom tooltip for bar chart ─────────────────────────
+// Custom tooltip for bar chart
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -59,7 +65,7 @@ const ChartTooltip = ({ active, payload, label }) => {
   );
 };
 
-// ─── Breakdown row ─────────────────────────────────────────
+// Breakdown row component
 function BreakdownRow({ label, value, accent, note, deduction }) {
   return (
     <div className={`flex items-start justify-between py-3 border-b border-white/[0.05] last:border-0 gap-4 ${accent ? 'border-0 pt-3' : ''}`}>
@@ -79,9 +85,273 @@ function BreakdownRow({ label, value, accent, note, deduction }) {
   );
 }
 
+// Treatment Search Component with CGHS Rate Card Autocomplete
+function TreatmentSearch({ value, onChange, selectedRateCardInfo }) {
+  const [query, setQuery] = useState(value || '');
+  const [results, setResults] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [showQuickPicks, setShowQuickPicks] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const wrapperRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+
+  // Sync external value
+  useEffect(() => {
+    if (value !== query) {
+      setQuery(value || '');
+    }
+  }, [value]);
+
+  // Load categories once
+  useEffect(() => {
+    async function loadCats() {
+      try {
+        const res = await api.get('/cost/rate-card/categories');
+        if (res.data?.categories) {
+          setCategories(res.data.categories);
+        }
+      } catch (err) {
+        // ignore fallback
+      }
+    }
+    loadCats();
+  }, []);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setShowQuickPicks(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const searchRateCard = useCallback(async (searchQuery, categoryFilter) => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await api.get('/cost/rate-card/search', {
+        params: {
+          q: searchQuery,
+          category: categoryFilter || undefined,
+          limit: 15,
+        }
+      });
+      setResults(res.data.treatments || []);
+    } catch (err) {
+      console.error('Rate card search error:', err);
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    onChange(val);
+    setIsOpen(true);
+    setShowQuickPicks(false);
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => searchRateCard(val, selectedCategory), 250);
+  };
+
+  const handleCategoryChange = (catName) => {
+    const nextCat = selectedCategory === catName ? '' : catName;
+    setSelectedCategory(nextCat);
+    if (query) {
+      searchRateCard(query, nextCat);
+    }
+  };
+
+  const handleSelect = (treatment) => {
+    setQuery(treatment.treatment_name);
+    onChange(treatment.treatment_name);
+    setIsOpen(false);
+    setResults([]);
+  };
+
+  const handleQuickPick = (t) => {
+    setQuery(t.value);
+    onChange(t.value);
+    setShowQuickPicks(false);
+    setIsOpen(false);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    onChange('');
+    setResults([]);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="flex items-center justify-between mb-2">
+        <label className="label-xs block">
+          Medical Procedure
+        </label>
+        <span className="text-2xs text-brand-500 font-medium flex items-center gap-1">
+          <Sparkles size={11} /> 1,750+ CGHS Rates
+        </span>
+      </div>
+
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+        <input
+          type="text"
+          value={query}
+          onChange={handleInputChange}
+          onFocus={() => {
+            if (query.length >= 2) setIsOpen(true);
+            else if (!query) setShowQuickPicks(true);
+          }}
+          placeholder="Search treatments... (e.g. knee replacement, CABG, cataract, MRI)"
+          className="input-field pl-9 pr-9"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Quick Picks Dropdown */}
+      {showQuickPicks && !query && (
+        <div className="absolute z-50 mt-1.5 w-full bg-[#1a1a1f] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden backdrop-blur-md">
+          <div className="px-3.5 py-2.5 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.02]">
+            <p className="text-2xs text-zinc-400 uppercase tracking-wider font-semibold">Popular Quick Picks</p>
+            <span className="text-2xs text-zinc-500">Click to select</span>
+          </div>
+          <div className="max-h-56 overflow-y-auto scroll-area divide-y divide-white/[0.02]">
+            {QUICK_TREATMENTS.map(t => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => handleQuickPick(t)}
+                className="w-full text-left px-3.5 py-2.5 text-xs text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <BookOpen size={13} className="text-brand-500/70 flex-shrink-0 group-hover:text-brand-500" />
+                  <span className="truncate">{t.label}</span>
+                </div>
+                <span className="text-2xs text-zinc-600 group-hover:text-zinc-400 font-mono">Select →</span>
+              </button>
+            ))}
+          </div>
+          <div className="px-3 py-2 border-t border-white/[0.06] bg-white/[0.01]">
+            <p className="text-2xs text-zinc-500 text-center">Type any medical term to search 1,750+ CGHS Rate Card procedures</p>
+          </div>
+        </div>
+      )}
+
+      {/* Autocomplete Search Results Dropdown */}
+      {isOpen && (results.length > 0 || searching) && (
+        <div className="absolute z-50 mt-1.5 w-full bg-[#1a1a1f] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden backdrop-blur-md">
+          {searching ? (
+            <div className="px-4 py-6 flex items-center justify-center gap-2.5 text-xs text-zinc-400">
+              <Spinner size={14} /> Searching official CGHS rate card...
+            </div>
+          ) : (
+            <>
+              <div className="px-3.5 py-2.5 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.02]">
+                <p className="text-2xs text-zinc-400 uppercase tracking-wider font-semibold">
+                  CGHS Rate Card Matches
+                </p>
+                <span className="text-2xs px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 font-mono font-medium">
+                  {results.length} found
+                </span>
+              </div>
+              <div className="max-h-64 overflow-y-auto scroll-area divide-y divide-white/[0.03]">
+                {results.map((t, idx) => (
+                  <button
+                    key={`${t.sr_no}-${idx}`}
+                    type="button"
+                    onClick={() => handleSelect(t)}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-white/[0.06] transition-all group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-zinc-200 group-hover:text-white leading-snug truncate">
+                          {t.treatment_name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-2xs px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-400 font-medium">
+                            {t.category}
+                          </span>
+                          <span className="text-2xs text-zinc-500">#{t.sr_no}</span>
+                          {t.relevance_score && (
+                            <span className="text-2xs text-zinc-600">
+                              {Math.round(t.relevance_score * 100)}% match
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs font-mono font-semibold text-brand-400">
+                          ₹{t.nabh_rate?.toLocaleString('en-IN')}
+                        </p>
+                        <p className="text-2xs text-zinc-500">NABH Rate</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Rate Card Match Badge
+function RateCardBadge({ match }) {
+  if (!match) return null;
+  return (
+    <div className="flex items-start gap-3.5 p-4 rounded-xl bg-brand-500/[0.07] border border-brand-500/[0.15]">
+      <FileText size={18} className="text-brand-500 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider">
+            CGHS Hospital Rate Card Match
+          </p>
+          <span className="text-2xs px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 font-mono">
+            {Math.round((match.relevance_score || 0) * 100)}% Confidence
+          </span>
+        </div>
+        <p className="text-sm font-medium text-zinc-200 mt-1 leading-snug">
+          {match.matched_treatment}
+        </p>
+        <div className="flex flex-wrap items-center gap-y-1 gap-x-4 mt-2 text-xs text-zinc-400">
+          <span>Specialty: <strong className="text-zinc-300 font-normal">{match.category}</strong></span>
+          <span>NABH (Metro): <strong className="text-brand-400 font-mono">₹{match.nabh_rate?.toLocaleString('en-IN')}</strong></span>
+          <span>Non-NABH: <strong className="text-zinc-300 font-mono">₹{match.non_nabh_rate?.toLocaleString('en-IN')}</strong></span>
+        </div>
+        <p className="text-2xs text-zinc-500 mt-1.5">
+          Source: {match.source} · Official Schedule (Delhi/NCR) · Page {match.source_page}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function CostEstimatorView({ policies }) {
   const [selectedPolicyId, setSelectedPolicyId] = useState(policies[0]?._id || '');
-  const [treatmentName, setTreatmentName]     = useState('Knee Replacement');
+  const [treatmentName, setTreatmentName]     = useState('');
   const [hospitalTier, setHospitalTier]       = useState('tier_1');
   const [roomRentPerDay, setRoomRentPerDay]   = useState(12000);
   const [stayDays, setStayDays]               = useState(4);
@@ -90,11 +360,11 @@ export default function CostEstimatorView({ policies }) {
   const [history, setHistory]                 = useState([]);
   const [error, setError]                     = useState(null);
 
-  // What-if
-  const [whatIfVar, setWhatIfVar]     = useState('hospital_tier');
-  const [whatIfVal, setWhatIfVal]     = useState('tier_2');
+  // What-if simulator
+  const [whatIfVar, setWhatIfVar]         = useState('hospital_tier');
+  const [whatIfVal, setWhatIfVal]         = useState('tier_2');
   const [whatIfLoading, setWhatIfLoading] = useState(false);
-  const [showWhatIf, setShowWhatIf]   = useState(false);
+  const [showWhatIf, setShowWhatIf]       = useState(false);
 
   useEffect(() => {
     if (policies.length > 0 && !selectedPolicyId) {
@@ -129,7 +399,7 @@ export default function CostEstimatorView({ policies }) {
       setEstimate(res.data.estimate);
       fetchHistory();
     } catch (err) {
-      setError(err.response?.data?.error || 'Calculation failed. Please try again.');
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Calculation failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -154,6 +424,7 @@ export default function CostEstimatorView({ policies }) {
 
   const breakdown = estimate?.cost_breakdown || {};
   const variants  = estimate?.what_if_variants || [];
+  const rateCardMatch = estimate?.rate_card_match || null;
 
   const policyOptions = policies.map(p => ({
     value: p._id,
@@ -173,20 +444,25 @@ export default function CostEstimatorView({ policies }) {
       {/* Page header */}
       <div>
         <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Cost Estimator</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">
-          Calculate out-of-pocket expenses based on room-rent limits, co-pay, and deductibles
+        <p className="text-sm text-zinc-400 mt-0.5">
+          Accurate out-of-pocket estimates using the official CGHS Rate Card (1,750+ procedures), policy room-rent limits, co-pay, and deductions
         </p>
       </div>
 
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* ─── Input form ─────────────────────────────── */}
+        {/* Input Form Column */}
         <div className="lg:col-span-2 space-y-4">
           <div className="surface p-5 space-y-4">
-            <p className="text-sm font-semibold text-zinc-200 pb-3 border-b border-white/[0.06]">
-              Estimation Inputs
-            </p>
+            <div className="pb-3 border-b border-white/[0.06] flex items-center justify-between">
+              <p className="text-sm font-semibold text-zinc-200">
+                Estimation Inputs
+              </p>
+              <span className="text-2xs px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 font-medium">
+                CGHS Rate Card
+              </span>
+            </div>
 
             <form onSubmit={handleCalculate} className="space-y-4">
               {policies.length > 0 ? (
@@ -202,11 +478,9 @@ export default function CostEstimatorView({ policies }) {
                 </div>
               )}
 
-              <Select
-                label="Medical Procedure"
+              <TreatmentSearch
                 value={treatmentName}
                 onChange={setTreatmentName}
-                options={TREATMENTS}
               />
 
               <Select
@@ -243,17 +517,17 @@ export default function CostEstimatorView({ policies }) {
 
               <button
                 type="submit"
-                disabled={loading || !selectedPolicyId}
+                disabled={loading || !selectedPolicyId || !treatmentName}
                 className="btn btn-primary w-full py-2.5 font-semibold"
               >
                 {loading ? <><Spinner size={14} className="text-black" /> Calculating…</> : <>
-                  <Calculator size={14} /> Calculate Breakdown
+                  <Calculator size={14} /> Calculate Out-of-Pocket Cost
                 </>}
               </button>
             </form>
           </div>
 
-          {/* History */}
+          {/* Previous Estimates History */}
           {history.length > 0 && (
             <div className="surface p-4">
               <p className="label-xs mb-3">Previous Estimates</p>
@@ -279,14 +553,17 @@ export default function CostEstimatorView({ policies }) {
           )}
         </div>
 
-        {/* ─── Results ─────────────────────────────────── */}
+        {/* Results Column */}
         <div className="lg:col-span-3 space-y-4">
           {estimate ? (
             <>
-              {/* Summary metrics */}
+              {/* Rate Card Match Banner */}
+              <RateCardBadge match={rateCardMatch} />
+
+              {/* Summary Metrics */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="surface p-4">
-                  <p className="label-xs mb-2">Total Bill</p>
+                  <p className="label-xs mb-2">Total Hospital Bill</p>
                   <p className="text-xl font-semibold text-zinc-100 tracking-tight">{fmt(estimate.estimated_total_cost)}</p>
                   <p className="text-xs text-zinc-500 mt-1 capitalize">{estimate.hospital_tier?.replace('_', ' ')}</p>
                 </div>
@@ -302,9 +579,9 @@ export default function CostEstimatorView({ policies }) {
                 </div>
               </div>
 
-              {/* Bar chart */}
+              {/* Bar Chart */}
               <div className="surface p-5">
-                <p className="text-sm font-medium text-zinc-300 mb-4">Cost Breakdown</p>
+                <p className="text-sm font-medium text-zinc-300 mb-4">Cost Distribution</p>
                 <ResponsiveContainer width="100%" height={120}>
                   <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 20, top: 0, bottom: 0 }}>
                     <XAxis type="number" hide />
@@ -326,11 +603,11 @@ export default function CostEstimatorView({ policies }) {
                 </ResponsiveContainer>
               </div>
 
-              {/* Detailed breakdown */}
+              {/* Detailed Breakdown Audit */}
               <div className="surface p-5">
-                <p className="text-sm font-medium text-zinc-300 mb-2">Detailed Audit</p>
+                <p className="text-sm font-medium text-zinc-300 mb-2">Detailed Financial Audit</p>
                 <div>
-                  <BreakdownRow label="Base Hospital & Surgical Charges" value={fmt(breakdown.base_hospital_charges)} />
+                  <BreakdownRow label="Base Hospital & Surgical Charges (CGHS Benchmark)" value={fmt(breakdown.base_hospital_charges)} />
                   {breakdown.room_rent_copay_penalty > 0 && (
                     <BreakdownRow
                       label="Room Rent Proportionate Deduction"
@@ -347,13 +624,13 @@ export default function CostEstimatorView({ policies }) {
                     />
                   )}
                   <BreakdownRow
-                    label="Excluded Items (IRDAI non-payables)"
+                    label="Excluded Items (IRDAI non-payables, 7% consumables)"
                     value={fmt(breakdown.excluded_items_cost)}
                     deduction
                   />
                   <div className="border-t border-white/[0.08] pt-3">
                     <BreakdownRow
-                      label="Net Admissible Claim"
+                      label="Net Admissible Insurer Claim"
                       value={fmt(breakdown.final_payable_by_insurer)}
                       accent="green"
                     />
@@ -361,23 +638,43 @@ export default function CostEstimatorView({ policies }) {
                 </div>
               </div>
 
-              {/* What-If simulator */}
+              {/* Assumptions & Citations */}
+              {(estimate.assumptions?.length > 0 || estimate.citations?.length > 0) && (
+                <div className="surface p-5">
+                  <p className="text-sm font-medium text-zinc-300 mb-3">Policy Audit & Citations</p>
+                  {estimate.assumptions?.map((a, i) => (
+                    <p key={i} className="text-xs text-zinc-500 leading-relaxed py-1 border-b border-white/[0.03] last:border-0">
+                      • {a}
+                    </p>
+                  ))}
+                  {estimate.citations?.filter(c => c.category === 'rate_card').map((c, i) => (
+                    <div key={i} className="mt-2.5 px-3 py-2 rounded-lg bg-brand-500/[0.05] border border-brand-500/[0.1]">
+                      <p className="text-2xs text-brand-500 uppercase tracking-wider font-semibold mb-0.5">Rate Card Benchmark Source</p>
+                      <p className="text-xs text-zinc-300">{c.text}</p>
+                      {c.page && <p className="text-2xs text-zinc-500 mt-0.5">Page {c.page} of Rate_CARD_HOSPITAL.pdf</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* What-If Simulator */}
               <div className="surface overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => setShowWhatIf(v => !v)}
                   className="w-full px-5 py-4 flex items-center justify-between text-sm font-medium text-zinc-300 hover:bg-white/[0.02] transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <RefreshCw size={14} className="text-brand-500" />
-                    What-If Simulator
+                    <span>What-If Simulator</span>
                   </div>
                   {showWhatIf ? <ChevronUp size={15} className="text-zinc-500" /> : <ChevronDown size={15} className="text-zinc-500" />}
                 </button>
 
                 {showWhatIf && (
                   <div className="px-5 pb-5 border-t border-white/[0.06] pt-4 space-y-4">
-                    <p className="text-xs text-zinc-500">
-                      Simulate alternative scenarios to see how decisions affect your out-of-pocket cost.
+                    <p className="text-xs text-zinc-400">
+                      Simulate alternative scenarios (switching hospital tier, adding riders, or expanding sum insured) to optimize out-of-pocket expenses.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -397,6 +694,7 @@ export default function CostEstimatorView({ policies }) {
                         className="flex-1"
                       />
                       <button
+                        type="button"
                         onClick={handleWhatIf}
                         disabled={whatIfLoading}
                         className="btn btn-primary gap-2 whitespace-nowrap"
@@ -406,27 +704,27 @@ export default function CostEstimatorView({ policies }) {
                       </button>
                     </div>
 
-                    {/* Variants */}
+                    {/* Simulation Variants Results */}
                     {variants.length > 0 && (
                       <div className="space-y-2 mt-2">
-                        <p className="label-xs">Scenario Results</p>
+                        <p className="label-xs">Simulated Scenarios</p>
                         {variants.map(v => (
                           <div
                             key={v.variant_id}
                             className="surface-inset rounded-xl p-3.5 flex items-center justify-between gap-4"
                           >
                             <div>
-                              <p className="text-xs font-medium text-zinc-300 capitalize">
+                              <p className="text-xs font-medium text-zinc-200 capitalize">
                                 {v.changed_variable?.replace(/_/g, ' ')}
-                                <span className="text-brand-500 ml-1">→ {v.new_value}</span>
+                                <span className="text-brand-400 ml-1 font-semibold">→ {v.new_value}</span>
                               </p>
-                              <p className="text-2xs text-zinc-500 mt-0.5">
+                              <p className="text-2xs text-zinc-400 mt-0.5">
                                 Total: {fmt(v.recalculated_total_cost)} · Insurer: {fmt(v.recalculated_covered_amount)}
                               </p>
                             </div>
                             <div className="text-right flex-shrink-0">
                               <p className="text-2xs text-zinc-500 uppercase">New OOP</p>
-                              <p className="text-sm font-semibold text-brand-500">{fmt(v.recalculated_out_of_pocket)}</p>
+                              <p className="text-sm font-semibold text-brand-400">{fmt(v.recalculated_out_of_pocket)}</p>
                             </div>
                           </div>
                         ))}
@@ -440,8 +738,8 @@ export default function CostEstimatorView({ policies }) {
             <div className="surface h-80 flex items-center justify-center">
               <EmptyState
                 icon={Calculator}
-                title="No estimate yet"
-                description="Select a policy and treatment, then click Calculate to see the detailed cost breakdown."
+                title="No estimate generated yet"
+                description="Search for a treatment from 1,750+ CGHS hospital procedures, select your policy, and calculate your personalized cost breakdown."
               />
             </div>
           )}

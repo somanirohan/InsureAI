@@ -6,18 +6,20 @@ from __future__ import annotations
 
 import logging
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 try:
     from db import get_async_db, serialize_doc, to_object_id
     from models.cost import CostEstimateRequest, WhatIfRequest
     from services.auth_service import get_current_user
     from services.cost_service import TREATMENT_BENCHMARKS, cost_estimator_service
+    from services.rate_card_service import rate_card_service
 except ImportError:
     from server.db import get_async_db, serialize_doc, to_object_id
     from server.models.cost import CostEstimateRequest, WhatIfRequest
     from server.services.auth_service import get_current_user
     from server.services.cost_service import TREATMENT_BENCHMARKS, cost_estimator_service
+    from server.services.rate_card_service import rate_card_service
 
 logger = logging.getLogger("insureai.cost")
 
@@ -26,8 +28,72 @@ router = APIRouter(prefix="/api/cost", tags=["Cost Estimator & What-If"])
 
 @router.get("/benchmarks")
 async def get_benchmarks(current_user: dict = Depends(get_current_user)):
-    """Return standard hospital treatment benchmarks."""
-    return {"benchmarks": TREATMENT_BENCHMARKS}
+    """Return standard hospital treatment benchmarks and rate card status."""
+    return {
+        "benchmarks": TREATMENT_BENCHMARKS,
+        "rate_card_loaded": rate_card_service.is_loaded,
+        "rate_card_total_treatments": rate_card_service.total_treatments,
+        "rate_card_categories": rate_card_service.categories,
+    }
+
+
+@router.get("/rate-card/search")
+async def search_rate_card(
+    q: str = Query("", description="Search query for treatment name"),
+    category: str = Query("", description="Filter by category"),
+    limit: int = Query(20, ge=1, le=50),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Search the CGHS Rate Card for treatments by name.
+    Returns matching treatments with NABH/Non-NABH rates.
+    """
+    if not rate_card_service.is_loaded:
+        raise HTTPException(status_code=503, detail="Rate card data not loaded.")
+
+    results = rate_card_service.search_treatments(
+        query=q,
+        category=category if category else None,
+        limit=limit,
+    )
+    return {
+        "query": q,
+        "total_results": len(results),
+        "treatments": results,
+    }
+
+
+@router.get("/rate-card/categories")
+async def get_rate_card_categories(
+    current_user: dict = Depends(get_current_user),
+):
+    """Return all treatment categories from the rate card."""
+    if not rate_card_service.is_loaded:
+        raise HTTPException(status_code=503, detail="Rate card data not loaded.")
+
+    categories = []
+    for cat in rate_card_service.categories:
+        treatments = rate_card_service.get_treatments_by_category(cat)
+        categories.append({
+            "name": cat,
+            "count": len(treatments),
+        })
+    return {"categories": categories}
+
+
+@router.get("/rate-card/treatment/{sr_no}")
+async def get_rate_card_treatment(
+    sr_no: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Look up a specific treatment by serial number from the rate card."""
+    if not rate_card_service.is_loaded:
+        raise HTTPException(status_code=503, detail="Rate card data not loaded.")
+
+    treatment = rate_card_service.get_treatment_by_sr_no(sr_no)
+    if not treatment:
+        raise HTTPException(status_code=404, detail=f"Treatment #{sr_no} not found.")
+    return {"treatment": treatment}
 
 
 @router.post("/estimate")
