@@ -1614,39 +1614,6 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                  {/* Typing */}
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '50%',
-                        flexShrink: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, rgba(200,169,110,0.22), rgba(80,60,180,0.28))',
-                        border: '1px solid rgba(200,169,110,0.28)',
-                      }}
-                    >
-                      <Shield size={11} style={{ color: '#c8a96e' }} />
-                    </div>
-                    <div
-                      style={{
-                        padding: '14px 18px',
-                        borderRadius: '4px 16px 16px 16px',
-                        background: 'rgba(255,255,255,0.035)',
-                        border: '1px solid rgba(255,255,255,0.07)',
-                        display: 'flex',
-                        gap: '5px',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {[0, 0.22, 0.44].map(d => (
-                        <div key={d} style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#c8a96e', animation: `pulseDot 1.2s ease-in-out ${d}s infinite` }} />
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
