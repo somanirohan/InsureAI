@@ -180,19 +180,25 @@ RULES:
 # ── Deterministic Heuristic Extractor ────────────────────────────────────────
 
 KNOWN_INSURERS: list[tuple[str, list[str]]] = [
-    ("Star Health & Allied Insurance", ["star health", "star health & allied", "star health and allied"]),
+    ("Pradhan Mantri Suraksha Bima Yojana (PMSBY)", ["pmsby", "suraksha bima yojana", "suraksha bima"]),
+    ("Pradhan Mantri Jeevan Jyoti Bima Yojana (PMJJBY)", ["pmjjby", "jeevan jyoti bima yojana", "jeevan jyoti"]),
+    ("Ayushman Bharat PM-JAY", ["ayushman bharat", "pm-jay", "pmjay", "jan arogya yojana", "ab-pmjay"]),
+    ("Central Government Health Scheme (CGHS)", ["cghs", "central government health scheme"]),
+    ("Employees' State Insurance Corporation (ESIC)", ["esic", "employees state insurance", "employees' state insurance"]),
+    ("Life Insurance Corporation of India (LIC)", ["lic of india", "life insurance corporation", "lic's"]),
+    ("Star Health & Allied Insurance", ["star health & allied", "star health and allied", "star health"]),
     ("HDFC ERGO General Insurance", ["hdfc ergo", "hdfc general"]),
-    ("Care Health Insurance", ["care health", "religare health", "religare"]),
+    ("Care Health Insurance", ["care health", "religare health", "religare", "care supreme", "care advantage", "care shield"]),
     ("ICICI Lombard General Insurance", ["icici lombard"]),
     ("Niva Bupa Health Insurance", ["niva bupa", "max bupa"]),
     ("Tata AIG General Insurance", ["tata aig"]),
-    ("Bajaj Allianz General Insurance", ["bajaj allianz"]),
-    ("Aditya Birla Health Insurance", ["aditya birla"]),
+    ("Bajaj Allianz General Insurance", ["bajaj allianz general", "bajaj allianz"]),
+    ("Aditya Birla Health Insurance", ["aditya birla health", "aditya birla"]),
     ("SBI General Insurance", ["sbi general"]),
     ("The New India Assurance", ["new india assurance"]),
     ("The Oriental Insurance Company", ["oriental insurance"]),
     ("National Insurance Company", ["national insurance"]),
-    ("United India Insurance Company", ["united india insurance"]),
+    ("United India Insurance Company", ["united india insurance", "united india"]),
     ("ManipalCigna Health Insurance", ["manipalcigna", "cigna ttk"]),
     ("Reliance General Insurance", ["reliance general"]),
     ("Acko General Insurance", ["acko general", "acko"]),
@@ -204,6 +210,11 @@ KNOWN_INSURERS: list[tuple[str, list[str]]] = [
     ("Universal Sompo General Insurance", ["universal sompo"]),
     ("Magma HDI General Insurance", ["magma hdi"]),
     ("Raheja QBE General Insurance", ["raheja qbe"]),
+    ("Max Life Insurance", ["max life"]),
+    ("HDFC Life Insurance", ["hdfc life"]),
+    ("SBI Life Insurance", ["sbi life"]),
+    ("ICICI Prudential Life Insurance", ["icici prudential", "icici pru"]),
+    ("Bajaj Allianz Life Insurance", ["bajaj allianz life"]),
 ]
 
 
@@ -219,24 +230,39 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
     all_text = "\n".join(p.text for p in pages)
     p1 = pages[0].text if pages else ""
     first_line = p1.strip().split("\n")[0] if p1 else ""
+    first_few_lines = "\n".join(p1.strip().split("\n")[:6]) if p1 else ""
 
     # 1. Insurer Name
     insurer_name = None
+    p1_lower = p1.lower()
     for canonical_name, aliases in KNOWN_INSURERS:
-        if any(a in p1.lower() for a in aliases):
+        if any(a in p1_lower for a in aliases):
             insurer_name = canonical_name
             break
+
     if not insurer_name:
+        # Regex search for institutional insurer or scheme entity
         m_ins = re.search(
-            r"([A-Za-z0-9\s&]+(?:Health|General|Life|Assurance|Insurance)\s*(?:Company|Co\.?|Ltd\.?|Limited)?)",
-            p1,
+            r"(?:(?:issued|underwritten|offered|managed|provided)\s+by\s+)?([A-Z][A-Za-z0-9&.\'\-]{1,25}(?:\s+[A-Z][A-Za-z0-9&.\'\-]{1,25}){0,5}\s+(?:Health|General|Life|Assurance|Insurance)(?:\s+(?:Company|Co\.?|Ltd\.?|Limited|Corporation|Scheme))?)",
+            first_few_lines or p1,
         )
         if m_ins:
-            insurer_name = m_ins.group(1).strip()
+            raw_matched = m_ins.group(1).strip()
+            # Clean out common narrative introductory prefixes
+            clean_name = re.sub(
+                r"^(?:this\s+is\s+(?:an?\s+)?|welcome\s+to\s+|policy\s+of\s+|about\s+|terms\s+of\s+|guidelines\s+of\s+|certificate\s+of\s+)",
+                "",
+                raw_matched,
+                flags=re.I,
+            ).strip()
+            # If the matched name captured an auxiliary verb clause (e.g. "PMSBY is an Accident Insurance"), trim
+            clean_name = re.split(r"\s+\b(?:is|are|provides|offering|has)\b\s+", clean_name, flags=re.I)[0].strip()
+            if len(clean_name) >= 3:
+                insurer_name = clean_name
 
     # 2. Policy Number
     policy_number = None
-    m_num = re.search(r"Policy\s+(?:Number|No\.?|#|Id)\s*[:\-]?\s*([A-Z0-9\-\/]+)", p1, re.I)
+    m_num = re.search(r"(?:Policy|Certificate)\s+(?:Number|No\.?|#|Id)\s*[:\-]?\s*([A-Z0-9\-\/]{4,30})", p1, re.I)
     if m_num:
         policy_number = m_num.group(1).strip()
 
@@ -245,42 +271,66 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
     plan_name = parts[1] if len(parts) > 1 else None
 
     policy_type = None
-    p1_lower = p1.lower()
-    if "family floater" in p1_lower:
+    if "pmsby" in p1_lower or "accidental death" in p1_lower or "accident insurance" in p1_lower:
+        policy_type = "Accident & Disability Insurance"
+    elif "pmjjby" in p1_lower or "jeevan jyoti" in p1_lower or "term life" in p1_lower:
+        policy_type = "Term Life Insurance"
+    elif "ayushman" in p1_lower or "pm-jay" in p1_lower or "jan arogya" in p1_lower:
+        policy_type = "Universal Health Protection Scheme"
+    elif "family floater" in p1_lower:
         policy_type = "Family Floater Health Insurance"
-    elif "individual" in p1_lower:
-        policy_type = "Individual Health Insurance"
     elif "critical illness" in p1_lower:
-        policy_type = "Critical Illness Plan"
+        policy_type = "Critical Illness Insurance"
+    elif "super top" in p1_lower or "top up" in p1_lower:
+        policy_type = "Super Top-up Health Insurance"
+    elif "senior citizen" in p1_lower:
+        policy_type = "Senior Citizen Health Insurance"
     elif "group health" in p1_lower or "corporate" in p1_lower:
         policy_type = "Group Health Insurance"
-    elif plan_name:
+    elif "individual" in p1_lower:
+        policy_type = "Individual Health Insurance"
+    elif plan_name and len(plan_name) > 3:
         policy_type = plan_name
     else:
         policy_type = "Health Insurance"
 
-    # 4. Sum Insured
+    # 4. Sum Insured (supporting Indian currency units like Lakh, Lac, Crore, Cr)
     sum_insured = None
     for p in pages:
+        # Pattern A: Label followed by amount (e.g. Sum Insured: Rs. 2 Lakhs, Base Sum Insured: ₹5,00,000)
         m_si = re.search(
-            r"(?:Base\s*)?(?:Sum\s*Insured|Coverage|SI)\s*[:\-]?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?)",
+            r"(?:Base\s*)?(?:Sum\s*Insured|Total\s*Coverage|Risk\s*Cover(?:age)?|SI|Cover\s+Amount)\s*[:\-]?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?|cr|thousand|k)?(?:\s*/\-|\b))",
             p.text,
             re.I,
         )
         if m_si:
-            sum_insured = {"value": f"Rs. {m_si.group(1).strip()}", "page": p.page_number}
+            raw_val = m_si.group(1).strip().rstrip("/-").strip()
+            clean_val = raw_val if any(c in raw_val.lower() for c in ("rs", "inr", "₹")) else f"Rs. {raw_val}"
+            sum_insured = {"value": clean_val, "page": p.page_number}
+            break
+
+        # Pattern B: Sentence style (e.g. "cover of Rs. 2 Lakh", "coverage of Rs. 5,00,000", "benefits of up to Rs. 5 Lakhs")
+        m_si_sent = re.search(
+            r"(?:cover(?:age)?|benefit|sum\s+insured)\s+(?:of|up\s+to|equal\s+to)\s+(?:INR|Rs\.?|₹)\s*([\d,]+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?|cr|thousand|k)?)",
+            p.text,
+            re.I,
+        )
+        if m_si_sent:
+            val = m_si_sent.group(1).strip()
+            sum_insured = {"value": f"Rs. {val}", "page": p.page_number}
             break
 
     # 5. Premium Amount
     premium_amount = None
     for p in pages:
         m_pr = re.search(
-            r"(?:Annual\s*)?Premium\s*[:\-]?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?)",
+            r"(?:Annual\s*)?Premium\s*[:\-]?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?(?:\s*/\-|\b))",
             p.text,
             re.I,
         )
         if m_pr:
-            premium_amount = {"value": f"Rs. {m_pr.group(1).strip()}", "page": p.page_number}
+            clean_pr = m_pr.group(1).strip().rstrip("/-").strip()
+            premium_amount = {"value": f"Rs. {clean_pr}", "page": p.page_number}
             break
 
     # 6. Room Rent Limit
@@ -291,7 +341,7 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
             if line_clean.lower().startswith("section"):
                 continue
             m_rr = re.search(
-                r"(?:Room\s*Rent\s*(?:Cap|Capping|Limit)|Single\s*Private\s*AC\s*Room)\s*[:\-]\s*([^\n\.;]+)",
+                r"(?:Room\s*Rent\s*(?:Cap|Capping|Limit)|Single\s*Private\s*AC\s*Room)\s*[:\-]\s*([^\n\.;]{3,80})",
                 line_clean,
                 re.I,
             )
@@ -309,7 +359,7 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
             if line_clean.lower().startswith("section"):
                 continue
             m_cp = re.search(
-                r"(?:Co-?[pP]ay(?:ment)?|Zero\s*Co-?[pP]ayment)\s*[:\-]\s*([^\n\.;]+)",
+                r"(?:Co-?[pP]ay(?:ment)?|Zero\s*Co-?[pP]ayment)\s*[:\-]\s*([^\n\.;]{2,80})",
                 line_clean,
                 re.I,
             )
@@ -329,7 +379,7 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
             line_clean = line.strip()
             if line_clean.lower().startswith("section"):
                 continue
-            m_dd = re.search(r"Deductible\s*[:\-]\s*([^\n\.;]+)", line_clean, re.I)
+            m_dd = re.search(r"Deductible\s*[:\-]\s*([^\n\.;]{2,80})", line_clean, re.I)
             if m_dd:
                 deductible = {"value": m_dd.group(1).strip(), "page": p.page_number}
                 break
@@ -340,35 +390,54 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
     waiting_periods = []
     for p in pages:
         for m_wp in re.finditer(
-            r"(?:Initial\s*Waiting\s*Period|Pre-Existing\s*Diseases?\s*(?:\(PED\))?|Specific\s*Illness(?:es)?)\s*(?:Waiting\s*Period)?\s*[:\-]?\s*([^\n\.;]+)",
+            r"(?:Initial\s*Waiting\s*Period|Pre-Existing\s*Diseases?\s*(?:\(PED\))?|Specific\s*Illness(?:es)?|Maternity\s*Waiting\s*Period)\s*(?:Waiting\s*Period)?\s*[:\-]?\s*([^\n\.;]{2,80})",
             p.text,
             re.I,
         ):
             cond = m_wp.group(0).split(":")[0].strip()
             period = m_wp.group(1).strip()
-            waiting_periods.append({"condition": cond, "period": period, "page": p.page_number})
+            # Clean up bullet numbers
+            cond = re.sub(r"^[\d\.\-\•\*\s]+", "", cond).strip()
+            period = re.sub(r"^[\d\.\-\•\*\s]+", "", period).strip()
+            if cond and period and not any(w["condition"].lower() == cond.lower() for w in waiting_periods):
+                waiting_periods.append({"condition": cond, "period": period, "page": p.page_number})
 
-    # 10. Exclusions
+    # 10. Exclusions (Expanded keyword set covering Indian & global standard health exclusions)
+    exclusion_patterns = (
+        r"(?:cosmetic|obesity|fertility|dental|experimental|unproven|consumables|"
+        r"psychiatric|mental\s+illness|self-inflicted|suicide|alcohol|substance\s+abuse|"
+        r"drug\s+abuse|hazardous\s+sports|adventure\s+sports|external\s+congenital|"
+        r"std|hiv|aids|maternity|pregnancy|rest\s+cure|rehabilitation|spectacles|"
+        r"hearing\s+aids|refractive\s+error|stem\s+cell|breach\s+of\s+law|war|nuclear)"
+    )
     exclusions = []
     for p in pages:
         for m_ex_line in re.finditer(
-            r"(?:\d+\.\d+\s+)?([A-Za-z][^\n\.;]*(?:cosmetic|obesity|fertility|dental|experimental|consumables|psychiatric|self-inflicted)[^\n\.;]*)",
+            rf"(?:\d+\.\d+\s+)?([A-Za-z][^\n\.;]*{exclusion_patterns}[^\n\.;]*)",
             p.text,
             re.I,
         ):
             item_text = m_ex_line.group(1).strip()
-            if not any(ex["item"] == item_text for ex in exclusions):
+            # Clean leading bullet symbols or numbers
+            item_text = re.sub(r"^[\d\.\-\•\*\s\(\)a-zA-Z]+\s*[:\-]?\s*", "", item_text).strip()
+            # Capitalize first letter
+            if item_text:
+                item_text = item_text[0].upper() + item_text[1:]
+            if 8 <= len(item_text) <= 180 and not any(ex["item"].lower() == item_text.lower() for ex in exclusions):
                 exclusions.append({"item": item_text, "page": p.page_number})
 
     # 11. Claim conditions
     claim_conditions = []
     for p in pages:
         for m_claim in re.finditer(
-            r"(?:Cashless\s*Intimation|Reimbursement|Discharge\s*Summary)\s*[:\-]?\s*([^\n\.;]+)",
+            r"(?:Cashless\s*Intimation|Reimbursement\s*Claim|Discharge\s*Summary\s*Submission|Claim\s*Notification)\s*[:\-]?\s*([^\n\.;]{4,120})",
             p.text,
             re.I,
         ):
-            claim_conditions.append({"condition": m_claim.group(0).strip(), "page": p.page_number})
+            raw_claim = m_claim.group(0).strip()
+            clean_claim = re.sub(r"^[\d\.\-\•\*\s]+", "", raw_claim).strip()
+            if not any(cc["condition"].lower() == clean_claim.lower() for cc in claim_conditions):
+                claim_conditions.append({"condition": clean_claim, "page": p.page_number})
 
     return {
         "insurer_name": {"value": insurer_name, "page": 1} if insurer_name else None,

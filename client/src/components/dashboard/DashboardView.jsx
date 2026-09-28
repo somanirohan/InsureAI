@@ -3,7 +3,7 @@ import { Upload, Shield, FileText, Activity, ChevronRight, Plus } from 'lucide-r
 import PolicyCard from './PolicyCard';
 import PolicyFactsModal from './PolicyFactsModal';
 import UploadPolicyModal from './UploadPolicyModal';
-import { MetricCard, SectionHeader, EmptyState, Spinner } from '../common/ui';
+import { SectionHeader, EmptyState, Spinner } from '../common/ui';
 
 export default function DashboardView({
   policies,
@@ -17,12 +17,7 @@ export default function DashboardView({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedPolicyForFacts, setSelectedPolicyForFacts] = useState(null);
 
-  const totalCoverage = policies.reduce((acc, p) => acc + (p.sum_insured || 0), 0);
-  const totalFacts    = policies.reduce((acc, p) => acc + (p.facts?.length || 0), 0);
   const readyPolicies = policies.filter(p => p.status === 'ready').length;
-
-  const formatCoverage = (v) =>
-    v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : v > 0 ? `₹${v.toLocaleString('en-IN')}` : '—';
 
   return (
     <div className="space-y-8">
@@ -44,31 +39,6 @@ export default function DashboardView({
           <Upload size={14} />
           Upload Policy
         </button>
-      </div>
-
-      {/* ─── Overview metrics ────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MetricCard
-          label="Policies"
-          value={policies.length}
-          sub={`${readyPolicies} ready for AI`}
-        />
-        <MetricCard
-          label="Total Coverage"
-          value={formatCoverage(totalCoverage)}
-          sub="Combined sum insured"
-          accent
-        />
-        <MetricCard
-          label="Extracted Facts"
-          value={totalFacts}
-          sub="Clause categories"
-        />
-        <MetricCard
-          label="Vector Store"
-          value="ChromaDB"
-          sub="RAG retrieval active"
-        />
       </div>
 
       {/* ─── Quick actions (only shown when policies exist) ─ */}

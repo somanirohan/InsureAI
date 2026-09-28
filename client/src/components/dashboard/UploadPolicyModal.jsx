@@ -15,6 +15,7 @@ import {
   Check,
   ArrowRight,
   AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import api from '../../services/api';
 import { Spinner, ErrorBanner } from '../common/ui';
@@ -36,6 +37,18 @@ const formatMoney = (val) => {
     return `₹${val.toLocaleString('en-IN')}`;
   }
   return String(val);
+};
+
+const parseWaitingPeriod = (str) => {
+  if (typeof str !== 'string') return { condition: String(str || ''), period: '' };
+  const idx = str.indexOf(':');
+  if (idx !== -1) {
+    return {
+      condition: str.substring(0, idx).trim(),
+      period: str.substring(idx + 1).trim(),
+    };
+  }
+  return { condition: str.trim(), period: '' };
 };
 
 export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) {
@@ -140,9 +153,9 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
       onClick={e => { if (!uploading && e.target === e.currentTarget) handleClose(); }}
     >
-      <div className={`w-full ${extractedPolicy ? 'max-w-xl' : 'max-w-md'} bg-[#1e1e23] border border-white/[0.10] rounded-2xl shadow-2xl transition-all duration-300 animate-slide-up overflow-hidden`}>
+      <div className={`w-full ${extractedPolicy ? 'max-w-xl max-h-[90vh] flex flex-col' : 'max-w-md'} bg-[#1e1e23] border border-white/[0.10] rounded-2xl shadow-2xl transition-all duration-300 animate-slide-up overflow-hidden`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5 border border-white/10 bg-white/[0.04]">
               <img src="/favicon_io/apple-touch-icon.png" alt="Logo" className="w-full h-full object-contain rounded-md" />
@@ -168,7 +181,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
           <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
           {/* ================= EXTRACTED SUMMARY VIEW ================= */}
@@ -228,31 +241,68 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
 
               {/* Waiting Periods & Exclusions Summary */}
               {extractedPolicy.red_flag_summary && (
-                <div className="surface-inset p-3.5 rounded-xl border border-white/[0.06] space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-zinc-300">Extracted Clauses &amp; Highlights</span>
-                    <span className="text-[11px] text-brand-400 font-medium">
-                      {extractedPolicy.facts?.length || 0} structured facts
-                    </span>
-                  </div>
-
+                <div className="space-y-3">
+                  {/* Waiting Periods */}
                   {extractedPolicy.red_flag_summary.waiting_periods?.length > 0 && (
-                    <div className="text-xs text-zinc-400 flex items-start gap-2 pt-1 border-t border-white/[0.04]">
-                      <span className="text-amber-400 font-bold">·</span>
-                      <span className="line-clamp-1">
-                        <strong className="text-zinc-300">Waiting Periods: </strong>
-                        {extractedPolicy.red_flag_summary.waiting_periods.slice(0, 2).join(' | ')}
-                      </span>
+                    <div className="surface-inset p-3.5 rounded-xl border border-white/[0.06] space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
+                          <Clock size={13} />
+                          <span>Waiting Periods</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-medium">
+                          {extractedPolicy.red_flag_summary.waiting_periods.length} clauses
+                        </span>
+                      </div>
+                      <div className="space-y-1.5 pt-0.5">
+                        {extractedPolicy.red_flag_summary.waiting_periods.map((wp, i) => {
+                          const { condition, period } = parseWaitingPeriod(wp);
+                          return (
+                            <div
+                              key={i}
+                              className="flex items-center justify-between gap-3 text-xs bg-white/[0.02] border border-white/[0.04] px-3 py-2 rounded-lg"
+                            >
+                              <span className="text-zinc-200 font-medium leading-snug">{condition}</span>
+                              {period && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 whitespace-nowrap flex-shrink-0">
+                                  {period}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
+                  {/* Major Exclusions */}
                   {extractedPolicy.red_flag_summary.major_exclusions?.length > 0 && (
-                    <div className="text-xs text-zinc-400 flex items-start gap-2 pt-1 border-t border-white/[0.04]">
-                      <span className="text-red-400 font-bold">·</span>
-                      <span className="line-clamp-1">
-                        <strong className="text-zinc-300">Exclusions: </strong>
-                        {extractedPolicy.red_flag_summary.major_exclusions.slice(0, 2).join(' | ')}
-                      </span>
+                    <div className="surface-inset p-3.5 rounded-xl border border-white/[0.06] space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-400">
+                          <AlertTriangle size={13} />
+                          <span>Key Exclusions</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-medium">
+                          {extractedPolicy.red_flag_summary.major_exclusions.length} items
+                        </span>
+                      </div>
+                      <div className="space-y-1.5 pt-0.5">
+                        {extractedPolicy.red_flag_summary.major_exclusions.slice(0, 4).map((item, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-2.5 text-xs text-zinc-200 bg-white/[0.02] border border-white/[0.04] px-3 py-2 rounded-lg leading-relaxed"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 flex-shrink-0" />
+                            <span className="flex-1">{item}</span>
+                          </div>
+                        ))}
+                        {extractedPolicy.red_flag_summary.major_exclusions.length > 4 && (
+                          <p className="text-[11px] text-zinc-500 text-center pt-1 font-medium">
+                            +{extractedPolicy.red_flag_summary.major_exclusions.length - 4} more exclusions documented in policy record
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -53,13 +53,13 @@ export default function App() {
   // ── Auth loading ───────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a12' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#07070d' }}>
         <Starfield count={60} />
         <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="relative w-20 h-20">
             <div className="animate-blob-float w-20 h-20" style={{
               borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
-              background: 'radial-gradient(ellipse at 40% 35%, rgba(240,200,100,0.4) 0%, rgba(60,40,160,0.5) 100%)',
+              background: 'radial-gradient(ellipse at 40% 35%, rgba(240,200,100,0.25) 0%, rgba(60,40,160,0.3) 100%)',
               filter: 'blur(2px)',
             }} />
             <div className="absolute inset-0 flex items-center justify-center">
@@ -102,7 +102,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#0a0a12' }}>
+    <div className="flex min-h-screen" style={{ background: '#07070d' }}>
       <Starfield count={70} />
 
       {/* Ambient nebula */}
@@ -111,9 +111,9 @@ export default function App() {
         className="fixed inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse at 15% 50%, rgba(60,40,160,0.12) 0%, transparent 50%),
-            radial-gradient(ellipse at 85% 20%, rgba(100,70,20,0.10) 0%, transparent 45%),
-            radial-gradient(ellipse at 50% 100%, rgba(30,20,80,0.20) 0%, transparent 60%)
+            radial-gradient(ellipse at 15% 50%, rgba(60,40,160,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at 85% 20%, rgba(80,50,15,0.05) 0%, transparent 45%),
+            radial-gradient(ellipse at 50% 100%, rgba(20,15,50,0.12) 0%, transparent 60%)
           `,
         }}
       />
@@ -129,7 +129,7 @@ export default function App() {
             width: 'clamp(360px, 55vw, 760px)',
             height: 'clamp(360px, 55vw, 760px)',
             zIndex: 0,
-            opacity: 0.85,
+            opacity: 0.32,
           }}
         >
           <LiquidBlob className="w-full h-full" />

@@ -18,6 +18,7 @@ def _parse_numeric_and_unit(val_str: Optional[str]) -> tuple[Optional[float], Op
     Parse a numeric value and unit from an extracted string only when evidence supports it.
     Returns (numeric_value, unit). If not reliably determinable, returns (None, None).
     Preserves explicit zeros (e.g. '0%', '0 co-pay').
+    Supports Indian currency multipliers like '2 Lakhs' -> 200,000, '1.5 Crore' -> 15,000,000.
     """
     if not val_str or not isinstance(val_str, str):
         return None, None
@@ -32,7 +33,30 @@ def _parse_numeric_and_unit(val_str: Optional[str]) -> tuple[Optional[float], Op
         except (ValueError, TypeError):
             pass
 
-    # Rupee currency match: e.g. 'Rs. 10,00,000', 'INR 15,00,000', '₹ 5,00,000'
+    # Indian currency multiplier (Lakh / Lac / Crore / Cr / Thousand / K):
+    # e.g. 'Rs. 2 Lakh', '₹ 5 Lakhs', 'INR 10 Lac', '1.5 Crore', '50 Lakhs'
+    mult_match = re.search(
+        r'(?:(?:rs\.?|inr|₹)\s*)?([\d,]+(?:\.\d+)?)\s*(lakhs?|lacs?|crores?|cr|thousand|k)\b',
+        text,
+        re.IGNORECASE,
+    )
+    if mult_match:
+        try:
+            base_num = float(mult_match.group(1).replace(",", ""))
+            word = mult_match.group(2).lower()
+            if word in ("lakh", "lakhs", "lac", "lacs"):
+                mult = 100_000.0
+            elif word in ("crore", "crores", "cr"):
+                mult = 10_000_000.0
+            elif word in ("thousand", "k"):
+                mult = 1_000.0
+            else:
+                mult = 1.0
+            return base_num * mult, "INR"
+        except (ValueError, TypeError):
+            pass
+
+    # Rupee currency match: e.g. 'Rs. 10,00,000', 'INR 15,00,000', '₹ 5,00,000', 'Rs. 2,00,000/-'
     curr_match = re.search(r'(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)', text, re.IGNORECASE)
     if curr_match:
         try:
@@ -41,12 +65,20 @@ def _parse_numeric_and_unit(val_str: Optional[str]) -> tuple[Optional[float], Op
         except (ValueError, TypeError):
             pass
 
-    # Standalone plain currency without symbol if in sum_insured/deductible like '10,00,000'
-    pure_num_match = re.fullmatch(r'([\d,]+(?:\.\d+)?)', text)
+    # Standalone plain currency with commas if in sum_insured/deductible like '10,00,000' or '2,00,000'
+    pure_num_match = re.search(r'\b([\d]{1,3}(?:,\d{2,3})+(?:\.\d+)?)\b', text)
     if pure_num_match:
         try:
             clean_num = pure_num_match.group(1).replace(",", "")
-            return float(clean_num), None
+            return float(clean_num), "INR"
+        except (ValueError, TypeError):
+            pass
+
+    # Simple plain number without commas
+    simple_num = re.fullmatch(r'([\d]+(?:\.\d+)?)', text)
+    if simple_num:
+        try:
+            return float(simple_num.group(1)), None
         except (ValueError, TypeError):
             pass
 

@@ -6,7 +6,7 @@
 
 /* ─── Design Tokens ──────────────────────────────────────── */
 :root {
-  --bg-primary:    #0a0a12;
+  --bg-primary:    #07070d;
   --bg-secondary:  rgba(255,255,255,0.04);
   --bg-tertiary:   rgba(255,255,255,0.02);
   --bg-elevated:   rgba(20,20,35,0.95);

@@ -61,18 +61,32 @@ export default function PolicyCard({ policy, onSelect, onDelete, onStartChat }) 
         {/* Red flag highlights */}
         {factCount > 0 && (
           <div className="mt-3 pt-3 border-t border-white/[0.06]">
-            <p className="label-xs mb-2">{factCount} Extracted Facts</p>
-            <div className="space-y-1">
+            <div className="flex items-center justify-between mb-2">
+              <p className="label-xs">{factCount} Extracted Facts</p>
+            </div>
+            <div className="space-y-1.5">
               {redFlags.room_rent_cap && (
-                <div className="flex items-start gap-2 text-xs text-zinc-400">
-                  <span className="text-amber-500 mt-0.5 flex-shrink-0">·</span>
-                  <span><span className="text-zinc-300">Room Rent:</span> {redFlags.room_rent_cap}</span>
+                <div className="flex items-start gap-2 text-xs text-zinc-300">
+                  <span className="text-amber-400 font-bold mt-0.5 flex-shrink-0">·</span>
+                  <span className="line-clamp-1"><strong className="text-zinc-400 font-normal">Room Rent:</strong> {redFlags.room_rent_cap}</span>
                 </div>
               )}
               {redFlags.copay_percentage && (
-                <div className="flex items-start gap-2 text-xs text-zinc-400">
-                  <span className="text-blue-500 mt-0.5 flex-shrink-0">·</span>
-                  <span><span className="text-zinc-300">Co-pay:</span> {redFlags.copay_percentage}</span>
+                <div className="flex items-start gap-2 text-xs text-zinc-300">
+                  <span className="text-blue-400 font-bold mt-0.5 flex-shrink-0">·</span>
+                  <span className="line-clamp-1"><strong className="text-zinc-400 font-normal">Co-pay:</strong> {redFlags.copay_percentage}</span>
+                </div>
+              )}
+              {!redFlags.room_rent_cap && !redFlags.copay_percentage && redFlags.waiting_periods?.length > 0 && (
+                <div className="flex items-start gap-2 text-xs text-zinc-300">
+                  <span className="text-amber-400 font-bold mt-0.5 flex-shrink-0">·</span>
+                  <span className="line-clamp-1"><strong className="text-zinc-400 font-normal">Waiting:</strong> {redFlags.waiting_periods[0]}</span>
+                </div>
+              )}
+              {!redFlags.room_rent_cap && !redFlags.copay_percentage && redFlags.major_exclusions?.length > 0 && (
+                <div className="flex items-start gap-2 text-xs text-zinc-300">
+                  <span className="text-rose-400 font-bold mt-0.5 flex-shrink-0">·</span>
+                  <span className="line-clamp-1"><strong className="text-zinc-400 font-normal">Exclusion:</strong> {redFlags.major_exclusions[0]}</span>
                 </div>
               )}
             </div>

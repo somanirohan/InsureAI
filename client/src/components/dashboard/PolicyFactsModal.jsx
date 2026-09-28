@@ -73,38 +73,97 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                     <span className="label-xs">{categoryFacts.length}</span>
                   </div>
                   <div className="space-y-2">
-                    {categoryFacts.map((fact) => (
-                      <div
-                        key={fact.fact_id || fact._id}
-                        className="surface-inset rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2"
-                      >
-                        <div>
-                          <p className="text-xs font-medium text-zinc-300 capitalize mb-0.5">
-                            {fact.fact_key?.replace(/_/g, ' ') || 'Unknown'}
-                          </p>
-                          <p className="text-sm text-zinc-100 font-semibold">
-                            {fact.fact_value}
-                            {fact.unit && fact.unit !== 'INR' && (
-                              <span className="text-xs text-zinc-500 font-normal ml-1">{fact.unit}</span>
+                    {categoryFacts.map((fact) => {
+                      const isExclusion = category === 'exclusion';
+                      const isWaiting = category === 'waiting_period';
+                      const isClaim = category === 'claim_condition';
+
+                      // Handle waiting period split
+                      let waitingCond = null;
+                      let waitingPeriod = null;
+                      if (isWaiting) {
+                        const raw = fact.fact_value || '';
+                        if (fact.metadata?.condition && fact.metadata?.period) {
+                          waitingCond = fact.metadata.condition;
+                          waitingPeriod = fact.metadata.period;
+                        } else if (raw.includes(':')) {
+                          const parts = raw.split(':');
+                          waitingCond = parts[0].trim();
+                          waitingPeriod = parts.slice(1).join(':').trim();
+                        } else {
+                          waitingCond = raw;
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={fact.fact_id || fact._id}
+                          className="surface-inset rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-white/[0.04]"
+                        >
+                          <div className="flex-1 min-w-0">
+                            {isExclusion ? (
+                              <div className="flex items-start gap-2.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-2 flex-shrink-0" />
+                                <p className="text-sm text-zinc-200 leading-relaxed font-normal">
+                                  {fact.fact_value}
+                                </p>
+                              </div>
+                            ) : isWaiting ? (
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-zinc-100">
+                                  {waitingCond}
+                                </p>
+                                {waitingPeriod && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 whitespace-nowrap self-start sm:self-auto">
+                                    {waitingPeriod}
+                                  </span>
+                                )}
+                              </div>
+                            ) : isClaim ? (
+                              <div className="flex items-start gap-2.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2 flex-shrink-0" />
+                                <p className="text-sm text-zinc-200 leading-relaxed">
+                                  {fact.fact_value}
+                                </p>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-xs font-medium text-zinc-400 capitalize mb-1">
+                                  {fact.fact_key?.replace(/_/g, ' ') || 'Detail'}
+                                </p>
+                                <p className="text-base font-semibold text-zinc-100">
+                                  {fact.fact_value}
+                                  {fact.unit && fact.unit !== 'INR' && (
+                                    <span className="text-xs text-zinc-400 font-normal ml-1.5">{fact.unit}</span>
+                                  )}
+                                </p>
+                              </div>
                             )}
-                          </p>
-                          {(fact.source_page || fact.source_section) && (
-                            <p className="text-2xs text-zinc-600 mt-1">
-                              {fact.source_page && `Page ${fact.source_page}`}
-                              {fact.source_page && fact.source_section && ' · '}
-                              {fact.source_section}
-                            </p>
+
+                            {(fact.source_page || fact.source_section) && (
+                              <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                                {fact.source_page && (
+                                  <span className="px-1.5 py-0.5 rounded bg-white/[0.04] text-zinc-400 font-mono text-[10px]">
+                                    Page {fact.source_page}
+                                  </span>
+                                )}
+                                {fact.source_section && (
+                                  <span>· {fact.source_section}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {fact.extraction_confidence && !isExclusion && !isWaiting && (
+                            <div className="flex-shrink-0">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
+                                {fact.extraction_confidence}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        {fact.extraction_confidence && (
-                          <div className="flex sm:justify-end items-start">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
-                              {fact.extraction_confidence}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               );
