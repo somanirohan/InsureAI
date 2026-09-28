@@ -21,13 +21,14 @@ except ImportError:
 
 class ServerSettings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "server/.env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
     PORT: int = 5001
-    MONGO_URI: str = "mongodb://127.0.0.1:27017/medshield"
+    MONGO_URI: str = "mongodb+srv://rohanjagdishsomani_db_user:N62wBcWLZNdmGwN7@insurai.v3ucvhs.mongodb.net"
+    MONGO_DB_NAME: str = "insurai"
     JWT_SECRET: str = "insureai_super_secret_jwt_key_2026_secure_key"
     JWT_EXPIRES_IN: str = "7d"
     CLIENT_URL: str = "http://localhost:5173"
