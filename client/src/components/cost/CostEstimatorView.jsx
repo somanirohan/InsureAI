@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, RefreshCw, TrendingDown, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Calculator, RefreshCw, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../../services/api';
 import { Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 
@@ -44,20 +43,6 @@ const WHATIF_VALUES = {
 const fmt = (n) => n !== undefined && n !== null ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
 const pct = (a, b) => b ? `${Math.round((a / b) * 100)}%` : '—';
 
-// ─── Custom tooltip for bar chart ─────────────────────────
-const ChartTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-[#1e1e23] border border-white/[0.10] rounded-xl px-3 py-2.5 text-xs shadow-md">
-      <p className="text-zinc-400 mb-1">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="font-medium">
-          {p.name}: {fmt(p.value)}
-        </p>
-      ))}
-    </div>
-  );
-};
 
 // ─── Breakdown row ─────────────────────────────────────────
 function BreakdownRow({ label, value, accent, note, deduction }) {
@@ -160,13 +145,6 @@ export default function CostEstimatorView({ policies }) {
     label: `${p.insurer_name} (₹${p.sum_insured ? (p.sum_insured / 100000).toFixed(1) + 'L' : 'N/A'})`,
   }));
 
-  // Chart data for covered vs out-of-pocket
-  const chartData = estimate ? [
-    { name: 'Insurer Pays', value: estimate.covered_amount },
-    { name: 'Your Share',   value: estimate.out_of_pocket_amount },
-  ] : [];
-
-  const COLORS = ['#30d158', '#ff453a'];
 
   return (
     <div className="space-y-6">
@@ -302,29 +280,6 @@ export default function CostEstimatorView({ policies }) {
                 </div>
               </div>
 
-              {/* Bar chart */}
-              <div className="surface p-5">
-                <p className="text-sm font-medium text-zinc-300 mb-4">Cost Breakdown</p>
-                <ResponsiveContainer width="100%" height={120}>
-                  <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 20, top: 0, bottom: 0 }}>
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={90}
-                      tick={{ fill: '#71717a', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                    <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={32}>
-                      {chartData.map((entry, i) => (
-                        <Cell key={i} fill={COLORS[i]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
 
               {/* Detailed breakdown */}
               <div className="surface p-5">
@@ -362,10 +317,10 @@ export default function CostEstimatorView({ policies }) {
               </div>
 
               {/* What-If simulator */}
-              <div className="surface overflow-hidden">
+              <div className="surface">
                 <button
                   onClick={() => setShowWhatIf(v => !v)}
-                  className="w-full px-5 py-4 flex items-center justify-between text-sm font-medium text-zinc-300 hover:bg-white/[0.02] transition-colors"
+                  className="w-full px-5 py-4 flex items-center justify-between text-sm font-medium text-zinc-300 hover:bg-white/[0.02] transition-colors rounded-2xl"
                 >
                   <div className="flex items-center gap-2">
                     <RefreshCw size={14} className="text-brand-500" />
