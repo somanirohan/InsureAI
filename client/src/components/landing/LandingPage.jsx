@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Shield, ArrowRight, Lock, CheckCircle, ChevronRight,
   FileText, Brain, TrendingUp, AlertTriangle, X, Mail,
-  User, Phone, Menu, DollarSign, GitCompare,
+  User, Phone, Menu, DollarSign, GitCompare, Sparkles,
+  CheckCircle2, AlertCircle, Check, Activity, Layers,
+  Search, ArrowUpRight, ShieldCheck, Scale, Zap,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Spinner } from '../common/ui';
@@ -15,7 +17,7 @@ import { LiquidBlob, Starfield } from '../common/LiquidBlob';
 function AuthDrawer({ onClose, defaultTab = 'login' }) {
   const [isLogin, setIsLogin] = useState(defaultTab === 'login');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail]       = useState('alex@medshield.ai');
+  const [email, setEmail]       = useState('alex@insurai.com');
   const [password, setPassword] = useState('Shield@2024');
   const [phone, setPhone]       = useState('');
   const [error, setError]       = useState(null);
@@ -27,7 +29,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
     setIsLogin(toLogin);
     setError(null);
     if (toLogin) {
-      setEmail('alex@medshield.ai');
+      setEmail('alex@insurai.com');
       setPassword('Shield@2024');
     } else {
       setEmail('');
@@ -111,10 +113,10 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
                 boxShadow: '0 0 16px rgba(200,169,110,0.15)',
               }}
             >
-              <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-lg" />
+              <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
             </div>
             <div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: '#f0f0f8', letterSpacing: '-0.02em' }}>MedShield</p>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: '#f0f0f8', letterSpacing: '-0.02em' }}>InsurAI</p>
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.01em' }}>Policy Intelligence</p>
             </div>
           </div>
@@ -330,59 +332,436 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   FEATURE CARD
+   BENTO GRID COMPONENTS (Modern Apple / Linear Pop-Out System)
+   Zero layout disturbance: Uses a stable grid placeholder so the card
+   floats & pops out above siblings on hover without pushing surrounding cards.
    ───────────────────────────────────────────────────────────── */
-function FeatureCard({ icon: Icon, title, desc, accent, delay = '0s' }) {
+function BentoCard({
+  className = '',
+  children,
+  accentColor = '#c8a96e',
+  glowColor = 'rgba(200,169,110,0.12)',
+  title = '',
+  description = '',
+}) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <div
-      className="rounded-2xl p-6 animate-fade-in"
-      style={{
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.065)',
-        backdropFilter: 'blur(12px)',
-        transition: 'all 0.28s ease',
-        animationDelay: delay,
-        cursor: 'default',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background   = 'rgba(255,255,255,0.048)';
-        e.currentTarget.style.border       = '1px solid rgba(200,169,110,0.22)';
-        e.currentTarget.style.transform    = 'translateY(-5px)';
-        e.currentTarget.style.boxShadow    = '0 20px 50px rgba(0,0,0,0.38)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background   = 'rgba(255,255,255,0.025)';
-        e.currentTarget.style.border       = '1px solid rgba(255,255,255,0.065)';
-        e.currentTarget.style.transform    = 'translateY(0)';
-        e.currentTarget.style.boxShadow    = 'none';
-      }}
+      className={`relative ${className}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ zIndex: hovered ? 50 : 1 }}
     >
+      {/* Stable layout anchor: guarantees the grid never shifts or recalculates height */}
       <div
+        className="rounded-3xl p-6 sm:p-7 opacity-0 pointer-events-none select-none invisible"
+        aria-hidden="true"
+      >
+        <h3 className="text-lg sm:text-xl font-bold tracking-tight mb-2">
+          {title}
+        </h3>
+        <p className="text-[13px] sm:text-sm leading-relaxed">
+          {description}
+        </p>
+      </div>
+
+      {/* Floating Pop-Out Card: Floats over the grid smoothly without disturbing siblings */}
+      <div
+        className="absolute top-0 left-0 right-0 rounded-3xl p-6 sm:p-7 flex flex-col justify-start overflow-hidden transition-all duration-300"
         style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '18px',
-          background: accent
-            ? 'linear-gradient(135deg, rgba(200,169,110,0.20), rgba(200,169,110,0.07))'
-            : 'rgba(255,255,255,0.055)',
-          border: accent
-            ? '1px solid rgba(200,169,110,0.32)'
-            : '1px solid rgba(255,255,255,0.08)',
+          background: hovered
+            ? 'linear-gradient(145deg, rgba(22,22,38,0.98) 0%, rgba(13,13,22,0.99) 100%)'
+            : 'linear-gradient(145deg, rgba(16,16,28,0.70) 0%, rgba(10,10,18,0.78) 100%)',
+          border: hovered
+            ? `1px solid ${accentColor}66`
+            : '1px solid rgba(255,255,255,0.075)',
+          backdropFilter: 'blur(28px)',
+          WebkitBackdropFilter: 'blur(28px)',
+          transform: hovered ? 'translateY(-6px) scale(1.015)' : 'translateY(0) scale(1)',
+          boxShadow: hovered
+            ? `0 32px 80px -10px rgba(0,0,0,0.95), 0 0 35px ${glowColor}`
+            : '0 6px 20px -6px rgba(0,0,0,0.4)',
+          pointerEvents: 'auto',
         }}
       >
-        <Icon size={17} style={{ color: accent ? '#c8a96e' : 'rgba(255,255,255,0.50)' }} />
+        {/* Ambient background glow orb */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '-25%',
+            right: '-20%',
+            width: '280px',
+            height: '280px',
+            background: glowColor,
+            filter: 'blur(65px)',
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            opacity: hovered ? 0.45 : 0.08,
+            transition: 'opacity 0.35s ease',
+          }}
+        />
+
+        {/* Clean Header: NO icon, NO "hover to view" text */}
+        <div className="relative z-10 w-full">
+          <h3
+            className="text-lg sm:text-xl font-bold tracking-tight text-[#f0f0f8] mb-2 transition-colors duration-200"
+            style={{ letterSpacing: '-0.02em', color: hovered ? '#ffffff' : '#f0f0f8' }}
+          >
+            {title}
+          </h3>
+          <p
+            className="text-[13px] sm:text-sm text-gray-400 leading-relaxed"
+            style={{ color: 'rgba(255,255,255,0.52)', lineHeight: 1.6 }}
+          >
+            {description}
+          </p>
+        </div>
+
+        {/* Expandable Micro-UI Drawer: Smoothly unfolds inside the floating card */}
+        <div
+          className="relative z-10 w-full"
+          style={{
+            display: 'grid',
+            gridTemplateRows: hovered ? '1fr' : '0fr',
+            opacity: hovered ? 1 : 0,
+            transform: hovered ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'grid-template-rows 0.38s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, transform 0.3s ease, margin-top 0.3s ease',
+            marginTop: hovered ? '16px' : '0px',
+          }}
+        >
+          <div style={{ minHeight: 0, overflow: 'hidden' }}>
+            {children}
+          </div>
+        </div>
       </div>
-      <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f0f0f8', letterSpacing: '-0.02em', marginBottom: '8px' }}>
-        {title}
-      </h3>
-      <p style={{ fontSize: '13px', lineHeight: 1.7, color: 'rgba(255,255,255,0.38)', letterSpacing: '-0.005em' }}>
-        {desc}
-      </p>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LANDING NAVBAR (High-Performance Floating Island)
+   Isolated state + rAF throttle ensures 0 layout reflows and 120 FPS buttery smoothness
+   ───────────────────────────────────────────────────────────── */
+function LandingNavbar({ openAuth, navLinks }) {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
+
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const y = window.scrollY;
+          setScrolled(prev => (y > 35 ? true : y < 15 ? false : prev));
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <>
+      <header
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '0 16px',
+          pointerEvents: 'none',
+        }}
+      >
+        <nav
+          style={{
+            width: '100%',
+            maxWidth: scrolled ? '720px' : '1140px',
+            transform: scrolled ? 'translate3d(0, 12px, 0)' : 'translate3d(0, 6px, 0)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pointerEvents: 'all',
+            borderRadius: '999px',
+            padding: scrolled ? '8px 12px 8px 18px' : '14px 22px',
+            background: scrolled ? 'rgba(8, 8, 18, 0.88)' : 'rgba(8, 8, 18, 0)',
+            border: scrolled
+              ? '1px solid rgba(200, 169, 110, 0.28)'
+              : '1px solid rgba(255, 255, 255, 0)',
+            backdropFilter: scrolled ? 'blur(20px)' : 'blur(0px)',
+            WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'blur(0px)',
+            boxShadow: scrolled
+              ? '0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(200, 169, 110, 0.08)'
+              : '0 0 0 rgba(0, 0, 0, 0)',
+            transition: [
+              'max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              'padding 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              'background 0.3s ease',
+              'border-color 0.3s ease',
+              'box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            ].join(', '),
+            willChange: 'max-width, transform',
+          }}
+        >
+          {/* Logo */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(200,169,110,0.35)',
+                boxShadow: '0 0 14px rgba(200,169,110,0.18)',
+                flexShrink: 0,
+                overflow: 'hidden',
+                padding: '2px',
+              }}
+            >
+              <img
+                src="/favicon_io/apple-touch-icon.png"
+                alt="InsurAI Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '7px' }}
+              />
+            </div>
+            <span
+              style={{
+                fontSize: '14px',
+                fontWeight: 650,
+                color: '#f0f0f8',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              InsurAI
+            </span>
+          </button>
+
+          {/* Center Links */}
+          <div
+            className="hidden md:flex"
+            style={{
+              alignItems: 'center',
+              gap: '24px',
+            }}
+          >
+            {navLinks.map(link => (
+              <a
+                key={link}
+                href={`#${link.toLowerCase().replace(/ /g, '-')}`}
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'rgba(255,255,255,0.55)',
+                  textDecoration: 'none',
+                  letterSpacing: '-0.01em',
+                  padding: '6px 12px',
+                  borderRadius: '999px',
+                  transition: 'color 0.15s ease, background 0.15s ease',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = '#f0f0f8';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                {link}
+              </a>
+            ))}
+          </div>
+
+          {/* Right CTAs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <button
+              id="nav-signin"
+              className="hidden md:flex"
+              onClick={() => openAuth('login')}
+              style={{
+                alignItems: 'center',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.55)',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '7px 14px',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                letterSpacing: '-0.01em',
+                transition: 'color 0.15s ease, background 0.15s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = '#f0f0f8';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              id="nav-getstarted"
+              onClick={() => openAuth('register')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13px',
+                fontWeight: 650,
+                letterSpacing: '-0.01em',
+                fontFamily: 'inherit',
+                background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
+                color: '#1a1000',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '8px 18px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(200,169,110,0.30)',
+                transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.boxShadow = '0 6px 24px rgba(200,169,110,0.50)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(200,169,110,0.30)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              Get Started <ArrowRight size={12} />
+            </button>
+
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden"
+              onClick={() => setMobileMenu(!mobileMenu)}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                borderRadius: '10px',
+                padding: '7px',
+                color: 'rgba(255,255,255,0.60)',
+                cursor: 'pointer',
+                marginLeft: '4px',
+              }}
+              aria-label="Open mobile menu"
+            >
+              {mobileMenu ? <X size={17} /> : <Menu size={17} />}
+            </button>
+          </div>
+        </nav>
+      </header>
+
+      {/* Mobile menu dropdown */}
+      {mobileMenu && (
+        <div
+          className="fixed top-20 left-4 right-4 z-40 rounded-2xl p-4 animate-slide-up"
+          style={{
+            background: 'rgba(8,8,22,0.97)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            backdropFilter: 'blur(28px)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.60)',
+          }}
+        >
+          {navLinks.map(link => (
+            <a
+              key={link}
+              href={`#${link.toLowerCase().replace(/ /g, '-')}`}
+              onClick={() => setMobileMenu(false)}
+              style={{
+                display: 'block',
+                padding: '12px 14px',
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.60)',
+                textDecoration: 'none',
+                borderRadius: '12px',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {link}
+            </a>
+          ))}
+          <div
+            style={{
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              marginTop: '10px',
+              paddingTop: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            <button
+              onClick={() => {
+                openAuth('login');
+                setMobileMenu(false);
+              }}
+              style={{
+                padding: '12px',
+                borderRadius: '14px',
+                fontSize: '14px',
+                fontWeight: 500,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                color: '#f0f0f8',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => {
+                openAuth('register');
+                setMobileMenu(false);
+              }}
+              style={{
+                padding: '12px',
+                borderRadius: '14px',
+                fontSize: '14px',
+                fontWeight: 650,
+                background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
+                color: '#1a1000',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Get Started Free
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -390,16 +769,8 @@ function FeatureCard({ icon: Icon, title, desc, accent, delay = '0s' }) {
    MAIN LANDING PAGE
    ───────────────────────────────────────────────────────────── */
 export default function LandingPage() {
-  const [authOpen, setAuthOpen]     = useState(false);
-  const [authTab, setAuthTab]       = useState('login');
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const [scrolled, setScrolled]     = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authTab, setAuthTab]   = useState('login');
 
   const openAuth = (tab = 'login') => {
     setAuthTab(tab);
@@ -426,256 +797,8 @@ export default function LandingPage() {
         }}
       />
 
-      {/* ══════════════════════════════════════════════════
-          DYNAMIC ISLAND NAVBAR
-          ════════════════════════════════════════════════ */}
-      {/* ── Outer shell: always full-width, padding creates the vertical lift ── */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          display: 'flex',
-          justifyContent: 'center',
-          padding: scrolled ? '12px 24px' : '0 24px',
-          pointerEvents: 'none',
-          /* padding is animatable, so the lift is smooth in both directions */
-          transition: 'padding 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-        }}
-      >
-        {/* ── Inner nav: all changed props are numeric → fully animatable ── */}
-        <nav
-          style={{
-            width: '100%',
-            maxWidth: scrolled ? '660px' : '1120px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            pointerEvents: 'all',
-            borderRadius: scrolled ? '999px' : '0px',
-            background: scrolled ? 'rgba(8,8,20,0.88)' : 'rgba(0,0,0,0)',
-            border: scrolled
-              ? '1px solid rgba(255,255,255,0.10)'
-              : '1px solid rgba(255,255,255,0)',
-            backdropFilter: scrolled ? 'blur(28px)' : 'blur(0px)',
-            WebkitBackdropFilter: scrolled ? 'blur(28px)' : 'blur(0px)',
-            boxShadow: scrolled
-              ? '0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)'
-              : '0 0px 0px rgba(0,0,0,0)',
-            padding: scrolled ? '8px 10px 8px 18px' : '20px 0',
-            gap: scrolled ? '6px' : '0px',
-            /* Every property above is numeric — smooth in both directions */
-            transition: [
-              'max-width 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-              'border-radius 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-              'background 0.40s ease',
-              'border-color 0.40s ease',
-              'backdrop-filter 0.40s ease',
-              '-webkit-backdrop-filter 0.40s ease',
-              'box-shadow 0.40s ease',
-              'padding 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-              'gap 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-            ].join(', '),
-          }}
-        >
-          {/* Logo */}
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: scrolled ? '30px' : '32px',
-                height: scrolled ? '30px' : '32px',
-                borderRadius: scrolled ? '999px' : '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(200,169,110,0.35)',
-                boxShadow: '0 0 14px rgba(200,169,110,0.18)',
-                transition: 'all 0.5s cubic-bezier(0.34,1.56,0.64,1)',
-                flexShrink: 0,
-                overflow: 'hidden',
-                padding: '2px',
-              }}
-            >
-              <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: scrolled ? '999px' : '7px' }} />
-            </div>
-            <span
-              style={{
-                fontSize: scrolled ? '13px' : '14px',
-                fontWeight: 650,
-                color: '#f0f0f8',
-                letterSpacing: '-0.02em',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              MedShield
-            </span>
-          </button>
-
-          {/* Centre links — hide on mobile */}
-          <div
-            className="hidden md:flex"
-            style={{
-              alignItems: 'center',
-              gap: scrolled ? '4px' : '32px',
-              transition: 'gap 0.4s ease',
-              ...(scrolled ? { flex: 1, justifyContent: 'center' } : {}),
-            }}
-          >
-            {navLinks.map(link => (
-              <a
-                key={link}
-                href={`#${link.toLowerCase().replace(/ /g, '-')}`}
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'rgba(255,255,255,0.50)',
-                  textDecoration: 'none',
-                  letterSpacing: '-0.01em',
-                  padding: scrolled ? '6px 14px' : '6px 4px',
-                  borderRadius: '999px',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color='#f0f0f8'; if (scrolled) e.currentTarget.style.background='rgba(255,255,255,0.07)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color='rgba(255,255,255,0.50)'; e.currentTarget.style.background='transparent'; }}
-              >
-                {link}
-              </a>
-            ))}
-          </div>
-
-          {/* Right CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            <button
-              id="nav-signin"
-              className="hidden md:flex"
-              onClick={() => openAuth('login')}
-              style={{
-                alignItems: 'center',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'rgba(255,255,255,0.55)',
-                background: 'transparent',
-                border: 'none',
-                borderRadius: '999px',
-                padding: '8px 14px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                letterSpacing: '-0.01em',
-                transition: 'all 0.18s',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color='#f0f0f8'; e.currentTarget.style.background='rgba(255,255,255,0.07)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color='rgba(255,255,255,0.55)'; e.currentTarget.style.background='transparent'; }}
-            >
-              Sign In
-            </button>
-            <button
-              id="nav-getstarted"
-              onClick={() => openAuth('register')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '13px',
-                fontWeight: 650,
-                letterSpacing: '-0.01em',
-                fontFamily: 'inherit',
-                background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
-                color: '#1a1000',
-                border: 'none',
-                borderRadius: '999px',
-                padding: scrolled ? '8px 18px' : '9px 20px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(200,169,110,0.30)',
-                transition: 'all 0.22s ease',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.boxShadow='0 6px 24px rgba(200,169,110,0.50)'; e.currentTarget.style.transform='translateY(-1px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow='0 4px 16px rgba(200,169,110,0.30)'; e.currentTarget.style.transform='translateY(0)'; }}
-            >
-              Get Started <ArrowRight size={12} />
-            </button>
-
-            {/* Mobile menu button */}
-            <button
-              className="md:hidden"
-              onClick={() => setMobileMenu(!mobileMenu)}
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                borderRadius: '10px',
-                padding: '7px',
-                color: 'rgba(255,255,255,0.60)',
-                cursor: 'pointer',
-                marginLeft: '4px',
-              }}
-            >
-              {mobileMenu ? <X size={17} /> : <Menu size={17} />}
-            </button>
-          </div>
-        </nav>
-      </div>
-
-      {/* Mobile menu dropdown */}
-      {mobileMenu && (
-        <div
-          className="fixed top-16 left-4 right-4 z-40 rounded-2xl p-4 animate-slide-up"
-          style={{
-            background: 'rgba(8,8,22,0.97)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            backdropFilter: 'blur(28px)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.60)',
-          }}
-        >
-          {navLinks.map(link => (
-            <a
-              key={link}
-              href={`#${link.toLowerCase().replace(/ /g, '-')}`}
-              onClick={() => setMobileMenu(false)}
-              style={{
-                display: 'block',
-                padding: '12px 14px',
-                fontSize: '14px',
-                color: 'rgba(255,255,255,0.60)',
-                textDecoration: 'none',
-                borderRadius: '12px',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {link}
-            </a>
-          ))}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '10px', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              onClick={() => { openAuth('login'); setMobileMenu(false); }}
-              style={{ padding: '12px', borderRadius: '14px', fontSize: '14px', fontWeight: 500, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', color: '#f0f0f8', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '-0.01em' }}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => { openAuth('register'); setMobileMenu(false); }}
-              style={{ padding: '12px', borderRadius: '14px', fontSize: '14px', fontWeight: 650, background: 'linear-gradient(135deg, #f0d898, #c8a96e)', color: '#1a1000', border: 'none', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '-0.01em' }}
-            >
-              Get Started Free
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Floating Island Navbar */}
+      <LandingNavbar openAuth={openAuth} navLinks={navLinks} />
 
       {/* ══════════════════════════════════════════════════
           HERO
@@ -852,19 +975,19 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════
-          FEATURES
+          FEATURES (Bento Box Architecture)
           ════════════════════════════════════════════════ */}
       <section
         id="features"
         style={{
           position: 'relative',
-          padding: '120px 24px',
-          maxWidth: '1120px',
+          padding: '120px 24px 220px 24px',
+          maxWidth: '1240px',
           margin: '0 auto',
         }}
       >
         {/* Section header */}
-        <div style={{ textAlign: 'center', marginBottom: '72px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
           <h2
             style={{
               fontSize: 'clamp(2rem, 3.5vw, 3.2rem)',
@@ -884,24 +1007,423 @@ export default function LandingPage() {
               color: "#ffffff"
             }}>master your coverage</span>
           </h2>
-          <p style={{ fontSize: '15px', lineHeight: 1.75, letterSpacing: '-0.01em', color: 'rgba(255,255,255,0.38)', maxWidth: '420px', margin: '0 auto' }}>
-            Built on a Retrieval-Augmented Generation pipeline — every answer is grounded in your actual policy document.
+          <p style={{ fontSize: '15px', lineHeight: 1.75, letterSpacing: '-0.01em', color: 'rgba(255,255,255,0.42)', maxWidth: '480px', margin: '0 auto' }}>
+            Built on an enterprise-grade RAG pipeline — every answer, risk score, and cost projection is mathematically grounded in your exact policy contract.
           </p>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '14px',
-          }}
-        >
-          <FeatureCard icon={Brain}         title="AI Chat Assistant"    desc="Ask anything about your policy. Get precise, cited answers sourced directly from your uploaded document — not generic guesses." accent delay="0s" />
-          <FeatureCard icon={AlertTriangle} title="Red-Flag Detection"   desc="Surfaces hidden exclusions, co-payment traps, sub-limits, and waiting period clauses that cost policyholders thousands." delay="0.06s" />
-          <FeatureCard icon={DollarSign}    title="Cost Estimator"       desc="Simulate any treatment — hospitalisation, surgery, diagnostics — and see your exact out-of-pocket liability before it happens." delay="0.12s" />
-          <FeatureCard icon={GitCompare}    title="Policy Comparison"    desc="Load multiple policies and compare coverage limits, exclusions, and premiums side-by-side to find the best plan." delay="0.18s" />
-          <FeatureCard icon={FileText}      title="Clause Extraction"    desc="Room rent, co-pay, cashless network, pre-existing conditions — automatically extracted and categorized at upload time." delay="0.24s" />
-          <FeatureCard icon={TrendingUp}    title="Confidence Scoring"   desc="Every AI answer comes with a source citation and a confidence level — High, Medium, or Low — so you know how reliable it is." delay="0.30s" />
+        {/* Bento Box Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Card 1: AI Chat Assistant (Spans 2 cols) */}
+          <BentoCard
+            className="md:col-span-2"
+            accentColor="#c8a96e"
+            glowColor="rgba(200,169,110,0.16)"
+            title="Conversational Policy Intelligence"
+            description="Ask complex coverage questions in plain language. InsurAI analyzes your uploaded policy clause-by-clause, retrieving exact citations and legal definitions with zero speculative hallucinations."
+          >
+            {/* Embedded Micro-UI: Interactive Chat & Citation Terminal */}
+            <div
+              className="rounded-2xl overflow-hidden border mt-4"
+              style={{
+                background: 'rgba(8, 8, 16, 0.75)',
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+              }}
+            >
+              {/* Terminal Meta Bar */}
+              <div
+                className="flex items-center justify-between px-4 py-2.5 border-b text-xs flex-wrap gap-2"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  borderColor: 'rgba(255, 255, 255, 0.06)',
+                }}
+              >
+                <div className="flex items-center gap-2 text-gray-300 font-mono text-[11px]">
+                  <FileText size={13} className="text-[#c8a96e]" />
+                  <span>Star_Comprehensive_2024.pdf</span>
+                  <span className="text-gray-500 hidden sm:inline">· 48 Pages Indexed</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-400 font-mono text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>99.8% Grounding Score</span>
+                </div>
+              </div>
+
+              {/* Chat Dialogue */}
+              <div className="p-4 sm:p-5 space-y-3.5 text-xs">
+                {/* User Message */}
+                <div className="flex items-start gap-2.5 max-w-[92%] ml-auto justify-end">
+                  <div
+                    className="rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-right"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(200,169,110,0.22), rgba(200,169,110,0.10))',
+                      border: '1px solid rgba(200,169,110,0.3)',
+                      color: '#f0f0f8',
+                    }}
+                  >
+                    <p className="leading-relaxed">
+                      Does my policy cover robotic joint replacement surgery, and what room category can I choose without penalty?
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Assistant Message */}
+                <div className="flex items-start gap-3 max-w-[96%]">
+                  <div
+                    className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(200,169,110,0.28), rgba(200,169,110,0.08))',
+                      border: '1px solid rgba(200,169,110,0.35)',
+                    }}
+                  >
+                    <Sparkles size={14} className="text-[#e8c97e]" />
+                  </div>
+                  <div className="space-y-2 flex-1">
+                    <div
+                      className="rounded-2xl rounded-tl-sm p-3.5"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid rgba(255, 255, 255, 0.07)',
+                        color: '#d4d4e0',
+                        lineHeight: 1.65,
+                      }}
+                    >
+                      <p>
+                        <strong className="text-white">Yes, fully covered.</strong> Under <span className="text-[#e8c97e] font-medium">Section 4.2.1 (Modern & Advanced Procedures)</span>, robotic joint replacement is indemnified up to 100% of Sum Insured (₹15,00,000). You are eligible for a <strong className="text-white">Single Standard Private AC Room</strong> with zero proportionate deduction.
+                      </p>
+
+                      {/* Sourced Citation Pill */}
+                      <div
+                        className="mt-3 p-2.5 rounded-xl border flex items-center justify-between gap-2"
+                        style={{
+                          background: 'rgba(200,169,110,0.06)',
+                          borderColor: 'rgba(200,169,110,0.22)',
+                        }}
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                          <span className="text-gray-300 truncate text-[11px]">
+                            <strong className="text-[#e8c97e]">Clause 4.2.1:</strong> "Modern robotic procedures indemnifiable up to Sum Insured..."
+                          </span>
+                        </div>
+                        <span
+                          className="shrink-0 text-[10px] font-mono font-medium px-2 py-0.5 rounded-md"
+                          style={{
+                            background: 'rgba(255,255,255,0.08)',
+                            color: '#f0f0f8',
+                          }}
+                        >
+                          Page 19 · Clause 4.2
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* Card 2: Red-Flag Detection (Spans 1 col) */}
+          <BentoCard
+            className="md:col-span-1"
+            accentColor="#ef4444"
+            glowColor="rgba(239,68,68,0.14)"
+            title="Hidden Clause & Trap Radar"
+            description="Surfaces punitive room rent caps, sub-limits, and waiting periods buried in cryptic insurance clauses."
+          >
+            {/* Stack of 3 Audit Cards */}
+            <div className="space-y-2.5 mt-3">
+              <div
+                className="p-3 rounded-2xl border transition-all duration-200"
+                style={{
+                  background: 'rgba(239,68,68,0.05)',
+                  borderColor: 'rgba(239,68,68,0.22)',
+                }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold text-red-200">1% Room Rent Cap</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                    Critical Risk
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 leading-normal">
+                  Hospital rooms &gt; ₹10k/day trigger up to 35% proportionate deduction across total bill.
+                </p>
+              </div>
+
+              <div
+                className="p-3 rounded-2xl border transition-all duration-200"
+                style={{
+                  background: 'rgba(245,158,11,0.05)',
+                  borderColor: 'rgba(245,158,11,0.22)',
+                }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold text-amber-200">24-Mo PED Waiting</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    2 Year Wait
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 leading-normal">
+                  Pre-existing diabetes & hypertension claims barred until policy month 25.
+                </p>
+              </div>
+
+              <div
+                className="p-3 rounded-2xl border transition-all duration-200"
+                style={{
+                  background: 'rgba(16,185,129,0.05)',
+                  borderColor: 'rgba(16,185,129,0.22)',
+                }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold text-emerald-200">Zero Co-Payment</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Verified Safe
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 leading-normal">
+                  100% claim settlement across 14,000+ cashless network hospitals.
+                </p>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* Card 3: Out-of-Pocket Cost Estimator (Spans 1 col) */}
+          <BentoCard
+            className="md:col-span-1"
+            accentColor="#10b981"
+            glowColor="rgba(16,185,129,0.14)"
+            title="Out-of-Pocket Cost Estimator"
+            description="Simulate hospital procedures before admission to know your exact deductible liability in advance."
+          >
+            {/* Interactive Splitter Gauge */}
+            <div
+              className="p-4 rounded-2xl border mt-3 space-y-3"
+              style={{
+                background: 'rgba(10, 18, 14, 0.65)',
+                borderColor: 'rgba(16,185,129,0.2)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-300">Cardiac Angioplasty</span>
+                <span className="text-xs font-bold text-white font-mono">₹3,80,000 Est.</span>
+              </div>
+
+              {/* Segmented Two-Tone Bar */}
+              <div className="w-full h-3 rounded-full overflow-hidden flex bg-gray-800">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                  style={{ width: '85%' }}
+                />
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-rose-400 transition-all duration-500"
+                  style={{ width: '15%' }}
+                />
+              </div>
+
+              {/* Bar Legend */}
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <div className="flex items-center gap-1.5 text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span>Insurer: ₹3,24,000 (85%)</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-amber-400">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span>You: ₹56,000</span>
+                </div>
+              </div>
+
+              {/* Itemized Breakdown */}
+              <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-gray-300">
+                  Consumables: <span className="text-amber-400 font-mono">₹32k</span>
+                </div>
+                <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-gray-300">
+                  Room Diff: <span className="text-amber-400 font-mono">₹24k</span>
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* Card 4: Clause Extraction (Spans 1 col) */}
+          <BentoCard
+            className="md:col-span-1"
+            accentColor="#8b5cf6"
+            glowColor="rgba(139,92,246,0.14)"
+            title="Instant Clause Extraction"
+            description="Converts 60+ page dense PDFs into structured, queryable data points in seconds."
+          >
+            {/* 2x2 Glass Metric Chips */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">Sum Insured</div>
+                <div className="text-sm font-bold text-white font-mono mt-0.5">₹15,00,000</div>
+                <div className="text-[10px] text-purple-300 mt-0.5">+ 100% Super NCB</div>
+              </div>
+              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">Room Rent</div>
+                <div className="text-sm font-bold text-white font-mono mt-0.5">Single AC</div>
+                <div className="text-[10px] text-emerald-400 mt-0.5">Zero Sub-limits</div>
+              </div>
+              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">Day Care</div>
+                <div className="text-sm font-bold text-white font-mono mt-0.5">540+ Types</div>
+                <div className="text-[10px] text-blue-300 mt-0.5">No 24h hospital rule</div>
+              </div>
+              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">Restoration</div>
+                <div className="text-sm font-bold text-white font-mono mt-0.5">100% Instant</div>
+                <div className="text-[10px] text-amber-300 mt-0.5">Unlimited Reloads</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-xl border border-purple-500/20 bg-purple-500/10 text-[11px] text-purple-200">
+              <Zap size={12} className="text-purple-400 shrink-0" />
+              <span>42 clauses parsed in 1.4s · 100% OCR fidelity</span>
+            </div>
+          </BentoCard>
+
+          {/* Card 5: Confidence Scoring (Spans 1 col) */}
+          <BentoCard
+            className="md:col-span-1"
+            accentColor="#06b6d4"
+            glowColor="rgba(6,182,212,0.14)"
+            title="Calibrated Confidence"
+            description="Every answer is evaluated with strict multi-pass verification against original policy embeddings."
+          >
+            {/* Confidence Gauge & Checklist */}
+            <div
+              className="p-4 rounded-2xl border mt-3 space-y-3"
+              style={{
+                background: 'rgba(8, 18, 24, 0.65)',
+                borderColor: 'rgba(6,182,212,0.2)',
+              }}
+            >
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <div className="text-2xl font-black tracking-tight text-white font-mono bg-gradient-to-r from-cyan-400 to-[#c8a96e] bg-clip-text text-transparent">
+                    99.4%
+                  </div>
+                  <div className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">
+                    Grounding Certainty
+                  </div>
+                </div>
+                <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+                  ● Multi-Agent Pass
+                </span>
+              </div>
+
+              <div className="space-y-1.5 pt-1 text-[11px] text-gray-300">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={13} className="text-cyan-400 shrink-0" />
+                  <span>Verbatim clause cross-reference</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={13} className="text-cyan-400 shrink-0" />
+                  <span>Semantic distance &lt; 0.12 verified</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={13} className="text-cyan-400 shrink-0" />
+                  <span>Strict negative constraint checking</span>
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* Card 6: Policy Comparison Matrix (Spans 3 cols full width) */}
+          <BentoCard
+            className="md:col-span-3"
+            accentColor="#c8a96e"
+            glowColor="rgba(200,169,110,0.14)"
+            title="Multi-Policy Comparative Matrix"
+            description="Compare corporate group insurance, family floaters, and personal covers side-by-side to eliminate redundant premiums and dangerous coverage blindspots."
+          >
+            {/* Interactive Comparative Matrix */}
+            <div
+              className="rounded-2xl overflow-x-auto border mt-4"
+              style={{
+                background: 'rgba(8, 8, 16, 0.75)',
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+              }}
+            >
+              <table className="w-full text-left text-xs min-w-[580px]">
+                <thead>
+                  <tr
+                    className="border-b"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      borderColor: 'rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <th className="py-3 px-4 text-gray-400 font-medium">Coverage Parameter</th>
+                    <th className="py-3 px-4 font-semibold text-[#f5e4a8]">
+                      Care Supreme (₹10L Base)
+                    </th>
+                    <th className="py-3 px-4 font-semibold text-gray-300">
+                      HDFC ERGO Optima (₹10L Base)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  <tr>
+                    <td className="py-2.5 px-4 text-gray-300 font-medium">Room Rent Limit</td>
+                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
+                      <CheckCircle2 size={13} />
+                      <span>Single Private AC (No Capping)</span>
+                    </td>
+                    <td className="py-2.5 px-4 text-amber-400 font-mono">1% of Sum Insured (₹10k/day)</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 text-gray-300 font-medium">Restoration Benefit</td>
+                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
+                      <CheckCircle2 size={13} />
+                      <span>Unlimited Automatic Reload</span>
+                    </td>
+                    <td className="py-2.5 px-4 text-gray-400">100% Once per Policy Year</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 text-gray-300 font-medium">Modern & Robotic Surgery</td>
+                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
+                      <CheckCircle2 size={13} />
+                      <span>100% Sum Insured Covered</span>
+                    </td>
+                    <td className="py-2.5 px-4 text-amber-400 font-mono">50% Sub-limit on Robotic</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4 text-gray-300 font-medium">Pre-Existing Waiting Period</td>
+                    <td className="py-2.5 px-4 text-gray-400">36 Months Waiting</td>
+                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
+                      <CheckCircle2 size={13} />
+                      <span>24 Months Waiting</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div
+                className="p-3 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]"
+                style={{
+                  background: 'rgba(200,169,110,0.05)',
+                  borderColor: 'rgba(200,169,110,0.2)',
+                }}
+              >
+                <div className="flex items-center gap-2 text-gray-300">
+                  <Sparkles size={13} className="text-[#c8a96e]" />
+                  <span>
+                    <strong className="text-white">InsurAI Arbitrage Insight:</strong> Care Supreme saves an estimated ₹1.85L on robotic surgical procedures.
+                  </span>
+                </div>
+                <button
+                  onClick={() => openAuth('register')}
+                  className="inline-flex items-center gap-1 text-[#e8c97e] hover:text-white font-medium transition-colors"
+                >
+                  <span>Compare your policies now</span>
+                  <ArrowUpRight size={13} />
+                </button>
+              </div>
+            </div>
+          </BentoCard>
         </div>
       </section>
 
@@ -1203,7 +1725,7 @@ export default function LandingPage() {
                 animation: 'gradientDrift 5s ease infinite',
               }}
             >
-              MedShield finds them.
+              InsurAI finds them.
             </span>
           </h2>
           <p
@@ -1280,14 +1802,14 @@ export default function LandingPage() {
                 padding: '2px',
               }}
             >
-              <img src="/favicon_io/favicon-32x32.png" alt="MedShield Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src="/favicon_io/favicon-32x32.png" alt="InsurAI Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.45)' }}>
-              MedShield
+              InsurAI
             </span>
           </div>
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.01em' }}>
-            © {new Date().getFullYear()} MedShield · Built with FastAPI · ChromaDB · React
+            © {new Date().getFullYear()} InsurAI
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             {['Privacy', 'Terms', 'Docs'].map(l => (
