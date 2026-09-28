@@ -143,15 +143,26 @@ def index_chunks(policy_id: str, chunks: Sequence[Chunk]) -> int:
         policy_id,
         settings.embedding_provider,
     )
-    embeddings = embedder.embed(texts)
-
-    # Upsert to avoid duplicate key errors on re-indexing
-    collection.upsert(
-        ids=ids,
-        embeddings=embeddings,  # type: ignore[arg-type]
-        documents=texts,
-        metadatas=metadatas,  # type: ignore[arg-type]
-    )
+    try:
+        embeddings = embedder.embed(texts)
+        # Upsert to avoid duplicate key errors on re-indexing
+        collection.upsert(
+            ids=ids,
+            embeddings=embeddings,  # type: ignore[arg-type]
+            documents=texts,
+            metadatas=metadatas,  # type: ignore[arg-type]
+        )
+    except Exception as emb_err:
+        logger.warning(
+            "Primary embedding provider (%s) unavailable: %s. Using Chroma built-in embeddings.",
+            settings.embedding_provider,
+            emb_err,
+        )
+        collection.upsert(
+            ids=ids,
+            documents=texts,
+            metadatas=metadatas,  # type: ignore[arg-type]
+        )
 
     logger.info("Successfully indexed %d chunks for policy '%s'", len(chunks), policy_id)
     return len(chunks)
@@ -185,14 +196,26 @@ def query_similar(
         return []
 
     fetch_k = min(effective_k, total_docs)
-    embedder = get_embedder()
-    query_vector = embedder.embed_one(query.strip())
+    results = None
 
-    results = collection.query(
-        query_embeddings=[query_vector],
-        n_results=fetch_k,
-        include=["documents", "metadatas", "distances"],
-    )
+    try:
+        embedder = get_embedder()
+        query_vector = embedder.embed_one(query.strip())
+        results = collection.query(
+            query_embeddings=[query_vector],
+            n_results=fetch_k,
+            include=["documents", "metadatas", "distances"],
+        )
+    except Exception as emb_err:
+        logger.warning(
+            "Primary embedder failed for query (%s). Falling back to Chroma query_texts.",
+            emb_err,
+        )
+        results = collection.query(
+            query_texts=[query.strip()],
+            n_results=fetch_k,
+            include=["documents", "metadatas", "distances"],
+        )
 
     retrieved: list[RetrievedChunk] = []
 

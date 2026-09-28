@@ -86,8 +86,12 @@ def rag_facts_to_mongo_facts(rag_facts: Optional[dict[str, Any]]) -> list[dict[s
 
     mongo_facts: list[dict[str, Any]] = []
 
-    # 1. Scalar fields: sum_insured, room_rent_limit, co_pay, deductible
+    # 1. Scalar fields: metadata, sum_insured, room_rent_limit, co_pay, deductible, premium
     scalar_mappings = [
+        ("insurer_name", "policy_metadata", "insurer_name"),
+        ("policy_type", "policy_metadata", "policy_type"),
+        ("policy_number", "policy_metadata", "policy_number"),
+        ("premium_amount", "premium", "premium_amount"),
         ("sum_insured", "sum_insured", "sum_insured"),
         ("room_rent_limit", "room_rent_limit", "room_rent_limit"),
         ("co_pay", "co_payment", "co_payment"),

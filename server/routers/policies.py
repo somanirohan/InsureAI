@@ -36,8 +36,8 @@ os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 async def upload_policy(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    insurer_name: Optional[str] = Form("Star Health & Allied Insurance"),
-    policy_type: Optional[str] = Form("individual_health"),
+    insurer_name: Optional[str] = Form(None),
+    policy_type: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user),
 ):
     """

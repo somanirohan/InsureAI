@@ -118,6 +118,25 @@ class PolicyService:
             if sum_fact and sum_fact.get("fact_value_numeric") is not None:
                 sum_insured_num = float(sum_fact["fact_value_numeric"])
 
+            # Extract numeric premium amount from facts if available
+            premium_num = None
+            prem_fact = next((f for f in mongo_facts if f.get("category") == "premium"), None)
+            if prem_fact and prem_fact.get("fact_value_numeric") is not None:
+                premium_num = float(prem_fact["fact_value_numeric"])
+
+            # Extract auto-detected insurer name, policy type, policy number
+            detected_insurer = None
+            if rag_facts.get("insurer_name") and isinstance(rag_facts["insurer_name"], dict):
+                detected_insurer = rag_facts["insurer_name"].get("value")
+
+            detected_policy_type = None
+            if rag_facts.get("policy_type") and isinstance(rag_facts["policy_type"], dict):
+                detected_policy_type = rag_facts["policy_type"].get("value")
+
+            detected_policy_number = None
+            if rag_facts.get("policy_number") and isinstance(rag_facts["policy_number"], dict):
+                detected_policy_number = rag_facts["policy_number"].get("value")
+
             # Derive red flags strictly from extracted facts
             waiting_list = [
                 f"{wp.get('condition')}: {wp.get('period')}"
@@ -180,8 +199,16 @@ class PolicyService:
                 "indexed_at": now,
                 "updated_at": now,
             }
+            if detected_insurer:
+                update_fields["insurer_name"] = detected_insurer
+            if detected_policy_type:
+                update_fields["policy_type"] = detected_policy_type
+            if detected_policy_number:
+                update_fields["policy_number"] = detected_policy_number
             if sum_insured_num is not None:
                 update_fields["sum_insured"] = sum_insured_num
+            if premium_num is not None:
+                update_fields["premium_amount"] = premium_num
 
             await db.policies.update_one({"_id": p_oid}, {"$set": update_fields})
             logger.info("Policy %s successfully processed and marked ready.", policy_id)
