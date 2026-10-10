@@ -7,7 +7,6 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-FF6F00)](https://www.trychroma.com/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **InsurAI** is a production-grade, full-stack AI platform designed to demystify complex health insurance contracts. By combining document parsing, multi-pass Large Language Model (LLM) extraction, isolated semantic vector search, and a deterministic cost calculation engine, InsurAI empowers policyholders and advisors to understand their coverage, uncover hidden exclusions, estimate out-of-pocket hospital bills, and converse with a citation-backed AI assistant.
 
@@ -31,12 +30,12 @@
   - [3. Backend Setup](#3-backend-setup)
   - [4. Frontend Setup](#4-frontend-setup)
   - [5. Local LLM & Embedding Setup (Ollama)](#5-local-llm--embedding-setup-ollama)
-  - [6. Database Seeding](#6-database-seeding)
-  - [7. Running the Application](#7-running-the-application)
-  - [8. Running the Automated Test Suites](#8-running-the-automated-test-suites)
+  - [6. Running the Application](#6-running-the-application)
+  - [7. Running the Automated Test Suites](#7-running-the-automated-test-suites)
 - [Minimum System Requirements](#-minimum-system-requirements)
   - [Hardware Requirements](#hardware-requirements)
   - [Software & Runtime Requirements](#software--runtime-requirements)
+
 
 ---
 
@@ -165,7 +164,7 @@ InsurAI/
 │   ├── routers/                # REST & WebSocket endpoints (auth, policies, chat, cost)
 │   ├── services/               # Core business logic (RAG adapter, policy worker, cost engine)
 │   ├── tests/                  # Pytest test suite (unit tests, DB tests, integration tests)
-│   └── utils/                  # Database seeder and helper utilities
+│   └── utils/                  # Database helper utilities
 │
 ├── client/                     # Vite + React 19 Frontend
 │   ├── src/
@@ -210,9 +209,10 @@ CLIENT_URL=http://localhost:5173
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 UPLOAD_DIR=server/uploads
 
-# ── MongoDB Database ───────────────────────────────────────────────
-MONGO_URI=mongodb://127.0.0.1:27017/insurai
+# ── MongoDB Database (Central Repository) ──────────────────────────
+MONGO_URI=mongodb+srv://rohanjagdishsomani_db_user:N62wBcWLZNdmGwN7@insurai.v3ucvhs.mongodb.net
 MONGO_DB_NAME=insurai
+
 
 # ── LLM Provider (Options: ollama | openrouter | nvidia) ───────────
 LLM_PROVIDER=ollama
@@ -290,21 +290,13 @@ ollama pull nomic-embed-text
 
 ---
 
-### 6. Database Seeding
+### 6. Running the Application
 
-InsurAI includes a seeder script that provisions a ready-to-use demo account, sample processed policies with facts, pre-computed vector embeddings, and an initial chat session:
-
-```bash
-python server/utils/seeder.py
-```
-
-**Default Demo Credentials:**
-- **Email:** `demo@insurai.com`
-- **Password:** `password123`
-
----
-
-### 7. Running the Application
+> **Central Repository & Pre-loaded Data:**
+> InsurAI connects directly to a central cloud MongoDB repository (`insurai.v3ucvhs.mongodb.net`). Sample processed policies, extracted facts, and vector embeddings are already provisioned, so no manual database seeding is required.
+> - **Demo Account:** `demo@insurai.com`
+> - **Demo Password:** `password123`
+> *(You can also register a new account anytime from the web interface)*
 
 #### Option A: One-Command Startup (Recommended)
 
@@ -341,7 +333,7 @@ npm run dev
 
 ---
 
-### 8. Running the Automated Test Suites
+### 7. Running the Automated Test Suites
 
 The test suite covers unit logic, vector store isolation, database schemas, and chat persistence:
 
@@ -387,8 +379,3 @@ The minimum and recommended specifications to run InsurAI smoothly:
 | **Tesseract OCR** *(Optional)* | Tesseract `5.0+` (optional fallback for scanned PDFs) | Tesseract `5.3+` |
 | **Web Browser** | Chrome 100+, Edge 100+, Firefox 100+, Safari 15+ | Latest Google Chrome or Brave |
 
----
-
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

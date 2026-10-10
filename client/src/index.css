@@ -364,3 +364,58 @@ code, .font-mono {
   border-radius: inherit;
   mix-blend-mode: overlay;
 }
+
+/* ─── Chainly Theme Styling ──────────────────────────────── */
+.font-display {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.font-headline {
+  font-family: 'Syne', 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+.font-handwriting {
+  font-family: 'Caveat', cursive;
+}
+
+.tilted-sticker {
+  transition: transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease, z-index 0.1s;
+  will-change: transform;
+}
+.tilted-sticker:hover {
+  transform: translateY(-10px) scale(1.06) rotate(0deg) !important;
+  z-index: 35 !important;
+  box-shadow: 0 28px 50px -12px rgba(6, 35, 39, 0.28) !important;
+}
+
+.btn-pill-lime {
+  background: #d2f57b;
+  color: #062327;
+  font-weight: 700;
+  border-radius: 9999px;
+  border: 1.5px solid #062327;
+  box-shadow: 0 4px 0 #062327;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-pill-lime:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #062327;
+  background: #dbfa86;
+}
+.btn-pill-lime:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #062327;
+}
+
+.btn-pill-dark {
+  background: #08262b;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: all 0.2s ease;
+}
+.btn-pill-dark:hover {
+  background: #0e3b43;
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
