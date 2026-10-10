@@ -76,13 +76,12 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                 label: category.replace(/_/g, ' '),
                 color: 'text-[#062327]',
               };
-              const isMetadata = category === 'policy_metadata';
               const isExclusion = category === 'exclusion';
               const isWaiting = category === 'waiting_period';
-              const isClaim = category === 'claim_condition';
 
               return (
                 <section key={category}>
+                  {/* Category Header */}
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`text-xs font-bold uppercase tracking-wider ${meta.color}`}>{meta.label}</span>
                     <div className="flex-1 h-px bg-[#062327]/08" />
@@ -91,133 +90,112 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                     </span>
                   </div>
 
-                  {/* If policy_metadata, group all items into a single unified block */}
-                  {isMetadata ? (
-                    <div className="bg-[#f5f8f8] rounded-2xl p-5 border border-[#062327]/08 divide-y divide-[#062327]/08">
-                      {categoryFacts.map((fact) => (
+                  {/* All sections in a unified single block per category */}
+                  <div className="bg-[#f5f8f8] rounded-2xl p-4 sm:p-5 border border-[#062327]/08 divide-y divide-[#062327]/08">
+                    {categoryFacts.map((fact) => {
+                      if (isExclusion) {
+                        return (
+                          <div
+                            key={fact.fact_id || fact._id}
+                            className="py-3.5 first:pt-0 last:pb-0 flex items-start justify-between gap-4 text-left"
+                          >
+                            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                              <span className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
+                              <p className="text-xs sm:text-sm text-[#062327] leading-relaxed font-medium">
+                                {fact.fact_value}
+                              </p>
+                            </div>
+                            {fact.source_page && (
+                              <span className="text-[10px] text-[#558187] font-mono px-2 py-0.5 rounded-full bg-white border border-[#062327]/08 flex-shrink-0">
+                                p.{fact.source_page}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (isWaiting) {
+                        let waitingCond = '';
+                        let waitingPeriod = '';
+                        const raw = fact.fact_value || '';
+                        if (fact.metadata?.condition && fact.metadata?.period) {
+                          waitingCond = fact.metadata.condition;
+                          waitingPeriod = fact.metadata.period;
+                        } else if (raw.includes(':')) {
+                          const parts = raw.split(':');
+                          waitingCond = parts[0].trim();
+                          waitingPeriod = parts.slice(1).join(':').trim();
+                        } else {
+                          waitingCond = raw;
+                        }
+
+                        return (
+                          <div
+                            key={fact.fact_id || fact._id}
+                            className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                          >
+                            <div className="text-left flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-semibold text-[#062327]">
+                                {waitingCond}
+                              </p>
+                              {fact.source_page && (
+                                <p className="text-[10px] text-[#558187] mt-0.5">
+                                  Page {fact.source_page}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              {waitingPeriod ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/20 font-sans tabular-nums">
+                                  {waitingPeriod}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-[#558187]">—</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Default key-value attributes (metadata, sum insured, limits, co-pay, deductible, etc.)
+                      const label = fact.fact_key?.replace(/_/g, ' ') || 'Detail';
+
+                      return (
                         <div
                           key={fact.fact_id || fact._id}
-                          className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left"
+                          className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
                         >
-                          <div className="flex-1 min-w-0 text-left">
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1 text-left">
-                              {fact.fact_key?.replace(/_/g, ' ') || 'Detail'}
-                            </p>
-                            <p className="font-sans text-sm sm:text-base font-bold text-[#062327] tracking-tight text-left">
-                              {fact.fact_value}
-                              {fact.unit && fact.unit !== 'INR' && (
-                                <span className="text-xs text-[#558187] font-normal ml-1.5">{fact.unit}</span>
-                              )}
+                          {/* Title on the left */}
+                          <div className="text-left flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#558187]">
+                              {label}
                             </p>
                             {fact.source_page && (
-                              <p className="text-[10px] text-[#558187] font-medium mt-1 text-left">
+                              <p className="text-[10px] text-[#558187] font-medium mt-0.5">
                                 Page {fact.source_page}
                                 {fact.source_section ? ` · ${fact.source_section}` : ''}
                               </p>
                             )}
                           </div>
 
-                          {fact.extraction_confidence && (
-                            <div className="flex-shrink-0 self-start sm:self-center">
+                          {/* Info / Value on the right */}
+                          <div className="text-right flex items-center gap-2.5 flex-shrink-0">
+                            <p className="font-sans text-sm sm:text-base font-bold text-[#062327] tracking-tight tabular-nums text-right">
+                              {fact.fact_value}
+                              {fact.unit && fact.unit !== 'INR' && (
+                                <span className="text-xs text-[#558187] font-normal ml-1.5">{fact.unit}</span>
+                              )}
+                            </p>
+                            {fact.extraction_confidence && (
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
                                 {fact.extraction_confidence}
                               </span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    /* Other categories */
-                    <div className="space-y-2">
-                      {categoryFacts.map((fact) => {
-                        let waitingCond = null;
-                        let waitingPeriod = null;
-                        if (isWaiting) {
-                          const raw = fact.fact_value || '';
-                          if (fact.metadata?.condition && fact.metadata?.period) {
-                            waitingCond = fact.metadata.condition;
-                            waitingPeriod = fact.metadata.period;
-                          } else if (raw.includes(':')) {
-                            const parts = raw.split(':');
-                            waitingCond = parts[0].trim();
-                            waitingPeriod = parts.slice(1).join(':').trim();
-                          } else {
-                            waitingCond = raw;
-                          }
-                        }
-
-                        return (
-                          <div
-                            key={fact.fact_id || fact._id}
-                            className="bg-[#f5f8f8] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#062327]/08 hover:border-[#062327]/18 transition-colors text-left"
-                          >
-                            <div className="flex-1 min-w-0 text-left">
-                              {isExclusion ? (
-                                <div className="flex items-start gap-2.5 text-left">
-                                  <span className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
-                                  <p className="text-sm text-[#062327] leading-relaxed font-medium text-left">
-                                    {fact.fact_value}
-                                  </p>
-                                </div>
-                              ) : isWaiting ? (
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left">
-                                  <p className="text-sm font-bold text-[#062327] text-left">
-                                    {waitingCond}
-                                  </p>
-                                  {waitingPeriod && (
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/20 whitespace-nowrap self-start sm:self-auto font-sans tabular-nums">
-                                      {waitingPeriod}
-                                    </span>
-                                  )}
-                                </div>
-                              ) : isClaim ? (
-                                <div className="flex items-start gap-2.5 text-left">
-                                  <span className="w-2 h-2 rounded-full bg-sky-500 mt-1.5 flex-shrink-0" />
-                                  <p className="text-sm text-[#062327] leading-relaxed text-left">
-                                    {fact.fact_value}
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="text-left">
-                                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1 text-left">
-                                    {fact.fact_key?.replace(/_/g, ' ') || 'Detail'}
-                                  </p>
-                                  <p className="font-sans text-sm sm:text-base font-bold text-[#062327] tracking-tight tabular-nums text-left">
-                                    {fact.fact_value}
-                                    {fact.unit && fact.unit !== 'INR' && (
-                                      <span className="text-xs text-[#558187] font-normal ml-1.5">{fact.unit}</span>
-                                    )}
-                                  </p>
-                                </div>
-                              )}
-
-                              {(fact.source_page || fact.source_section) && (
-                                <div className="mt-2 flex items-center gap-2 text-[11px] text-[#558187] text-left">
-                                  {fact.source_page && (
-                                    <span className="px-2 py-0.5 rounded-full bg-[#062327]/08 text-[#062327] font-mono text-[10px] font-bold">
-                                      Page {fact.source_page}
-                                    </span>
-                                  )}
-                                  {fact.source_section && (
-                                    <span className="text-[#558187]">· {fact.source_section}</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {fact.extraction_confidence && !isExclusion && !isWaiting && (
-                              <div className="flex-shrink-0 self-start sm:self-center">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
-                                  {fact.extraction_confidence}
-                                </span>
-                              </div>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </section>
               );
             })
