@@ -188,5 +188,5 @@ def test_low_confidence_triggers_needs_confirmation(sample_treatment):
         treatment=sample_treatment,
         expected_patient_name="Ramesh Sharma",
     )
-    assert len(issues) == 0
     assert needs_conf is True
+    assert "Low confidence on total billed amount." in issues

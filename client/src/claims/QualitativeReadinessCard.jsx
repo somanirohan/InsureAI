@@ -21,6 +21,13 @@ export default function QualitativeReadinessCard({ readiness }) {
     all_flags = [],
     blocking_flags_count = 0,
     can_submit = false,
+    // New split counts
+    total_documents = 0,
+    validated_documents = 0,
+    missing_documents = 0,
+    total_requirements = 0,
+    done_requirements = 0,
+    pending_requirements = 0,
   } = readiness;
 
   const blockingFlags = all_flags.filter(f => f.severity === 'blocking');
@@ -50,59 +57,64 @@ export default function QualitativeReadinessCard({ readiness }) {
         </div>
       </div>
 
-      {/* Qualitative Count Pills (Strictly NO numeric percentages or scores) */}
+      {/* Qualitative Count Pills — split into docs + actions (NO numeric percentages) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Documents validated */}
         <div className="p-3.5 rounded-2xl bg-[#f0fdf4] border border-[#22c55e]/25 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#dcfce7] flex items-center justify-center flex-shrink-0">
             <CheckCircle2 size={18} className="text-[#15803d]" />
           </div>
           <div>
             <div className="text-xs font-bold text-[#15803d]">
-              {complete_items} of {total_items} Items Validated
+              {total_documents > 0
+                ? `${validated_documents} of ${total_documents} Docs Validated`
+                : `${complete_items} of ${total_items} Items Validated`}
             </div>
-            <div className="text-[11px] text-[#166534] font-medium">
-              Grounded & complete
-            </div>
+            <div className="text-[11px] text-[#166534] font-medium">Grounded &amp; complete</div>
           </div>
         </div>
 
+        {/* Actions done */}
         <div className={`p-3.5 rounded-2xl border flex items-center gap-3 ${
-          flagged_items > 0
+          total_requirements > 0 && pending_requirements > 0
             ? 'bg-[#fffbeb] border-[#f59e0b]/30'
             : 'bg-[#f5f8f8] border-[#062327]/08'
         }`}>
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            flagged_items > 0 ? 'bg-[#fef3c7]' : 'bg-white'
+            total_requirements > 0 && pending_requirements > 0 ? 'bg-[#fef3c7]' : 'bg-white'
           }`}>
-            <AlertTriangle size={18} className={flagged_items > 0 ? 'text-[#b45309]' : 'text-[#558187]'} />
+            <AlertTriangle size={18} className={total_requirements > 0 && pending_requirements > 0 ? 'text-[#b45309]' : 'text-[#558187]'} />
           </div>
           <div>
-            <div className={`text-xs font-bold ${flagged_items > 0 ? 'text-[#b45309]' : 'text-[#558187]'}`}>
-              {flagged_items} Needs Confirmation
+            <div className={`text-xs font-bold ${total_requirements > 0 && pending_requirements > 0 ? 'text-[#b45309]' : 'text-[#558187]'}`}>
+              {total_requirements > 0
+                ? `${done_requirements} of ${total_requirements} Actions Done`
+                : `${flagged_items} Needs Confirmation`}
             </div>
             <div className="text-[11px] text-[#558187] font-medium">
-              Requires user verification
+              {total_requirements > 0 ? 'Self-attested reminders' : 'Requires user verification'}
             </div>
           </div>
         </div>
 
+        {/* Missing documents */}
         <div className={`p-3.5 rounded-2xl border flex items-center gap-3 ${
-          missing_items > 0
+          missing_documents > 0 || missing_items > 0
             ? 'bg-[#fef2f2] border-[#ef4444]/30'
             : 'bg-[#f5f8f8] border-[#062327]/08'
         }`}>
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            missing_items > 0 ? 'bg-[#fee2e2]' : 'bg-white'
+            missing_documents > 0 || missing_items > 0 ? 'bg-[#fee2e2]' : 'bg-white'
           }`}>
-            <Clock size={18} className={missing_items > 0 ? 'text-[#be123c]' : 'text-[#558187]'} />
+            <Clock size={18} className={missing_documents > 0 || missing_items > 0 ? 'text-[#be123c]' : 'text-[#558187]'} />
           </div>
           <div>
-            <div className={`text-xs font-bold ${missing_items > 0 ? 'text-[#be123c]' : 'text-[#558187]'}`}>
-              {missing_items} Items Missing
+            <div className={`text-xs font-bold ${missing_documents > 0 || missing_items > 0 ? 'text-[#be123c]' : 'text-[#558187]'}`}>
+              {total_documents > 0
+                ? `${missing_documents} Documents Missing`
+                : `${missing_items} Items Missing`}
             </div>
-            <div className="text-[11px] text-[#558187] font-medium">
-              Required documents pending
-            </div>
+            <div className="text-[11px] text-[#558187] font-medium">Required documents pending</div>
           </div>
         </div>
       </div>

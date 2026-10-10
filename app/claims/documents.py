@@ -37,26 +37,76 @@ logger = logging.getLogger("insureai.claims.documents")
 
 EXPECTED_DOC_TYPES_FOR_SLOT: Dict[str, set[str]] = {
     "discharge_summary": {"discharge_summary", "discharge_card", "summary", "medical_summary"},
-    "final_bill": {"final_bill", "hospital_bill", "invoice", "bill", "detailed_bill"},
-    "investigation_reports": {"investigation_reports", "investigation_report", "lab_report", "diagnostic_report", "radiology", "pathology"},
-    "identity_proof": {"identity_proof", "aadhaar", "pan", "passport", "id_card", "voter_id"},
-    "preauth_form": {"preauth_form", "pre_authorization", "cashless_request", "preauth_approval"},
+    "itemised_bills": {"itemised_bills", "itemized_bills", "final_bill", "hospital_bill", "invoice", "bill", "detailed_bill", "receipts"},
+    "final_bill": {"final_bill", "itemised_bills", "hospital_bill", "invoice", "bill", "detailed_bill"},
+    "diagnostic_reports": {"diagnostic_reports", "diagnostic_report", "investigation_reports", "investigation_report", "lab_report", "radiology", "pathology"},
+    "investigation_reports": {"investigation_reports", "investigation_report", "diagnostic_reports", "lab_report", "radiology", "pathology"},
+    "prescriptions": {"prescriptions", "prescription", "pharmacy_bill", "medicine_bill"},
+    "claim_form": {"claim_form", "completed_claim_form", "reimbursement_claim_form", "form_a", "form_b"},
     "reimbursement_claim_form": {"reimbursement_claim_form", "claim_form", "form_a", "form_b"},
+    "preauth_approval_letter": {"preauth_approval_letter", "preauth_form", "pre_authorization", "cashless_request", "preauth_approval"},
+    "preauth_form": {"preauth_form", "preauth_approval_letter", "pre_authorization", "cashless_request", "preauth_approval"},
+    "id_proof": {"id_proof", "identity_proof", "aadhaar", "pan", "passport", "id_card", "voter_id"},
+    "identity_proof": {"identity_proof", "id_proof", "aadhaar", "pan", "passport", "id_card", "voter_id"},
+    "policy_copy": {"policy_copy", "policy_schedule", "health_card"},
+    "doctor_certificate": {"doctor_certificate", "medical_certificate"},
     "emergency_intimation": {"emergency_intimation", "intimation_mail", "intimation_letter", "notification"},
 }
 
 
+# ── OCR & Environment Helpers ──────────────────────────────────────────────────
+
+def check_ocr_availability() -> Dict[str, Any]:
+    """
+    Check if Tesseract binary and language data are available on host system.
+    """
+    try:
+        import pytesseract
+        import shutil
+
+        tess_bin = shutil.which("tesseract") or getattr(pytesseract.pytesseract, "tesseract_cmd", "tesseract")
+        version = str(pytesseract.get_tesseract_version())
+        langs = pytesseract.get_languages(config="")
+        return {
+            "available": True,
+            "binary_path": tess_bin,
+            "version": version,
+            "languages": langs,
+            "error": None,
+        }
+    except Exception as exc:
+        return {
+            "available": False,
+            "binary_path": None,
+            "version": None,
+            "languages": [],
+            "error": str(exc),
+        }
+
+
 # ── Text Extraction ───────────────────────────────────────────────────────────
 
-def extract_document_text(file_path: str) -> str:
-    """Extract raw text from PDF or Image file with robust fallbacks."""
+def extract_document_text(file_path: str, claim_id: Optional[str] = None, doc_id: Optional[str] = None) -> Tuple[str, Dict[str, Any]]:
+    """
+    Extract raw text from PDF or Image file with robust fallbacks and diagnostics.
+    Returns: (extracted_text, diagnostic_info)
+    """
+    diag: Dict[str, Any] = {
+        "source": "empty",
+        "ocr_triggered": False,
+        "ocr_available": True,
+        "ocr_error": None,
+        "char_count": 0,
+        "first_200": "",
+    }
+
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Document file not found: {file_path}")
 
     ext = Path(file_path).suffix.lower()
+    text_parts: List[str] = []
 
     if ext == ".pdf":
-        text_parts: List[str] = []
         try:
             with fitz.open(file_path) as doc:
                 for page in doc:
@@ -64,35 +114,88 @@ def extract_document_text(file_path: str) -> str:
                     if txt and txt.strip():
                         text_parts.append(txt.strip())
             
-            combined = "\n\n".join(text_parts)
-            if combined.strip():
-                return combined
+            combined = "\n\n".join(text_parts).strip()
+            # If native text extraction has at least 50 characters, use native
+            if len(combined) >= 50:
+                diag["source"] = "native"
+                diag["char_count"] = len(combined)
+                diag["first_200"] = combined[:200]
+                logger.info("[%s/%s] Native PDF text extracted: %d chars", claim_id or "-", doc_id or "-", len(combined))
+                return combined, diag
         except Exception as exc:
-            logger.warning("PyMuPDF text extraction failed on %s: %s", file_path, exc)
+            logger.warning("[%s/%s] PyMuPDF native extraction failed on %s: %s", claim_id or "-", doc_id or "-", file_path, exc)
 
-    # Fallback / image OCR
+    # Scanned PDF or Image: Trigger OCR fallback
+    diag["ocr_triggered"] = True
+    ocr_status = check_ocr_availability()
+    if not ocr_status["available"]:
+        diag["ocr_available"] = False
+        diag["ocr_error"] = ocr_status.get("error") or "Tesseract binary not found on host PATH"
+        logger.warning("[%s/%s] OCR unavailable: %s", claim_id or "-", doc_id or "-", diag["ocr_error"])
+        return "", diag
+
     try:
-        from PIL import Image
+        from PIL import Image, ImageOps
         import pytesseract
 
+        def _preprocess_and_ocr(pil_img: Image.Image) -> str:
+            # Basic preprocessing: convert to RGB / L, handle rotation
+            try:
+                # Handle EXIF orientation
+                pil_img = ImageOps.exif_transpose(pil_img)
+            except Exception:
+                pass
+            
+            # Grayscale for OCR sharpness
+            gray = pil_img.convert("L")
+
+            # Try Tesseract OSD (Orientation and Script Detection) if available
+            try:
+                osd = pytesseract.image_to_osd(gray)
+                angle_match = re.search(r'Rotate: (\d+)', osd)
+                if angle_match:
+                    angle = int(angle_match.group(1))
+                    if angle in (90, 180, 270):
+                        gray = gray.rotate(360 - angle, expand=True)
+            except Exception:
+                pass
+
+            return pytesseract.image_to_string(gray, lang="eng").strip()
+
         if ext == ".pdf":
-            # Render first 3 pages to images for OCR
             with fitz.open(file_path) as doc:
                 ocr_parts = []
-                for idx in range(min(len(doc), 3)):
-                    pix = doc[idx].get_pixmap(dpi=150)
+                # Render pages at 300 DPI for high fidelity
+                zoom = 300 / 72
+                mat = fitz.Matrix(zoom, zoom)
+                for idx in range(min(len(doc), 5)):
+                    pix = doc[idx].get_pixmap(matrix=mat, colorspace=fitz.csRGB)
                     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                    ocr_txt = pytesseract.image_to_string(img)
-                    if ocr_txt.strip():
-                        ocr_parts.append(ocr_txt.strip())
-                return "\n\n".join(ocr_parts)
+                    page_txt = _preprocess_and_ocr(img)
+                    if page_txt:
+                        ocr_parts.append(page_txt)
+                
+                combined_ocr = "\n\n".join(ocr_parts).strip()
+                diag["source"] = "ocr" if combined_ocr else "empty"
+                diag["char_count"] = len(combined_ocr)
+                diag["first_200"] = combined_ocr[:200]
+                logger.info("[%s/%s] PDF OCR finished: %d chars", claim_id or "-", doc_id or "-", len(combined_ocr))
+                return combined_ocr, diag
         else:
-            img = Image.open(file_path)
-            return pytesseract.image_to_string(img)
-    except Exception as exc:
-        logger.warning("OCR processing unavailable or failed for %s: %s", file_path, exc)
+            # Direct Image (JPG/PNG)
+            with Image.open(file_path) as img:
+                img_txt = _preprocess_and_ocr(img)
+                diag["source"] = "ocr" if img_txt else "empty"
+                diag["char_count"] = len(img_txt)
+                diag["first_200"] = img_txt[:200]
+                logger.info("[%s/%s] Image OCR finished: %d chars", claim_id or "-", doc_id or "-", len(img_txt))
+                return img_txt, diag
 
-    return ""
+    except Exception as exc:
+        diag["ocr_error"] = str(exc)
+        logger.warning("[%s/%s] OCR processing failed on %s: %s", claim_id or "-", doc_id or "-", file_path, exc)
+
+    return "", diag
 
 
 # ── LLM Extraction & Regex Fallback ───────────────────────────────────────────
@@ -116,38 +219,73 @@ def _regex_fallback_extract(text: str, item_id: str) -> Tuple[Dict[str, Any], Di
         "document_type": 0.5,
     }
 
+    # Extract patient name via pattern: Patient Name[:\s]+([A-Za-z\s]+)
+    name_match = re.search(r'(?:patient(?:\'s)?\s*name|name\s*of\s*patient)\s*[:\-]?\s*([A-Za-z][A-Za-z\s\.]{2,40})', text, re.IGNORECASE)
+    if name_match:
+        cand = name_match.group(1).split("\n")[0].strip()
+        cand = re.sub(r'\s+', ' ', cand)
+        if len(cand) >= 3 and not any(k in cand.lower() for k in ("age", "gender", "sex", "date", "dr.", "doctor")):
+            fields["patient_name"] = cand
+            confidence["patient_name"] = 0.75
+
+    # Normalize common OCR character confusions in numbers and punctuation
+    norm_text = text.replace("‘", "").replace("’", "").replace("`", "")
+
     # Extract dates
-    dates = re.findall(r'\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}-\d{2}-\d{2})\b', text)
+    dates = re.findall(r'\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}[/-]\d{2}[/-]\d{2})\b', norm_text)
     if dates:
         for raw_d in dates:
             iso_d = _normalize_date_str(raw_d)
             if iso_d:
                 if not fields["admission_date"]:
                     fields["admission_date"] = iso_d
+                    confidence["admission_date"] = 0.75
                 elif not fields["discharge_date"] and iso_d >= fields["admission_date"]:
                     fields["discharge_date"] = iso_d
+                    confidence["discharge_date"] = 0.75
 
-    # Extract currency amounts
-    curr_matches = re.findall(r'(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{2})?)', text, re.IGNORECASE)
+    # Extract currency amounts (handling Rs, INR, Ps/Fs OCR confusions, and Total/Tal Amount)
+    curr_matches = re.findall(
+        r'(?:(?:rs|inr|₹|ps|fs)\.?|(?:total|tal|amt|amount|payable|net)\s*(?:amount|payable|charges)?[:\s\.]*)\s*([\d,]+(?:\.\d{2})?)',
+        norm_text,
+        re.IGNORECASE,
+    )
     amounts: List[float] = []
     for m in curr_matches:
         try:
-            amt = float(m.replace(",", ""))
-            if amt > 0:
-                amounts.append(amt)
+            cleaned_num = m.replace(",", "").rstrip(".")
+            if cleaned_num:
+                amt = float(cleaned_num)
+                if amt > 0:
+                    amounts.append(amt)
         except ValueError:
             pass
     if amounts:
         fields["total_amount"] = max(amounts)
+        confidence["total_amount"] = 0.75
 
-    # Document type inference
-    lower_text = text.lower()
-    if "discharge" in lower_text or "summary" in lower_text:
-        fields["document_type"] = "discharge_summary"
-    elif "bill" in lower_text or "invoice" in lower_text or "receipt" in lower_text:
+    # Extract diagnosis if indicated
+    diag_match = re.search(r'(?:diagn[oa]sis|indication|condition)\s*[:\-]?\s*([A-Za-z][A-Za-z\s]{3,50})', norm_text, re.IGNORECASE)
+    if diag_match:
+        cand_diag = diag_match.group(1).split("\n")[0].strip()
+        if len(cand_diag) >= 4:
+            fields["diagnosis"] = cand_diag
+            confidence["diagnosis"] = 0.75
+
+    # Document type inference (prioritize specific keywords over general)
+    lower_text = norm_text.lower()
+    if any(k in lower_text for k in ("final inpatient bill", "final bill", "tax invoice", "hospital bill", "invoice")):
         fields["document_type"] = "final_bill"
-    elif "investigation" in lower_text or "report" in lower_text or "pathology" in lower_text:
-        fields["document_type"] = "investigation_reports"
+        confidence["document_type"] = 0.8
+    elif any(k in lower_text for k in ("discharge summary", "discharge card")):
+        fields["document_type"] = "discharge_summary"
+        confidence["document_type"] = 0.8
+    elif any(k in lower_text for k in ("investigation", "diagnostic report", "pathology")):
+        fields["document_type"] = "diagnostic_reports"
+        confidence["document_type"] = 0.75
+    elif item_id in ("final_bill", "itemised_bills") and fields.get("total_amount") is not None:
+        fields["document_type"] = "final_bill"
+        confidence["document_type"] = 0.7
     else:
         fields["document_type"] = "unknown"
 
@@ -159,6 +297,7 @@ def _normalize_date_str(raw: str) -> Optional[str]:
     if not raw or not isinstance(raw, str):
         return None
     raw = raw.strip()
+    # Normalize common OCR confusions in digits (e.g. O->0, l/I->1)
     for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%y", "%d-%m-%y"):
         try:
             return datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
@@ -170,6 +309,8 @@ def _normalize_date_str(raw: str) -> Optional[str]:
 def extract_document_fields(
     text: str,
     item_id: str,
+    claim_id: Optional[str] = None,
+    doc_id: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, float]]:
     """
     Extract structured fields and per-field confidence from document text.
@@ -194,7 +335,7 @@ Document context: Uploaded for checklist slot '{item_id}'.
 
 DOCUMENT TEXT:
 \"\"\"
-{text[:4000]}
+{text[:3000]}
 \"\"\"
 
 Respond with ONLY a valid JSON object matching this schema:
@@ -204,7 +345,7 @@ Respond with ONLY a valid JSON object matching this schema:
   "discharge_date": "YYYY-MM-DD string or null",
   "diagnosis": "string or null",
   "total_amount": 0.0,
-  "document_type": "discharge_summary | final_bill | investigation_reports | identity_proof | preauth_form | unknown",
+  "document_type": "discharge_summary | itemised_bills | final_bill | diagnostic_reports | investigation_reports | identity_proof | id_proof | prescriptions | claim_form | preauth_form | preauth_approval_letter | unknown",
   "confidence": {{
     "patient_name": 0.0 to 1.0,
     "admission_date": 0.0 to 1.0,
@@ -226,27 +367,50 @@ Output only the JSON object, no explanation.
                 {"role": "user", "content": prompt},
             ],
             temperature=0.0,
+            max_tokens=600,
+            format="json",
         )
 
-        json_match = re.search(r'\{.*\}', reply, re.DOTALL)
+        # Strip markdown fences if present
+        cleaned_reply = reply.strip()
+        if cleaned_reply.startswith("```"):
+            cleaned_reply = re.sub(r'^```(?:json)?\n?', '', cleaned_reply)
+            cleaned_reply = re.sub(r'\n?```$', '', cleaned_reply)
+
+        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
         if json_match:
             data = json.loads(json_match.group(0))
             conf = data.get("confidence") or {}
+            
+            raw_amt = data.get("total_amount")
+            parsed_amt = None
+            if raw_amt is not None:
+                if isinstance(raw_amt, (int, float)):
+                    parsed_amt = float(raw_amt)
+                elif isinstance(raw_amt, str):
+                    clean_str = re.sub(r'[^\d.]', '', raw_amt)
+                    if clean_str:
+                        try:
+                            parsed_amt = float(clean_str)
+                        except ValueError:
+                            pass
+
             fields = {
-                "patient_name": data.get("patient_name"),
+                "patient_name": data.get("patient_name") or None,
                 "admission_date": _normalize_date_str(data.get("admission_date")),
                 "discharge_date": _normalize_date_str(data.get("discharge_date")),
-                "diagnosis": data.get("diagnosis"),
-                "total_amount": float(data.get("total_amount")) if data.get("total_amount") is not None else None,
+                "diagnosis": data.get("diagnosis") or None,
+                "total_amount": parsed_amt,
                 "document_type": str(data.get("document_type") or "unknown").lower(),
             }
             parsed_conf = {
-                k: float(conf.get(k, 0.5)) for k in fields
+                k: float(conf.get(k, 0.85 if fields[k] is not None else 0.0)) for k in fields
             }
+            logger.info("[%s/%s] LLM field extraction succeeded: %s", claim_id or "-", doc_id or "-", fields)
             return fields, parsed_conf
 
     except Exception as exc:
-        logger.warning("LLM extraction failed or timed out: %s. Using regex fallback.", exc)
+        logger.warning("[%s/%s] LLM extraction failed or timed out: %s. Using regex fallback.", claim_id or "-", doc_id or "-", exc)
 
     return _regex_fallback_extract(text, item_id)
 
@@ -283,6 +447,7 @@ def validate_document(
     item_id: str,
     treatment: Optional[TreatmentDetails] = None,
     expected_patient_name: Optional[str] = None,
+    ocr_diag: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[str], bool]:
     """
     Run 5 deterministic validators on the extracted document fields:
@@ -297,6 +462,15 @@ def validate_document(
     """
     issues: List[str] = []
     needs_confirmation = False
+
+    # Check OCR availability / extraction diagnostics first
+    if ocr_diag:
+        if not ocr_diag.get("ocr_available", True):
+            issues.append("OCR unavailable on this machine. Please install Tesseract on host.")
+            needs_confirmation = True
+        elif ocr_diag.get("char_count", 0) == 0:
+            issues.append("Document unreadable or blank: no text could be extracted.")
+            needs_confirmation = True
 
     # 1. Patient Name Matching
     extracted_name = extracted_fields.get("patient_name")
@@ -346,7 +520,7 @@ def validate_document(
             pass
 
     # 3. Numeric Bill Total
-    is_bill_slot = item_id in ("final_bill", "reimbursement_claim_form") or extracted_fields.get("document_type") == "final_bill"
+    is_bill_slot = item_id in ("final_bill", "itemised_bills", "reimbursement_claim_form") or extracted_fields.get("document_type") in ("final_bill", "itemised_bills")
     bill_total = extracted_fields.get("total_amount")
 
     if is_bill_slot:
@@ -383,10 +557,24 @@ def validate_document(
             )
             needs_confirmation = True
 
-    # Confidence check: Any critical field < 0.7 triggers confirmation requirement
-    for field_name, conf_val in field_confidence.items():
-        if field_name in ("patient_name", "total_amount", "admission_date") and conf_val < 0.7:
-            needs_confirmation = True
+    # Slot-aware Confidence Check: Only check fields that are expected for this slot type
+    # patient_name is expected on all slots
+    if field_confidence.get("patient_name", 1.0) < 0.7:
+        needs_confirmation = True
+        if "Low confidence on patient name extraction." not in issues and not any("patient name" in i.lower() for i in issues):
+            issues.append("Low confidence on patient name extraction.")
+
+    # total_amount is only required/checked for bill slots
+    if is_bill_slot and field_confidence.get("total_amount", 1.0) < 0.7:
+        needs_confirmation = True
+        if "Low confidence on total billed amount." not in issues and not any("billed amount" in i.lower() for i in issues):
+            issues.append("Low confidence on total billed amount.")
+
+    # admission_date is only required/checked for in-patient clinical documents (discharge summary, preauth)
+    if item_id in ("discharge_summary", "preauth_form", "preauth_approval_letter") and field_confidence.get("admission_date", 1.0) < 0.7:
+        needs_confirmation = True
+        if "Low confidence on admission date extraction." not in issues and not any("admission date" in i.lower() for i in issues):
+            issues.append("Low confidence on admission date extraction.")
 
     return issues, needs_confirmation
 
@@ -397,20 +585,34 @@ def process_uploaded_claim_document(
     item_id: str,
     treatment: Optional[TreatmentDetails] = None,
     expected_patient_name: Optional[str] = None,
+    claim_id: Optional[str] = None,
+    existing_document_id: Optional[str] = None,
 ) -> ClaimDocument:
     """
     Full pipeline to ingest, extract, and validate an uploaded claim document.
     """
-    doc_id = str(uuid.uuid4())
-    raw_text = extract_document_text(file_path)
+    doc_id = existing_document_id or str(uuid.uuid4())
+    logger.info("[%s/%s] Starting document processing for '%s' in slot '%s'", claim_id or "-", doc_id, filename, item_id)
 
-    extracted_fields, field_confidence = extract_document_fields(raw_text, item_id)
+    raw_text, ocr_diag = extract_document_text(file_path, claim_id=claim_id, doc_id=doc_id)
+    extracted_fields, field_confidence = extract_document_fields(raw_text, item_id, claim_id=claim_id, doc_id=doc_id)
+
     validation_issues, needs_confirmation = validate_document(
         extracted_fields=extracted_fields,
         field_confidence=field_confidence,
         item_id=item_id,
         treatment=treatment,
         expected_patient_name=expected_patient_name,
+        ocr_diag=ocr_diag,
+    )
+
+    logger.info(
+        "[%s/%s] Document processed: status=%s, issues=%d, needs_conf=%s",
+        claim_id or "-",
+        doc_id,
+        "needs_confirmation" if needs_confirmation else "validated",
+        len(validation_issues),
+        needs_confirmation,
     )
 
     return ClaimDocument(

@@ -251,7 +251,29 @@ async def test_claims_api_flow(override_auth, sample_policy):
         assert settle_est["basis"] == "pre_treatment_estimate"
         assert settle_est["total"] > 0
 
-        # 8. Get Review package
+        # 8. Mark requirement done endpoint
+        req_item = next(
+            (it for it in check_res.json()["claim"]["checklist"] if it.get("kind") == "requirement"),
+            None
+        )
+        if req_item:
+            req_done_res = await client.put(
+                f"/api/claims/{claim_id}/checklist/{req_item['item_id']}/done",
+                json={"done": True, "note": "Attested completed"},
+            )
+            assert req_done_res.status_code == 200
+            assert req_done_res.json()["item"]["status"] == "done"
+
+        # 9. Verify upload to requirement item is rejected with 422
+        bad_upload_res = await client.post(
+            f"/api/claims/{claim_id}/documents",
+            data={"item_id": "admission_intimation"},
+            files={"file": ("test.pdf", b"%PDF-1.4 dummy", "application/pdf")},
+        )
+        assert bad_upload_res.status_code == 422
+        assert "not an uploadable document slot" in bad_upload_res.json()["detail"]
+
+        # 10. Get Review package
         rev_res = await client.get(f"/api/claims/{claim_id}/review")
         assert rev_res.status_code == 200
         rev_data = rev_res.json()
@@ -259,14 +281,14 @@ async def test_claims_api_flow(override_auth, sample_policy):
         assert "qualitative_label" in rev_data["readiness"]
         assert rev_data["can_submit"] is False  # Documents are still pending!
 
-        # 9. Blocked transition to ready_to_submit
+        # 11. Blocked transition to ready_to_submit
         bad_status_res = await client.post(
             f"/api/claims/{claim_id}/status",
             json={"status": "ready_to_submit", "note": "Trying to bypass docs"},
         )
         assert bad_status_res.status_code in (400, 409)
 
-        # 10. Check timeline
+        # 12. Check timeline
         timeline_res = await client.get(f"/api/claims/{claim_id}/timeline")
         assert timeline_res.status_code == 200
         timeline = timeline_res.json()["timeline"]

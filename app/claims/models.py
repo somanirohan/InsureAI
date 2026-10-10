@@ -29,6 +29,8 @@ ChecklistItemStatusType = Literal[
     "validated",
     "flagged",
     "needs_confirmation",
+    "pending",
+    "done",
 ]
 
 CheckResultType = Literal["pass", "fail", "flag", "unable_to_determine"]
@@ -71,11 +73,18 @@ class EligibilityResult(BaseModel):
 
 class ChecklistItem(BaseModel):
     item_id: str
+    kind: Literal["document", "requirement"] = "document"
     label: str
-    stage: str
+    description: Optional[str] = None
+    stage: str = "unspecified"
     page_cite: Optional[int] = None
+    original_text: str = ""
+    source: Literal["policy", "standard_suggestion"] = "policy"
     status: ChecklistItemStatusType = "required"
+    needs_confirmation: bool = False
+    deadline: Optional[Dict[str, Any]] = None
     document_id: Optional[str] = None
+    due_date_hint: Optional[str] = None
 
 
 class ClaimDocument(BaseModel):

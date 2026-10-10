@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import BaseModel
 
 try:
     from config import settings
@@ -27,6 +28,7 @@ except ImportError:
     from server.services.auth_service import get_current_user
     from server.services.fact_mapper import mongo_facts_to_rag_facts
 
+from app.claims.builder import build_claim_workflow_checklist
 from app.claims.documents import process_uploaded_claim_document, validate_document
 from app.claims.eligibility import evaluate_eligibility
 from app.claims.models import (
@@ -92,41 +94,10 @@ async def create_claim(
     claim_id = str(uuid.uuid4())
     now_iso = datetime.utcnow().isoformat()
 
-    # Pre-populate checklist from extracted policy facts
+    # Pre-populate checklist using deterministic workflow checklist builder
     rag_facts = mongo_facts_to_rag_facts(policy.get("facts", []))
-    checklist_resp = build_claim_checklist(rag_facts)
-    checklist_items: List[Dict[str, Any]] = []
-
-    for group in checklist_resp.get("checklist", []):
-        stage = group.get("stage", "unspecified")
-        for it in group.get("items", []):
-            checklist_items.append({
-                "item_id": it["item_id"],
-                "label": it["condition"],
-                "stage": stage,
-                "page_cite": it.get("page"),
-                "status": "required",
-                "document_id": None,
-            })
-
-    # Fallback to standard checklist items if policy has none
-    if not checklist_items:
-        standard_items = [
-            ("preauth_form", "Pre-authorization request form", "before_admission"),
-            ("discharge_summary", "Original discharge summary with clinical course", "after_discharge"),
-            ("final_bill", "Itemized hospital final bill and payment receipts", "after_discharge"),
-            ("investigation_reports", "Diagnostic and investigation test reports", "after_discharge"),
-            ("identity_proof", "Government-issued photo identification proof", "before_admission"),
-        ]
-        for item_id, label, stage in standard_items:
-            checklist_items.append({
-                "item_id": item_id,
-                "label": label,
-                "stage": stage,
-                "page_cite": None,
-                "status": "required",
-                "document_id": None,
-            })
+    workflow_items = build_claim_workflow_checklist(rag_facts)
+    checklist_items: List[Dict[str, Any]] = [item.model_dump() for item in workflow_items]
 
     claim_doc: Dict[str, Any] = {
         "claim_id": claim_id,
@@ -287,25 +258,34 @@ async def refresh_claim_checklist(
     policy = await _get_policy_or_404(claim["policy_id"], user_id)
 
     rag_facts = mongo_facts_to_rag_facts(policy.get("facts", []))
-    checklist_resp = build_claim_checklist(rag_facts)
+    treatment = claim.get("treatment") or {}
+    adm_date = treatment.get("admission_date")
+    dis_date = treatment.get("discharge_date")
 
+    workflow_items = build_claim_workflow_checklist(
+        rag_facts,
+        admission_date=adm_date,
+        discharge_date=dis_date,
+    )
+
+    existing_items = {it["item_id"]: it for it in claim.get("checklist", [])}
     existing_docs = {d["item_id"]: d for d in claim.get("documents", [])}
     new_items: List[Dict[str, Any]] = []
 
-    for group in checklist_resp.get("checklist", []):
-        stage = group.get("stage", "unspecified")
-        for it in group.get("items", []):
-            item_id = it["item_id"]
+    for w_it in workflow_items:
+        item_dict = w_it.model_dump()
+        item_id = item_dict["item_id"]
+
+        if item_dict["kind"] == "requirement":
+            if item_id in existing_items and existing_items[item_id].get("status") == "done":
+                item_dict["status"] = "done"
+        else:
             existing_doc = existing_docs.get(item_id)
-            item_status = "validated" if existing_doc and not existing_doc.get("needs_confirmation") else ("uploaded" if existing_doc else "required")
-            new_items.append({
-                "item_id": item_id,
-                "label": it["condition"],
-                "stage": stage,
-                "page_cite": it.get("page"),
-                "status": item_status,
-                "document_id": existing_doc.get("document_id") if existing_doc else None,
-            })
+            if existing_doc:
+                item_dict["document_id"] = existing_doc.get("document_id")
+                item_dict["status"] = "needs_confirmation" if existing_doc.get("needs_confirmation") else "validated"
+
+        new_items.append(item_dict)
 
     if not new_items:
         new_items = claim.get("checklist", [])
@@ -337,6 +317,65 @@ async def refresh_claim_checklist(
     return {"success": True, "claim": serialize_doc(claim)}
 
 
+class MarkRequirementDoneRequest(BaseModel):
+    done: bool = True
+    note: Optional[str] = None
+
+
+@router.put("/{claim_id}/checklist/{item_id}/done")
+async def mark_checklist_item_done(
+    claim_id: str,
+    item_id: str,
+    payload: Optional[MarkRequirementDoneRequest] = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Mark a requirement checklist item as done or pending (user-attested).
+    Rejects document slots with HTTP 400.
+    Appends an immutable timeline entry.
+    """
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+
+    is_done = payload.done if payload is not None else True
+    user_note = payload.note if payload is not None else None
+
+    checklist = claim.get("checklist", [])
+    target_item = next((it for it in checklist if it.get("item_id") == item_id), None)
+    if not target_item:
+        raise HTTPException(status_code=404, detail=f"Checklist item '{item_id}' not found.")
+
+    if target_item.get("kind") == "document":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot mark document item '{item_id}' as done. Upload a document file instead.",
+        )
+
+    target_status = "done" if is_done else "pending"
+    target_item["status"] = target_status
+
+    now_iso = datetime.utcnow().isoformat()
+    action_str = "completed" if is_done else "pending"
+    claim.setdefault("timeline", []).append({
+        "timestamp": now_iso,
+        "event": f"Requirement '{target_item.get('label')}' marked as {action_str}",
+        "note": user_note or f"Action item '{item_id}' self-attested as {action_str}",
+    })
+
+    claim["updated_at"] = now_iso
+    db = get_async_db()
+    await db.claims.update_one(
+        {"claim_id": claim_id},
+        {"$set": {
+            "checklist": claim["checklist"],
+            "timeline": claim["timeline"],
+            "updated_at": claim["updated_at"],
+        }}
+    )
+
+    return {"success": True, "claim": serialize_doc(claim), "item": target_item}
+
+
 @router.post("/{claim_id}/documents", status_code=status.HTTP_201_CREATED)
 async def upload_claim_document(
     claim_id: str,
@@ -361,6 +400,33 @@ async def upload_claim_document(
             status_code=400,
             detail="Unsupported format. Only PDF, PNG, JPG files are allowed.",
         )
+
+    # Check if item_id is an action/deadline requirement slot or unknown
+    checklist = claim.get("checklist", [])
+    target_slot = next((it for it in checklist if it.get("item_id") == item_id), None)
+
+    if target_slot:
+        if target_slot.get("kind") == "requirement":
+            # Optional proof upload ONLY for preauthorisation (links to preauth_approval_letter)
+            if item_id in ("preauthorisation", "preauth_form", "preauth_approval_letter"):
+                pass
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Item '{item_id}' is an action/deadline requirement, not an uploadable document slot. Mark it as done instead of uploading a file.",
+                )
+    else:
+        from app.claims.checklist_vocabulary import DOCUMENT_TYPES, REQUIREMENT_TYPES
+        if item_id in REQUIREMENT_TYPES and item_id not in ("preauthorisation", "preauth_form"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Item '{item_id}' is an action/deadline requirement, not an uploadable document slot. Mark it as done instead of uploading a file.",
+            )
+        elif item_id not in DOCUMENT_TYPES and not item_id.startswith("other_"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Unknown checklist item slot '{item_id}'.",
+            )
 
     # Save file safely
     doc_dir = os.path.join(settings.UPLOAD_DIR, "claims", claim_id)
@@ -392,19 +458,22 @@ async def upload_claim_document(
     claim["documents"] = docs
 
     # Update checklist item status
-    checklist = claim.get("checklist", [])
     item_found = False
     for it in checklist:
         if it.get("item_id") == item_id:
             item_found = True
             it["document_id"] = claim_doc_obj.document_id
-            it["status"] = "needs_confirmation" if claim_doc_obj.needs_confirmation else "validated"
+            if it.get("kind") == "requirement":
+                it["status"] = "done"
+            else:
+                it["status"] = "needs_confirmation" if claim_doc_obj.needs_confirmation else "validated"
             break
 
     if not item_found:
         # Dynamically append slot if uploaded item wasn't in original checklist
         checklist.append({
             "item_id": item_id,
+            "kind": "document",
             "label": item_id.replace("_", " ").title(),
             "stage": "after_discharge",
             "page_cite": None,
@@ -413,8 +482,12 @@ async def upload_claim_document(
         })
     claim["checklist"] = checklist
 
-    # Auto-transition to docs_validated if all checklist items are validated
-    all_validated = all(it.get("status") == "validated" for it in checklist)
+    # Auto-transition to docs_validated if all policy-sourced document items are validated
+    policy_docs = [
+        it for it in checklist
+        if it.get("kind", "document") == "document" and it.get("source", "policy") == "policy"
+    ]
+    all_validated = all(it.get("status") == "validated" for it in policy_docs) if policy_docs else all(it.get("status") == "validated" for it in checklist)
     if all_validated and claim.get("status") == "docs_pending":
         transition_claim(
             claim,
@@ -438,6 +511,75 @@ async def upload_claim_document(
             "documents": claim["documents"],
             "checklist": claim["checklist"],
             "status": claim["status"],
+            "timeline": claim["timeline"],
+            "updated_at": claim["updated_at"],
+        }}
+    )
+
+    return {"success": True, "claim": serialize_doc(claim), "document": doc_dict}
+
+
+@router.post("/{claim_id}/documents/{document_id}/reprocess")
+async def reprocess_claim_document(
+    claim_id: str,
+    document_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Re-run the full extraction and validation pipeline on an already uploaded document.
+    Clears old validation issues and updates checklist status.
+    """
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+
+    target_doc = next((d for d in claim.get("documents", []) if d.get("document_id") == document_id), None)
+    if not target_doc:
+        raise HTTPException(status_code=404, detail="Document not found on this claim.")
+
+    file_path = target_doc.get("file_path")
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Document file not found on disk.")
+
+    treatment = TreatmentDetails(**claim["treatment"]) if claim.get("treatment") else None
+    patient_name = current_user.get("full_name") or current_user.get("name") or current_user.get("email", "").split("@")[0]
+
+    # Re-run full pipeline
+    processed_doc = process_uploaded_claim_document(
+        file_path=file_path,
+        filename=target_doc.get("filename", "document"),
+        item_id=target_doc.get("item_id", ""),
+        treatment=treatment,
+        expected_patient_name=patient_name,
+        claim_id=claim_id,
+        existing_document_id=document_id,
+    )
+    doc_dict = processed_doc.model_dump()
+
+    # Update document in claim
+    docs = [d for d in claim.get("documents", []) if d.get("document_id") != document_id]
+    docs.append(doc_dict)
+    claim["documents"] = docs
+
+    # Update checklist item status
+    for it in claim.get("checklist", []):
+        if it.get("document_id") == document_id:
+            it["status"] = "needs_confirmation" if processed_doc.needs_confirmation else "validated"
+            break
+
+    now_iso = datetime.utcnow().isoformat()
+    claim.setdefault("timeline", []).append({
+        "timestamp": now_iso,
+        "event": "Document re-processed",
+        "note": f"Re-ran OCR extraction on '{target_doc.get('filename')}'",
+    })
+    claim["updated_at"] = now_iso
+
+    db = get_async_db()
+    await db.claims.update_one(
+        {"claim_id": claim_id},
+        {"$set": {
+            "documents": claim["documents"],
+            "checklist": claim["checklist"],
             "timeline": claim["timeline"],
             "updated_at": claim["updated_at"],
         }}

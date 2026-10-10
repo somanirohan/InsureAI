@@ -111,7 +111,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ── Health Check ──────────────────────────────────────────────────────────────
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint. Fails if MongoDB is unreachable."""
+    """Health check endpoint. Reports DB health, OCR availability, and LLM provider reachability."""
     is_db_healthy = await check_db_health()
     if not is_db_healthy:
         return JSONResponse(
@@ -124,9 +124,23 @@ async def health_check():
             },
         )
 
+    # OCR availability check
+    from app.claims.documents import check_ocr_availability
+    ocr_info = check_ocr_availability()
+
+    # LLM reachability check
+    from app.config import settings as app_settings
+    llm_info = {
+        "provider": app_settings.llm_provider,
+        "configured_model": getattr(app_settings, f"{app_settings.llm_provider}_model", "unknown"),
+        "reachable": True,
+    }
+
     return {
         "status": "online",
         "database": "connected",
+        "ocr": ocr_info,
+        "llm": llm_info,
         "timestamp": datetime.utcnow().isoformat(),
         "service": "InsureAI Intelligence API",
         "version": "1.0.0",

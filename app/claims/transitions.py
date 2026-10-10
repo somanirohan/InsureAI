@@ -30,6 +30,8 @@ CHECKLIST_ITEM_ALLOWED_TRANSITIONS: Dict[str, Set[str]] = {
     "needs_confirmation": {"validated", "flagged", "uploaded"},
     "flagged": {"uploaded", "validated"},
     "validated": {"uploaded"},
+    "pending": {"done"},
+    "done": {"pending"},
 }
 
 

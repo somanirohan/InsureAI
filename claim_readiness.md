@@ -119,5 +119,6 @@ This document details the architectural decisions, design choices, tradeoffs, an
 - **`server/services/fact_mapper.py`**: Updated `rag_facts_to_mongo_facts()` and `mongo_facts_to_rag_facts()` to persist and restore `stage`, `deadline`, `page`, and `verified` metadata in MongoDB.
 - **`server/services/rag_service.py`**: Forwarded `checklist`, `general_advice`, and `heads_up` fields in the RAG service response dictionary.
 - **`server/routers/chat.py`**: Persisted `checklist`, `general_advice`, and `heads_up` in the conversation `assistant_msg` in MongoDB.
-- **`client/src/components/chat/ChatBox.jsx`**: Added `ChecklistCard` with collapsible stage groups, inline deadline badges, existing citation chips, insurer confirmation badges, and distinct general advice styling.
 - **`claim_readiness.md`**: Created architecture and decision documentation.
+- **`docs/claims/checklist_split_decision_log.md`**: Detailed architectural decision log and verification results for the Requirement/Document checklist split.
+- **`docs/claims/results.md`**: Quantitative split accuracy evaluation across diverse phrasing styles.

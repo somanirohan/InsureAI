@@ -1,0 +1,46 @@
+[
+  {
+    "name": "numbered_list",
+    "text": "1. Original discharge summary 2. Final hospital bill and receipts 3. Diagnostic reports",
+    "expected_ids": ["discharge_summary", "itemised_bills", "diagnostic_reports"]
+  },
+  {
+    "name": "bullet_text",
+    "text": "• Discharge card • Pharmacy bills • Duly completed claim form",
+    "expected_ids": ["discharge_summary", "prescriptions", "claim_form"]
+  },
+  {
+    "name": "documents_such_as",
+    "text": "Documents such as treating doctor certificate, investigation reports, and final bill must be furnished",
+    "expected_ids": ["doctor_certificate", "diagnostic_reports", "itemised_bills"]
+  },
+  {
+    "name": "photocopy_id_proof",
+    "text": "Photocopy of ID proof and original discharge summary",
+    "expected_ids": ["id_proof", "discharge_summary"]
+  },
+  {
+    "name": "pathology_radiology_lab",
+    "text": "Pathology reports, radiology reports, and doctor prescriptions must be submitted",
+    "expected_ids": ["diagnostic_reports", "prescriptions"]
+  },
+  {
+    "name": "cashless_preauth_72h",
+    "text": "Pre-authorisation must be requested at least 72 hours prior to admission",
+    "expected_req_id": "preauthorisation",
+    "expected_deadline_val": 72,
+    "expected_unit": "hours"
+  },
+  {
+    "name": "emergency_intimation_48h",
+    "text": "Notification is required within 48 hours of emergency hospitalisation",
+    "expected_req_id": "admission_intimation",
+    "expected_deadline_val": 48,
+    "expected_unit": "hours"
+  },
+  {
+    "name": "unmapped_document_phrase",
+    "text": "Implant invoice and barcode sticker must be provided",
+    "expected_unmapped": true
+  }
+]

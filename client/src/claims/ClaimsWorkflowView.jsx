@@ -42,6 +42,8 @@ export default function ClaimsWorkflowView({ policies = [] }) {
   const [loadingClaims, setLoadingClaims] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [uploadingSlot, setUploadingSlot] = useState(null);
+  const [markingRequirementId, setMarkingRequirementId] = useState(null);
+  const [readiness, setReadiness] = useState(null);
   const [error, setError] = useState(null);
 
   // Review screen data
@@ -103,6 +105,16 @@ export default function ClaimsWorkflowView({ policies = [] }) {
     }
   }, []);
 
+  // Fetch readiness (for checklist tab header counts)
+  const fetchReadiness = useCallback(async (claimId) => {
+    try {
+      const res = await api.get(`/claims/${claimId}/review`);
+      setReadiness(res.data?.readiness || null);
+    } catch (err) {
+      console.error('Error fetching readiness:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchClaims();
   }, [fetchClaims]);
@@ -118,6 +130,29 @@ export default function ClaimsWorkflowView({ policies = [] }) {
       fetchReviewData(activeClaimId);
     }
   }, [activeClaimId, activeStep, fetchReviewData]);
+
+  // Auto-refresh readiness whenever we land on the checklist tab or claim changes
+  useEffect(() => {
+    if (activeClaimId && activeStep === 'checklist') {
+      fetchReadiness(activeClaimId);
+    }
+  }, [activeClaimId, activeStep, fetchReadiness]);
+
+  // Mark / unmark a requirement item as done
+  const handleMarkRequirementDone = async (itemId, done) => {
+    try {
+      setMarkingRequirementId(itemId);
+      const res = await api.put(`/claims/${activeClaimId}/checklist/${itemId}/done`, { done });
+      setActiveClaim(res.data.claim);
+      // Refresh readiness counts
+      fetchReadiness(activeClaimId);
+    } catch (err) {
+      console.error('Error marking requirement:', err);
+      setError(err.response?.data?.detail || 'Failed to update requirement');
+    } finally {
+      setMarkingRequirementId(null);
+    }
+  };
 
   // Create new claim
   const handleCreateClaim = async (e) => {
@@ -199,6 +234,25 @@ export default function ClaimsWorkflowView({ policies = [] }) {
       setError(err.response?.data?.detail || 'Document upload/validation failed');
     } finally {
       setUploadingSlot(null);
+    }
+  };
+
+  // Reprocess document (re-run OCR and validation)
+  const [reprocessingDocId, setReprocessingDocId] = useState(null);
+  const handleReprocessDocument = async (docId) => {
+    try {
+      setReprocessingDocId(docId);
+      const res = await api.post(`/claims/${activeClaimId}/documents/${docId}/reprocess`);
+      setActiveClaim(res.data.claim);
+
+      // Auto recalculate settlement
+      const settleRes = await api.post(`/claims/${activeClaimId}/settlement`);
+      setActiveClaim(prev => ({ ...prev, settlement_estimate: settleRes.data.settlement_estimate }));
+    } catch (err) {
+      console.error('Error reprocessing document:', err);
+      setError(err.response?.data?.detail || 'Failed to reprocess document');
+    } finally {
+      setReprocessingDocId(null);
     }
   };
 
@@ -528,9 +582,14 @@ export default function ClaimsWorkflowView({ policies = [] }) {
           <DocumentChecklistSection
             checklist={activeClaim?.checklist || []}
             documents={activeClaim?.documents || []}
+            readiness={readiness}
             onUploadDocument={handleUploadDocument}
             onConfirmDocument={handleConfirmDocument}
+            onReprocessDocument={handleReprocessDocument}
+            onMarkRequirementDone={handleMarkRequirementDone}
             uploadingSlot={uploadingSlot}
+            reprocessingDocId={reprocessingDocId}
+            markingRequirementId={markingRequirementId}
           />
         )}
 

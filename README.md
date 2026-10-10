@@ -259,6 +259,31 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+#### Host OCR Engine Setup (Tesseract)
+
+InsurAI uses Tesseract OCR for scanned policy and claim documents. Because InsurAI runs natively on the host (non-Docker), Tesseract must be installed directly on your machine and present on your system `PATH`:
+
+- **macOS (Homebrew)**:
+  ```bash
+  brew install tesseract
+  # Optional language packs:
+  brew install tesseract-lang
+  ```
+- **Ubuntu / Debian**:
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y tesseract-ocr tesseract-ocr-eng
+  ```
+- **Windows**:
+  - Download and run the installer from [UB-Mannheim Tesseract Releases](https://github.com/UB-Mannheim/tesseract/wiki).
+  - Add `C:\Program Files\Tesseract-OCR` to your System Environment `Path` variable.
+
+*Verify installation:*
+```bash
+tesseract --version
+```
+> **Graceful Degradation Safeguard:** If Tesseract is not installed on the machine, document uploads still succeed without crashing. Uploaded documents will be marked with the explicit status `needs_confirmation` and the reason `"OCR unavailable on this machine. Please install Tesseract on host."` until Tesseract is installed and the document is reprocessed via the "Re-run" action.
+
 ---
 
 ### 4. Frontend Setup
