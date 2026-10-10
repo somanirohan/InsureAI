@@ -25,6 +25,7 @@ class QuestionRequest(BaseModel):
     policy_id: Optional[str] = None
     question: str
     plain_language_mode: bool = False
+    language: Optional[str] = "en"
 
 class ConversationResponse(BaseModel):
     id: str = Field(alias="_id")

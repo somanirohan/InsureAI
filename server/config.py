@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -42,6 +42,17 @@ class ServerSettings(BaseSettings):
     UPLOAD_DIR: str = "server/uploads"
     MAX_FILE_SIZE_MB: int = 25
     ENVIRONMENT: str = "development"
+
+    # ── Cookie & Session Security ─────────────────────────────────────────────
+    COOKIE_NAME: str = "access_token"
+    COOKIE_SECURE: bool = False  # Set to True for HTTPS / production
+    COOKIE_SAMESITE: str = "lax"
+    COOKIE_DOMAIN: Optional[str] = None
+
+    # ── Rate Limiting & Protection ─────────────────────────────────────────────
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_AUTH_MAX_REQUESTS: int = 20  # per minute per IP for /api/auth
+    RATE_LIMIT_API_MAX_REQUESTS: int = 120   # per minute per IP for other endpoints
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

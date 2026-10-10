@@ -19,15 +19,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { Spinner, ErrorBanner } from '../common/ui';
-
-const PIPELINE_STEPS = [
-  { id: 'uploading',  label: 'Uploading' },
-  { id: 'extracting', label: 'Extracting' },
-  { id: 'indexed',    label: 'Indexing' },
-  { id: 'ready',      label: 'Ready' },
-];
-
-const stepOrder = PIPELINE_STEPS.map(s => s.id);
+import { useLanguage } from '../../context/LanguageContext';
 
 const formatMoney = (val) => {
   if (!val && val !== 0) return '—';
@@ -52,6 +44,7 @@ const parseWaitingPeriod = (str) => {
 };
 
 export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) {
+  const { t } = useLanguage();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [pipelineStep, setPipelineStep] = useState(null);
@@ -59,6 +52,15 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
   const [dragOver, setDragOver] = useState(false);
   const [extractedPolicy, setExtractedPolicy] = useState(null);
   const inputRef = useRef(null);
+
+  const PIPELINE_STEPS = [
+    { id: 'uploading',  label: t('upload_modal.pipeline.uploading', 'Uploading') },
+    { id: 'extracting', label: t('upload_modal.pipeline.extracting', 'Extracting') },
+    { id: 'indexed',    label: t('upload_modal.pipeline.indexing', 'Indexing') },
+    { id: 'ready',      label: t('upload_modal.pipeline.ready', 'Ready') },
+  ];
+
+  const stepOrder = PIPELINE_STEPS.map(s => s.id);
 
   if (!isOpen) return null;
 
@@ -84,7 +86,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
       setError(null);
       setExtractedPolicy(null);
     } else {
-      setError('Please select a valid PDF file.');
+      setError(t('upload_modal.error_pdf_only', 'Please select a valid PDF file.'));
     }
   };
 
@@ -97,7 +99,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) { setError('Please select a policy PDF.'); return; }
+    if (!file) { setError(t('upload_modal.error_pdf_only', 'Please select a policy PDF.')); return; }
 
     try {
       setUploading(true);
@@ -131,7 +133,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
             setExtractedPolicy(pol);
           } else if (currentStatus === 'failed') {
             clearInterval(pollInterval);
-            setError(pol.processing_error || 'Policy extraction failed on server.');
+            setError(pol.processing_error || t('upload_modal.error_upload_failed', 'Policy extraction failed on server.'));
             setUploading(false);
             setPipelineStep(null);
           }
@@ -140,7 +142,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
         }
       }, 1200);
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.detail || 'Upload failed. Please try again.');
+      setError(err.response?.data?.error || err.response?.data?.detail || t('upload_modal.error_upload_failed', 'Upload failed. Please try again.'));
       setUploading(false);
       setPipelineStep(null);
     }
@@ -162,12 +164,12 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
             </div>
             <div>
               <h2 className="text-base font-semibold text-zinc-100">
-                {extractedPolicy ? 'Policy Extracted Successfully' : 'Upload Policy'}
+                {extractedPolicy ? t('upload_modal.extracted_title', 'Policy Extracted Successfully') : t('upload_modal.title', 'Upload Policy')}
               </h2>
               <p className="text-xs text-zinc-500 mt-0.5">
                 {extractedPolicy
-                  ? 'Key details & clauses auto-detected from your document'
-                  : 'AI automatically extracts provider, plan type & coverage facts'}
+                  ? t('upload_modal.subtitle', 'Key details & clauses auto-detected from your document')
+                  : t('dashboard.upload_desc', 'AI automatically extracts provider, plan type & coverage facts')}
               </p>
             </div>
           </div>
@@ -175,7 +177,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
             onClick={handleClose}
             disabled={uploading}
             className="btn btn-ghost p-2 rounded-xl text-zinc-400 hover:text-zinc-200"
-            aria-label="Close"
+            aria-label={t('common.close', 'Close')}
           >
             <X size={16} />
           </button>
@@ -193,7 +195,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="text-base font-bold text-zinc-100 truncate">
-                      {extractedPolicy.insurer_name || 'Insurance Provider'}
+                      {extractedPolicy.insurer_name || t('upload_modal.insurer_label', 'Insurance Provider')}
                     </h3>
                     <p className="text-xs text-zinc-400 font-medium mt-0.5">
                       {extractedPolicy.policy_type || 'Comprehensive Health Plan'}
@@ -205,7 +207,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Base Sum Insured</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">{t('upload_modal.sum_insured_label', 'Base Sum Insured')}</p>
                     <p className="text-base font-bold text-brand-400 mt-0.5">
                       {formatMoney(extractedPolicy.sum_insured)}
                     </p>
@@ -221,13 +223,13 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
               {/* Extracted Details Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="surface-inset p-3.5 rounded-xl border border-white/[0.06]">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Room Rent Cap</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">{t('upload_modal.room_rent_label', 'Room Rent Cap')}</p>
                   <p className="text-xs font-medium text-zinc-200 line-clamp-2">
                     {extractedPolicy.red_flag_summary?.room_rent_cap || 'No sub-limit detected'}
                   </p>
                 </div>
                 <div className="surface-inset p-3.5 rounded-xl border border-white/[0.06]">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Co-Payment</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">{t('upload_modal.copay_label', 'Co-Payment')}</p>
                   <p className="text-xs font-medium text-zinc-200 line-clamp-2">
                     {extractedPolicy.red_flag_summary?.copay_percentage || '0% / None specified'}
                   </p>
@@ -243,10 +245,10 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
                           <Clock size={13} />
-                          <span>Waiting Periods</span>
+                          <span>{t('upload_modal.waiting_label', 'Waiting Periods')}</span>
                         </div>
                         <span className="text-[10px] text-zinc-500 font-medium">
-                          {extractedPolicy.red_flag_summary.waiting_periods.length} clauses
+                          {extractedPolicy.red_flag_summary.waiting_periods.length} {t('common.actions', 'clauses')}
                         </span>
                       </div>
                       <div className="space-y-1.5 pt-0.5">
@@ -276,7 +278,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-400">
                           <AlertTriangle size={13} />
-                          <span>Key Exclusions</span>
+                          <span>{t('upload_modal.exclusions_label', 'Key Exclusions')}</span>
                         </div>
                         <span className="text-[10px] text-zinc-500 font-medium">
                           {extractedPolicy.red_flag_summary.major_exclusions.length} items
@@ -294,7 +296,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                         ))}
                         {extractedPolicy.red_flag_summary.major_exclusions.length > 4 && (
                           <p className="text-[11px] text-zinc-500 text-center pt-1 font-medium">
-                            +{extractedPolicy.red_flag_summary.major_exclusions.length - 4} more exclusions documented in policy record
+                            +{extractedPolicy.red_flag_summary.major_exclusions.length - 4} more exclusions documented
                           </p>
                         )}
                       </div>
@@ -311,14 +313,14 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                   className="btn btn-ghost flex-1 py-2.5 text-xs text-zinc-400 hover:text-zinc-200"
                 >
                   <RefreshCw size={13} className="mr-1.5" />
-                  Upload Another
+                  {t('upload_modal.upload_another', 'Upload Another')}
                 </button>
                 <button
                   type="button"
                   onClick={handleClose}
                   className="btn btn-primary flex-1 py-2.5 text-xs font-semibold gap-1.5 shadow-lg shadow-brand-500/10"
                 >
-                  View in Dashboard
+                  {t('upload_modal.view_policy', 'View in Dashboard')}
                   <ArrowRight size={13} />
                 </button>
               </div>
@@ -332,7 +334,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                   <div className="flex items-center gap-2 mb-4">
                     <Spinner size={13} className="text-brand-500" />
                     <span className="text-xs font-medium text-brand-400">
-                      Processing policy document with AI pipeline...
+                      {t('upload_modal.uploading_title', 'Processing policy document with AI pipeline...')}
                     </span>
                   </div>
                   <div className="flex items-center gap-0">
@@ -415,7 +417,8 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                     <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400 mx-auto mb-3 shadow-inner">
                       <UploadCloud size={24} />
                     </div>
-                    <p className="text-sm text-zinc-200 font-medium">Drop policy PDF here</p>
+                    <p className="text-sm text-zinc-200 font-medium">{t('upload_modal.drop_title', 'Drop policy PDF here')}</p>
+                    <p className="text-xs text-zinc-500 mt-1">{t('upload_modal.drop_desc', 'or browse from your device (PDF up to 50MB)')}</p>
                   </>
                 )}
               </div>
@@ -429,12 +432,12 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
                 {uploading ? (
                   <>
                     <Spinner size={14} />
-                    Extracting &amp; Indexing…
+                    {t('common.processing', 'Extracting & Indexing…')}
                   </>
                 ) : (
                   <>
                     <UploadCloud size={15} />
-                    Upload &amp; Extract
+                    {t('upload_modal.upload_cta', 'Upload & Extract')}
                   </>
                 )}
               </button>

@@ -9,19 +9,21 @@ import {
   User,
   Menu,
   X,
+  Globe,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage, LanguageSelector } from '../../context/LanguageContext';
 
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard',    icon: LayoutGrid },
-  { id: 'chat',      label: 'AI Assistant', icon: MessageSquare },
-  { id: 'cost',      label: 'Cost',         icon: DollarSign },
-  { id: 'compare',   label: 'Compare',      icon: GitCompare },
-];
-
-// ─── Desktop Sidebar ────────────────────────────────────────
-export function Sidebar({ activeTab, setActiveTab }) {
+export function Sidebar({ activeTab, setActiveTab, onOpenSecurityModal }) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
+
+  const navItems = [
+    { id: 'dashboard', label: t('nav.dashboard', 'Dashboard'),       icon: LayoutGrid },
+    { id: 'chat',      label: t('nav.chat', 'AI Assistant'),         icon: MessageSquare },
+    { id: 'cost',      label: t('nav.cost', 'Cost Estimator'),       icon: DollarSign },
+    { id: 'compare',   label: t('nav.compare', 'Compare Policies'),  icon: GitCompare },
+  ];
 
   return (
     <aside
@@ -38,7 +40,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
       <div className="px-5 pt-7 pb-6">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className="flex items-center gap-3 group"
+          className="flex items-center gap-3 group text-left"
         >
           <div
             className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
@@ -51,15 +53,19 @@ export function Sidebar({ activeTab, setActiveTab }) {
             <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-lg" />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>MedShield</p>
-            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.30)' }}>Policy Intelligence</p>
+            <p className="text-sm font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>
+              {t('brand_name', 'MedShield')}
+            </p>
+            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
+              {t('brand_tagline', 'Policy Intelligence')}
+            </p>
           </div>
         </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-0.5">
-        <p className="label-xs px-2 mb-3">Navigation</p>
+        <p className="label-xs px-2 mb-3">{t('nav.navigation', 'Navigation')}</p>
         {navItems.map(({ id, label, icon: Icon }) => {
           const isActive = activeTab === id;
           return (
@@ -85,10 +91,10 @@ export function Sidebar({ activeTab, setActiveTab }) {
                 size={14}
                 style={{ color: isActive ? '#c8a96e' : 'rgba(255,255,255,0.35)' }}
               />
-              <span className="flex-1 text-left">{label}</span>
+              <span className="flex-1 text-left truncate">{label}</span>
               {isActive && (
                 <div
-                  className="w-1 h-1 rounded-full"
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                   style={{ background: '#c8a96e' }}
                 />
               )}
@@ -97,9 +103,40 @@ export function Sidebar({ activeTab, setActiveTab }) {
         })}
       </nav>
 
+      {/* Language Selector in Sidebar */}
+      <div className="px-4 py-2 border-t border-white/[0.04]">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
+            {t('nav.select_language', 'Language')}
+          </span>
+          <LanguageSelector variant="compact" />
+        </div>
+      </div>
+
+      {/* Security Status Indicator */}
+      <div className="px-3 pt-2">
+        <button
+          onClick={onOpenSecurityModal}
+          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all group"
+          style={{
+            background: 'rgba(16, 185, 129, 0.07)',
+            border: '1px solid rgba(16, 185, 129, 0.22)',
+          }}
+          title="Inspect Security & Cookie Protection"
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-medium tracking-tight text-zinc-300 group-hover:text-emerald-300 transition-colors">
+              Session Secured · HttpOnly
+            </span>
+          </div>
+          <Shield size={11} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+        </button>
+      </div>
+
       {/* User Footer */}
       <div
-        className="px-3 pb-5 pt-4"
+        className="px-3 pb-5 pt-2"
         style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
       >
         <div className="flex items-center gap-3 px-2 py-2 rounded-xl">
@@ -114,7 +151,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium truncate leading-tight" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              {user?.full_name?.split(' ')[0] || 'User'}
+              {user?.full_name?.split(' ')[0] || t('nav.user', 'User')}
             </p>
             <p className="text-[10px] truncate leading-tight" style={{ color: 'rgba(255,255,255,0.28)' }}>
               {user?.email || ''}
@@ -124,7 +161,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
             id="nav-logout"
             onClick={logout}
             className="btn btn-ghost p-1.5 rounded-lg"
-            title="Logout"
+            title={t('nav.logout', 'Logout')}
             style={{ color: 'rgba(255,255,255,0.25)' }}
             onMouseEnter={e => e.currentTarget.style.color='rgba(220,80,80,0.80)'}
             onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.25)'}
@@ -137,10 +174,17 @@ export function Sidebar({ activeTab, setActiveTab }) {
   );
 }
 
-// ─── Mobile Top Bar ─────────────────────────────────────────
-export function MobileTopBar({ activeTab, setActiveTab }) {
+export function MobileTopBar({ activeTab, setActiveTab, onOpenSecurityModal }) {
   const { logout } = useAuth();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+
+  const navItems = [
+    { id: 'dashboard', label: t('nav.dashboard', 'Dashboard'),       icon: LayoutGrid },
+    { id: 'chat',      label: t('nav.chat', 'AI Assistant'),         icon: MessageSquare },
+    { id: 'cost',      label: t('nav.cost', 'Cost Estimator'),       icon: DollarSign },
+    { id: 'compare',   label: t('nav.compare', 'Compare Policies'),  icon: GitCompare },
+  ];
 
   return (
     <>
@@ -163,16 +207,28 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
           >
             <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-md" />
           </div>
-          <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>MedShield</span>
+          <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>
+            {t('brand_name', 'MedShield')}
+          </span>
         </div>
-        <button
-          onClick={() => setOpen(!open)}
-          className="btn btn-ghost p-2"
-          aria-label="Toggle menu"
-          style={{ color: 'rgba(255,255,255,0.60)' }}
-        >
-          {open ? <X size={18} /> : <Menu size={18} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenSecurityModal}
+            className="p-1.5 rounded-lg text-emerald-400 hover:bg-white/[0.06] transition-colors"
+            title="Inspect Security & Cookies"
+          >
+            <Shield size={16} />
+          </button>
+          <LanguageSelector variant="compact" />
+          <button
+            onClick={() => setOpen(!open)}
+            className="btn btn-ghost p-2"
+            aria-label="Toggle menu"
+            style={{ color: 'rgba(255,255,255,0.60)' }}
+          >
+            {open ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </header>
 
       {/* Mobile Drawer */}
@@ -203,7 +259,9 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
                 >
                   <img src="/favicon_io/apple-touch-icon.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-md" />
                 </div>
-                <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>MedShield</span>
+                <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>
+                  {t('brand_name', 'MedShield')}
+                </span>
               </div>
               <button onClick={() => setOpen(false)} style={{ color: 'rgba(255,255,255,0.40)' }}>
                 <X size={16} />
@@ -229,20 +287,45 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
                     }}
                   >
                     <Icon size={14} style={{ color: isActive ? '#c8a96e' : 'rgba(255,255,255,0.35)' }} />
-                    {label}
+                    <span className="truncate">{label}</span>
                   </button>
                 );
               })}
             </div>
 
-            <button
-              onClick={() => { logout(); setOpen(false); }}
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
-              style={{ color: 'rgba(255,255,255,0.30)' }}
-            >
-              <LogOut size={13} />
-              Logout
-            </button>
+            <div className="pt-4 border-t border-white/[0.08] space-y-3">
+              <button
+                onClick={() => {
+                  onOpenSecurityModal?.();
+                  setOpen(false);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all"
+                style={{
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.22)',
+                  color: '#6ee7b7',
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <Shield size={13} />
+                  <span>Secured · HttpOnly Active</span>
+                </div>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              </button>
+
+              <div className="flex items-center justify-between px-2">
+                <span className="text-xs text-zinc-400">{t('nav.select_language', 'Language')}</span>
+                <LanguageSelector variant="compact" />
+              </div>
+              <button
+                onClick={() => { logout(); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
+                style={{ color: 'rgba(255,255,255,0.30)' }}
+              >
+                <LogOut size={13} />
+                {t('nav.logout', 'Logout')}
+              </button>
+            </div>
           </nav>
         </>
       )}

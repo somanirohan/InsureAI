@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   Shield, ArrowRight, Lock, CheckCircle, ChevronRight,
   FileText, Brain, TrendingUp, AlertTriangle, X, Mail,
-  User, Phone, Menu, DollarSign, GitCompare,
+  User, Phone, Menu, DollarSign, GitCompare, Globe,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage, LanguageSelector } from '../../context/LanguageContext';
 import { Spinner } from '../common/ui';
 import { LiquidBlob, Starfield } from '../common/LiquidBlob';
 
@@ -13,6 +14,7 @@ import { LiquidBlob, Starfield } from '../common/LiquidBlob';
    Slides in from the right; dummy credentials pre-filled
    ───────────────────────────────────────────────────────────── */
 function AuthDrawer({ onClose, defaultTab = 'login' }) {
+  const { t } = useLanguage();
   const [isLogin, setIsLogin] = useState(defaultTab === 'login');
   const [fullName, setFullName] = useState('');
   const [email, setEmail]       = useState('alex@medshield.ai');
@@ -140,12 +142,12 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
           {/* Headline */}
           <div className="mb-7">
             <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#f0f0f8', letterSpacing: '-0.03em', lineHeight: 1.2, marginBottom: '6px' }}>
-              {isLogin ? 'Welcome back' : 'Create account'}
+              {isLogin ? t('auth.sign_in_title', 'Welcome back') : t('auth.sign_up_title', 'Create account')}
             </h2>
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', letterSpacing: '-0.01em', lineHeight: 1.6 }}>
               {isLogin
-                ? 'Sign in to access your policy intelligence dashboard.'
-                : 'Get started with AI-powered insurance analysis.'}
+                ? t('auth.sign_in_subtitle', 'Sign in to access your policy intelligence dashboard.')
+                : t('auth.sign_up_subtitle', 'Get started with AI-powered insurance analysis.')}
             </p>
           </div>
 
@@ -154,12 +156,12 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
             className="flex p-1 mb-6 rounded-2xl"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
           >
-            {['Sign In', 'Register'].map((label, i) => {
+            {[{ key: 'login', label: t('landing.sign_in', 'Sign In') }, { key: 'register', label: t('landing.sign_up', 'Register') }].map(({ key, label }, i) => {
               const active = i === 0 ? isLogin : !isLogin;
               return (
                 <button
-                  key={label}
-                  id={`drawer-tab-${i === 0 ? 'login' : 'register'}`}
+                  key={key}
+                  id={`drawer-tab-${key}`}
                   type="button"
                   onClick={() => switchTab(i === 0)}
                   style={{
@@ -201,7 +203,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
               {!isLogin && (
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                    Full Name
+                    {t('auth.full_name', 'Full Name')}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <User size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
@@ -211,7 +213,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
                       required
                       value={fullName}
                       onChange={e => setFullName(e.target.value)}
-                      placeholder="Your full name"
+                      placeholder={t('auth.full_name', 'Your full name')}
                       style={fieldStyle}
                       onFocus={handleFieldFocus}
                       onBlur={handleFieldBlur}
@@ -222,7 +224,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
 
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                  Email address
+                  {t('auth.email', 'Email address')}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
@@ -242,7 +244,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
 
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                  Password
+                  {t('auth.password', 'Password')}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Lock size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
@@ -263,7 +265,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
               {!isLogin && (
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                    Phone <span style={{ textTransform: 'none', fontWeight: 400, color: 'rgba(255,255,255,0.20)' }}>(optional)</span>
+                    {t('auth.phone', 'Phone')} <span style={{ textTransform: 'none', fontWeight: 400, color: 'rgba(255,255,255,0.20)' }}>({t('auth.optional', 'optional')})</span>
                   </label>
                   <div style={{ position: 'relative' }}>
                     <Phone size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
@@ -310,7 +312,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
                   onMouseLeave={e => { e.currentTarget.style.boxShadow='0 4px 24px rgba(200,169,110,0.32)'; e.currentTarget.style.transform='translateY(0)'; }}
                 >
                   {loading && <Spinner size={14} />}
-                  <span>{loading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Sign In' : 'Create Account')}</span>
+                  <span>{loading ? (isLogin ? t('auth.signing_in', 'Signing in…') : t('auth.creating_account', 'Creating account…')) : (isLogin ? t('landing.sign_in', 'Sign In') : t('landing.sign_up', 'Create Account'))}</span>
                   {!loading && <ArrowRight size={14} />}
                 </button>
               </div>
@@ -320,7 +322,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
           {/* Dummy account note */}
           {isLogin && (
             <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: 'rgba(255,255,255,0.18)', lineHeight: 1.6 }}>
-              Pre-filled with a demo account. Backend must be running on port 5001.
+              {t('auth.demo_hint', 'Pre-filled with a demo account. Backend must be running on port 5001.')}
             </p>
           )}
         </div>
@@ -389,7 +391,8 @@ function FeatureCard({ icon: Icon, title, desc, accent, delay = '0s' }) {
 /* ─────────────────────────────────────────────────────────────
    MAIN LANDING PAGE
    ───────────────────────────────────────────────────────────── */
-export default function LandingPage() {
+export default function LandingPage({ onOpenSecurityModal }) {
+  const { t } = useLanguage();
   const [authOpen, setAuthOpen]     = useState(false);
   const [authTab, setAuthTab]       = useState('login');
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -407,7 +410,11 @@ export default function LandingPage() {
   };
 
   /* ── nav link items ── */
-  const navLinks = ['Features', 'How it works'];
+  const navLinks = [
+    { label: t('nav.features', 'Features'), href: '#features' },
+    { label: t('nav.how_it_works', 'How it works'), href: '#how-it-works' },
+    { label: 'Security & Cookies', onClick: onOpenSecurityModal },
+  ];
 
   return (
     <div className="min-h-screen" style={{ background: '#07070f', color: '#f0f0f8' }}>
@@ -429,7 +436,6 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════
           DYNAMIC ISLAND NAVBAR
           ════════════════════════════════════════════════ */}
-      {/* ── Outer shell: always full-width, padding creates the vertical lift ── */}
       <div
         style={{
           position: 'fixed',
@@ -441,15 +447,13 @@ export default function LandingPage() {
           justifyContent: 'center',
           padding: scrolled ? '12px 24px' : '0 24px',
           pointerEvents: 'none',
-          /* padding is animatable, so the lift is smooth in both directions */
           transition: 'padding 0.48s cubic-bezier(0.34,1.56,0.64,1)',
         }}
       >
-        {/* ── Inner nav: all changed props are numeric → fully animatable ── */}
         <nav
           style={{
             width: '100%',
-            maxWidth: scrolled ? '660px' : '1120px',
+            maxWidth: scrolled ? '720px' : '1120px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -464,9 +468,8 @@ export default function LandingPage() {
             boxShadow: scrolled
               ? '0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)'
               : '0 0px 0px rgba(0,0,0,0)',
-            padding: scrolled ? '8px 10px 8px 18px' : '20px 0',
+            padding: scrolled ? '8px 12px 8px 18px' : '20px 0',
             gap: scrolled ? '6px' : '0px',
-            /* Every property above is numeric — smooth in both directions */
             transition: [
               'max-width 0.48s cubic-bezier(0.34,1.56,0.64,1)',
               'border-radius 0.48s cubic-bezier(0.34,1.56,0.64,1)',
@@ -521,7 +524,7 @@ export default function LandingPage() {
                 transition: 'all 0.3s ease',
               }}
             >
-              MedShield
+              {t('brand_name', 'MedShield')}
             </span>
           </button>
 
@@ -535,31 +538,59 @@ export default function LandingPage() {
               ...(scrolled ? { flex: 1, justifyContent: 'center' } : {}),
             }}
           >
-            {navLinks.map(link => (
-              <a
-                key={link}
-                href={`#${link.toLowerCase().replace(/ /g, '-')}`}
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'rgba(255,255,255,0.50)',
-                  textDecoration: 'none',
-                  letterSpacing: '-0.01em',
-                  padding: scrolled ? '6px 14px' : '6px 4px',
-                  borderRadius: '999px',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color='#f0f0f8'; if (scrolled) e.currentTarget.style.background='rgba(255,255,255,0.07)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color='rgba(255,255,255,0.50)'; e.currentTarget.style.background='transparent'; }}
-              >
-                {link}
-              </a>
+            {navLinks.map(({ label, href, onClick }) => (
+              onClick ? (
+                <button
+                  key={label}
+                  onClick={onClick}
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: 'rgba(255,255,255,0.50)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    letterSpacing: '-0.01em',
+                    padding: scrolled ? '6px 14px' : '6px 4px',
+                    borderRadius: '999px',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color='#f0f0f8'; if (scrolled) e.currentTarget.style.background='rgba(255,255,255,0.07)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color='rgba(255,255,255,0.50)'; e.currentTarget.style.background='transparent'; }}
+                >
+                  {label}
+                </button>
+              ) : (
+                <a
+                  key={href}
+                  href={href}
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: 'rgba(255,255,255,0.50)',
+                    textDecoration: 'none',
+                    letterSpacing: '-0.01em',
+                    padding: scrolled ? '6px 14px' : '6px 4px',
+                    borderRadius: '999px',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color='#f0f0f8'; if (scrolled) e.currentTarget.style.background='rgba(255,255,255,0.07)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color='rgba(255,255,255,0.50)'; e.currentTarget.style.background='transparent'; }}
+                >
+                  {label}
+                </a>
+              )
             ))}
           </div>
 
           {/* Right CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            {/* Language Selector */}
+            <LanguageSelector variant="compact" />
+
             <button
               id="nav-signin"
               className="hidden md:flex"
@@ -582,7 +613,7 @@ export default function LandingPage() {
               onMouseEnter={e => { e.currentTarget.style.color='#f0f0f8'; e.currentTarget.style.background='rgba(255,255,255,0.07)'; }}
               onMouseLeave={e => { e.currentTarget.style.color='rgba(255,255,255,0.55)'; e.currentTarget.style.background='transparent'; }}
             >
-              Sign In
+              {t('landing.sign_in', 'Sign In')}
             </button>
             <button
               id="nav-getstarted"
@@ -608,7 +639,7 @@ export default function LandingPage() {
               onMouseEnter={e => { e.currentTarget.style.boxShadow='0 6px 24px rgba(200,169,110,0.50)'; e.currentTarget.style.transform='translateY(-1px)'; }}
               onMouseLeave={e => { e.currentTarget.style.boxShadow='0 4px 16px rgba(200,169,110,0.30)'; e.currentTarget.style.transform='translateY(0)'; }}
             >
-              Get Started <ArrowRight size={12} />
+              {t('landing.get_started', 'Get Started')} <ArrowRight size={12} />
             </button>
 
             {/* Mobile menu button */}
@@ -642,10 +673,10 @@ export default function LandingPage() {
             boxShadow: '0 16px 48px rgba(0,0,0,0.60)',
           }}
         >
-          {navLinks.map(link => (
+          {navLinks.map(({ label, href }) => (
             <a
-              key={link}
-              href={`#${link.toLowerCase().replace(/ /g, '-')}`}
+              key={href}
+              href={href}
               onClick={() => setMobileMenu(false)}
               style={{
                 display: 'block',
@@ -657,21 +688,24 @@ export default function LandingPage() {
                 letterSpacing: '-0.01em',
               }}
             >
-              {link}
+              {label}
             </a>
           ))}
+          <div className="py-2 px-2">
+            <LanguageSelector variant="compact" className="w-full" />
+          </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '10px', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
               onClick={() => { openAuth('login'); setMobileMenu(false); }}
               style={{ padding: '12px', borderRadius: '14px', fontSize: '14px', fontWeight: 500, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', color: '#f0f0f8', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '-0.01em' }}
             >
-              Sign In
+              {t('landing.sign_in', 'Sign In')}
             </button>
             <button
               onClick={() => { openAuth('register'); setMobileMenu(false); }}
               style={{ padding: '12px', borderRadius: '14px', fontSize: '14px', fontWeight: 650, background: 'linear-gradient(135deg, #f0d898, #c8a96e)', color: '#1a1000', border: 'none', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '-0.01em' }}
             >
-              Get Started Free
+              {t('landing.get_started', 'Get Started Free')}
             </button>
           </div>
         </div>
@@ -1289,7 +1323,24 @@ export default function LandingPage() {
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.01em' }}>
             © {new Date().getFullYear()} MedShield · Built with FastAPI · ChromaDB · React
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <button
+              onClick={onOpenSecurityModal}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.40)',
+                letterSpacing: '-0.01em',
+                transition: 'color 0.15s',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = '#e8c97e'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.40)'}
+            >
+              Security & Cookies
+            </button>
             {['Privacy', 'Terms', 'Docs'].map(l => (
               <a
                 key={l}

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, User, Phone, KeyRound, ArrowRight } from 'lucide-react';
+import { Shield, Mail, Lock, User, Phone, KeyRound, ArrowRight, Globe } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage, LanguageSelector } from '../../context/LanguageContext';
 import { Spinner } from '../common/ui';
 import { LiquidBlob, Starfield } from '../common/LiquidBlob';
 
 export default function AuthModal() {
+  const { t } = useLanguage();
   const [isLogin, setIsLogin]   = useState(true);
   const [fullName, setFullName] = useState('');
   const [email, setEmail]       = useState('demo@medshield.ai');
@@ -150,6 +152,11 @@ export default function AuthModal() {
           WebkitBackdropFilter: 'blur(24px)',
         }}
       >
+        {/* Language selector in top corner */}
+        <div className="absolute top-6 right-6 z-20">
+          <LanguageSelector variant="compact" />
+        </div>
+
         <div className="w-full max-w-[360px] animate-slide-up">
 
           {/* Brand */}
@@ -165,10 +172,10 @@ export default function AuthModal() {
               <img src="/favicon_io/android-chrome-192x192.png" alt="MedShield Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>
-              MedShield
+              {t('brand_name', 'MedShield')}
             </h2>
             <p className="text-[13px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              AI Insurance Policy Intelligence
+              {t('brand_subtagline', 'AI Insurance Policy Intelligence')}
             </p>
           </div>
 
@@ -186,7 +193,7 @@ export default function AuthModal() {
                 style={{ color: '#c8a96e' }}
               >
                 <KeyRound size={11} />
-                Quick Demo Access
+                {t('auth.fill_demo', 'Quick Demo Access')}
               </div>
               <p className="text-[11px] leading-tight" style={{ color: 'rgba(255,255,255,0.35)' }}>
                 demo@medshield.ai · password123
@@ -214,12 +221,12 @@ export default function AuthModal() {
             className="flex p-1 mb-5 rounded-2xl"
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
-            {['Log In', 'Register'].map((label, i) => {
+            {[{ key: 'login', label: t('landing.sign_in', 'Log In') }, { key: 'register', label: t('landing.sign_up', 'Register') }].map(({ key, label }, i) => {
               const active = i === 0 ? isLogin : !isLogin;
               return (
                 <button
-                  key={label}
-                  id={`auth-tab-${i === 0 ? 'login' : 'register'}`}
+                  key={key}
+                  id={`auth-tab-${key}`}
                   type="button"
                   onClick={() => { setIsLogin(i === 0); setError(null); }}
                   className="flex-1 py-2 text-[12px] font-medium rounded-xl transition-all duration-200"
@@ -261,7 +268,7 @@ export default function AuthModal() {
             {!isLogin && (
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                  Full Name
+                  {t('auth.full_name', 'Full Name')}
                 </label>
                 <div className="relative">
                   <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'rgba(255,255,255,0.25)' }} />
@@ -271,7 +278,7 @@ export default function AuthModal() {
                     required
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
-                    placeholder="Dr. Arjun Verma"
+                    placeholder={t('auth.full_name', 'Dr. Arjun Verma')}
                     className="input-field"
                     style={{ paddingLeft: '34px' }}
                   />
@@ -281,7 +288,7 @@ export default function AuthModal() {
 
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                Email
+                {t('auth.email', 'Email')}
               </label>
               <div className="relative">
                 <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'rgba(255,255,255,0.25)' }} />
@@ -300,7 +307,7 @@ export default function AuthModal() {
 
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                Password
+                {t('auth.password', 'Password')}
               </label>
               <div className="relative">
                 <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'rgba(255,255,255,0.25)' }} />
@@ -320,7 +327,7 @@ export default function AuthModal() {
             {!isLogin && (
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                  Phone <span className="normal-case font-normal" style={{ color: 'rgba(255,255,255,0.22)' }}>(optional)</span>
+                  {t('auth.phone', 'Phone')} <span className="normal-case font-normal" style={{ color: 'rgba(255,255,255,0.22)' }}>({t('auth.optional', 'optional')})</span>
                 </label>
                 <div className="relative">
                   <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'rgba(255,255,255,0.25)' }} />
@@ -354,8 +361,8 @@ export default function AuthModal() {
                 {loading && <Spinner size={14} />}
                 <span>
                   {loading
-                    ? isLogin ? 'Signing in…' : 'Creating account…'
-                    : isLogin ? 'Sign In' : 'Create Account'
+                    ? isLogin ? t('auth.signing_in', 'Signing in…') : t('auth.creating_account', 'Creating account…')
+                    : isLogin ? t('landing.sign_in', 'Sign In') : t('landing.sign_up', 'Create Account')
                   }
                 </span>
                 {!loading && <ArrowRight size={14} />}

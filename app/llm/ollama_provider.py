@@ -30,6 +30,8 @@ class OllamaProvider(LLMProvider):
     Includes auto-discovery and fallback for installed models to prevent 404 crashes.
     """
 
+    _ollama_reachable: bool | None = None
+
     def __init__(
         self,
         base_url: str | None = None,
@@ -38,10 +40,22 @@ class OllamaProvider(LLMProvider):
         self.base_url = (base_url or settings.ollama_base_url).rstrip("/")
         self.model = model or settings.ollama_model
 
+    def _check_reachable(self) -> bool:
+        if OllamaProvider._ollama_reachable is not None:
+            return OllamaProvider._ollama_reachable
+        try:
+            r = requests.get(f"{self.base_url}/api/tags", timeout=0.5)
+            OllamaProvider._ollama_reachable = (r.status_code == 200)
+        except Exception:
+            OllamaProvider._ollama_reachable = False
+        return OllamaProvider._ollama_reachable
+
     def _find_installed_chat_model(self) -> Optional[str]:
         """Query Ollama /api/tags to find an installed chat/completion model."""
+        if not self._check_reachable():
+            return None
         try:
-            resp = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            resp = requests.get(f"{self.base_url}/api/tags", timeout=1)
             if resp.status_code == 200:
                 data = resp.json()
                 models = data.get("models", [])
@@ -64,11 +78,10 @@ class OllamaProvider(LLMProvider):
     ) -> str:
         """
         POST to /api/chat with stream=false.
-
-        We pass temperature and any other kwargs directly into the Ollama
-        options dict so callers can still tune generation without knowing
-        which provider is active.
         """
+        if not self._check_reachable():
+            raise ConnectionError(f"Ollama server is not reachable at {self.base_url}")
+
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,

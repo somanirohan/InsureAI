@@ -62,6 +62,7 @@ async def send_message(
             policy_id=payload.policy_id,
             question=question,
             plain_language_requested=payload.plain_language_mode,
+            language=payload.language or "en",
         )
     except HTTPException:
         raise
@@ -233,7 +234,13 @@ async def websocket_chat_endpoint(
             pass
         return None
 
-    user_info = _auth_user(token) if token else None
+    # Extract token from query parameter, or HttpOnly cookie from browser handshake
+    cookie_token = None
+    if websocket.cookies:
+        cookie_token = websocket.cookies.get(settings.COOKIE_NAME) or websocket.cookies.get("insureai_token")
+
+    effective_token = token or cookie_token
+    user_info = _auth_user(effective_token) if effective_token else None
 
     # Send connected event
     await websocket.send_json({"type": "connected"})
@@ -247,8 +254,8 @@ async def websocket_chat_endpoint(
                 await websocket.send_json({"type": "error", "message": "Invalid JSON format."})
                 continue
 
-            # Check authentication from message if not query param
-            msg_token = data.get("token") or token
+            # Check authentication from message payload, query param, or cookies
+            msg_token = data.get("token") or token or cookie_token
             if not user_info and msg_token:
                 user_info = _auth_user(msg_token)
 
@@ -263,6 +270,7 @@ async def websocket_chat_endpoint(
 
             policy_id = data.get("policy_id")
             plain_lang_mode = bool(data.get("plain_language_mode", False))
+            chat_lang = data.get("language") or "en"
             user_id = user_info["user_id"]
 
             await websocket.send_json({"type": "status", "message": "Consulting policy intelligence engine..."})
@@ -273,6 +281,7 @@ async def websocket_chat_endpoint(
                     policy_id=policy_id,
                     question=question,
                     plain_language_requested=plain_lang_mode,
+                    language=chat_lang,
                 )
             except HTTPException as http_exc:
                 await websocket.send_json({"type": "error", "message": http_exc.detail})

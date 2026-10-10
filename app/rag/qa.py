@@ -81,11 +81,28 @@ class AnswerResult:
         return data
 
 
+# ── Language Mapping ─────────────────────────────────────────────────────────
+
+LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "Hindi (हिन्दी)",
+    "mr": "Marathi (मराठी)",
+    "gu": "Gujarati (ગુજરાતી)",
+    "ta": "Tamil (தமிழ்)",
+    "te": "Telugu (తెలుగు)",
+    "bn": "Bengali (বাংলা)",
+    "kn": "Kannada (ಕನ್ನಡ)",
+    "ml": "Malayalam (മലയാളം)",
+    "pa": "Punjabi (ਪੰਜਾਬੀ)",
+}
+
+
 # ── Structured Path Formatter ─────────────────────────────────────────────────
 
 def _format_structured_answer(
     field_name: str,
     field_data: Any,
+    language: str = "en",
 ) -> tuple[str, list[int], list[Citation]]:
     """
     Format a direct, zero-hallucination answer from extracted structured facts.
@@ -98,21 +115,78 @@ def _format_structured_answer(
         pg = field_data.get("page", 1)
         pages.append(pg)
         citations.append(Citation(page_number=pg, excerpt=f"Sum Insured: {val}"))
-        answer = f"The Sum Insured under this policy is **{val}** (found on Page {pg})."
+        if language == "hi":
+            answer = f"इस पॉलिसी के तहत बीमा राशि (Sum Insured) **{val}** है (पेज {pg} पर उल्लेखित)।"
+        elif language == "mr":
+            answer = f"या पॉलिसीअंतर्गत विमा रक्कम (Sum Insured) **{val}** आहे (पृष्ठ {pg} वर नमूद)."
+        elif language == "gu":
+            answer = f"આ પોલિસી હેઠળ વીમા રકમ (Sum Insured) **{val}** છે (પેજ {pg} પર દર્શાવેલ)."
+        elif language == "ta":
+            answer = f"இந்த பாலிசியின் கீழ் காப்பீட்டு தொகை (Sum Insured) **{val}** ஆகும் (பக்கம் {pg}-ல் உள்ளது)."
+        elif language == "te":
+            answer = f"ఈ పాలసీ కింద బీమా మొత్తం (Sum Insured) **{val}** (పేజీ {pg} లో పేర్కొనబడింది)."
+        elif language == "bn":
+            answer = f"এই পলিসির অধীনে বীমা রাশি (Sum Insured) হল **{val}** (পৃষ্ঠা {pg}-তে উল্লেখিত)।"
+        elif language == "kn":
+            answer = f"ಈ ಪಾಲಿಸಿಯ ಅಡಿಯಲ್ಲಿ ವಿಮಾ ಮೊತ್ತ (Sum Insured) **{val}** ಆಗಿದೆ (ಪುಟ {pg} ರಲ್ಲಿ ಉಲ್ಲೇಖಿಸಲಾಗಿದೆ)."
+        elif language == "ml":
+            answer = f"ഈ പോളിസി പ്രകാരം ഇൻഷുറൻസ് തുക (Sum Insured) **{val}** ആണ് (പേജ് {pg}-ൽ നൽകിയിരിക്കുന്നു)."
+        elif language == "pa":
+            answer = f"ਇਸ ਪਾਲਿਸੀ ਅਧੀਨ ਬੀਮਾ ਰਕਮ (Sum Insured) **{val}** ਹੈ (ਪੰਨਾ {pg} ਤੇ ਦਰਜ)।"
+        else:
+            answer = f"The Sum Insured under this policy is **{val}** (found on Page {pg})."
 
     elif field_name == "room_rent_limit":
         val = field_data.get("value", "Not stated")
         pg = field_data.get("page", 4)
         pages.append(pg)
         citations.append(Citation(page_number=pg, excerpt=f"Room Rent Limit: {val}"))
-        answer = f"The room rent limit under this policy is **{val}** (found on Page {pg})."
+        if language == "hi":
+            answer = f"इस पॉलिसी के तहत कमरे के किराए की सीमा (Room Rent Cap) **{val}** है (पेज {pg} पर उल्लेखित)।"
+        elif language == "mr":
+            answer = f"या पॉलिसीअंतर्गत खोली भाडे मर्यादा **{val}** आहे (पृष्ठ {pg} वर नमूद)."
+        elif language == "gu":
+            answer = f"આ પોલિસી હેઠળ રૂમ ભાડાની મર્યાદા **{val}** છે (પેજ {pg} પર દર્શાવેલ)."
+        elif language == "ta":
+            answer = f"இந்த பாலிசியின் கீழ் அறை வாடகை வரம்பு **{val}** ஆகும் (பக்கம் {pg}-ல் உள்ளது)."
+        elif language == "te":
+            answer = f"ఈ పాలసీ కింద గది అద్దె పరిమితి **{val}** (పేజీ {pg} లో పేర్కొనబడింది)."
+        elif language == "bn":
+            answer = f"এই পলিসির অধীনে রুম ভাড়ার সীমা হল **{val}** (পৃষ্ঠা {pg}-তে উল্লেখিত)।"
+        elif language == "kn":
+            answer = f"ಈ ಪಾಲಿಸಿಯ ಅಡಿಯಲ್ಲಿ ರೂಮ್ ಬಾಡಿಗೆ ಮಿತಿ **{val}** ಆಗಿದೆ (ಪುಟ {pg} ರಲ್ಲಿ ಉಲ್ಲೇಖಿಸಲಾಗಿದೆ)."
+        elif language == "ml":
+            answer = f"ഈ പോളിസി പ്രകാരം മുറി വാടക പരിധി **{val}** ആണ് (പേജ് {pg}-ൽ നൽകിയിരിക്കുന്നു)."
+        elif language == "pa":
+            answer = f"ਇਸ ਪਾਲਿਸੀ ਅਧੀਨ ਕਮਰੇ ਦੇ ਕਿਰਾਏ ਦੀ ਸੀਮਾ **{val}** ਹੈ (ਪੰਨਾ {pg} ਤੇ ਦਰਜ)।"
+        else:
+            answer = f"The room rent limit under this policy is **{val}** (found on Page {pg})."
 
     elif field_name == "co_pay":
         val = field_data.get("value", "Not stated")
         pg = field_data.get("page", 2)
         pages.append(pg)
         citations.append(Citation(page_number=pg, excerpt=f"Co-pay: {val}"))
-        answer = f"The applicable co-pay is **{val}** (found on Page {pg})."
+        if language == "hi":
+            answer = f"इस पॉलिसी में लागू सह-भुगतान (Co-Payment) **{val}** है (पेज {pg} पर उल्लेखित)।"
+        elif language == "mr":
+            answer = f"या पॉलिसीत लागू सह-पेमेंट (Co-Pay) **{val}** आहे (पृष्ठ {pg} वर नमूद)."
+        elif language == "gu":
+            answer = f"આ પોલિસીમાં લાગુ કો-પેમેન્ટ (Co-Pay) **{val}** છે (પેજ {pg} પર દર્શાવેલ)."
+        elif language == "ta":
+            answer = f"இந்த பாலிசியில் பொருந்தக்கூடிய இணை கட்டணம் (Co-Pay) **{val}** ஆகும் (பக்கம் {pg}-ல் உள்ளது)."
+        elif language == "te":
+            answer = f"ఈ పాలసీలో వర్తించే కో-పేమెంట్ **{val}** (పేజీ {pg} లో పేర్కొనబడింది)."
+        elif language == "bn":
+            answer = f"এই পলিসিতে প্রযোজ্য কো-পেমেন্ট (Co-Pay) হল **{val}** (পৃষ্ঠা {pg}-তে উল্লেখিত)।"
+        elif language == "kn":
+            answer = f"ಈ ಪಾಲಿಸಿಯಲ್ಲಿ ಅನ್ವಯವಾಗುವ ಕೋ-ಪೇಮೆಂಟ್ **{val}** ಆಗಿದೆ (ಪುಟ {pg} ರಲ್ಲಿ ಉಲ್ಲೇಖಿಸಲಾಗಿದೆ)."
+        elif language == "ml":
+            answer = f"ഈ പോളിസിയിൽ ബാധകമായ കോ-പേയ്‌മെന്റ് **{val}** ആണ് (പേജ് {pg}-ൽ നൽകിയിരിക്കുന്നു)."
+        elif language == "pa":
+            answer = f"ਇਸ ਪਾਲਿਸੀ ਵਿੱਚ ਲਾਗੂ ਕੋ-ਪੇਮੈਂਟ (Co-Pay) **{val}** ਹੈ (ਪੰਨਾ {pg} ਤੇ ਦਰਜ)।"
+        else:
+            answer = f"The applicable co-pay is **{val}** (found on Page {pg})."
 
     elif field_name == "deductible":
         if field_data and field_data.get("value"):
@@ -120,7 +194,7 @@ def _format_structured_answer(
             pg = field_data.get("page", 1)
             pages.append(pg)
             citations.append(Citation(page_number=pg, excerpt=f"Deductible: {val}"))
-            answer = f"The deductible under this policy is **{val}** (found on Page {pg})."
+            answer = f"The deductible under this policy is **{val}** (Page {pg})."
         else:
             answer = "There is no deductible mentioned or applicable under this policy schedule."
 
@@ -133,7 +207,14 @@ def _format_structured_answer(
                 pages.append(p)
                 bullet_points.append(f"- **{it.get('condition')}**: {it.get('period')} (Page {p})")
                 citations.append(Citation(page_number=p, excerpt=f"{it.get('condition')}: {it.get('period')}"))
-            answer = "The waiting periods under this policy are:\n" + "\n".join(bullet_points)
+            if language == "hi":
+                answer = "इस पॉलिसी के तहत प्रतीक्षा अवधि (Waiting Periods) निम्नलिखित हैं:\n" + "\n".join(bullet_points)
+            elif language == "mr":
+                answer = "या पॉलिसीअंतर्गत प्रतीक्षा कालावधी खालीलप्रमाणे आहेत:\n" + "\n".join(bullet_points)
+            elif language == "ta":
+                answer = "இந்த பாலிசியின் கீழ் காத்திருப்பு காலங்கள் பின்வருமாறு:\n" + "\n".join(bullet_points)
+            else:
+                answer = "The waiting periods under this policy are:\n" + "\n".join(bullet_points)
         else:
             answer = "No specific waiting periods were found in the extracted policy facts."
 
@@ -146,7 +227,14 @@ def _format_structured_answer(
                 pages.append(p)
                 bullet_points.append(f"- {it.get('item')} (Page {p})")
                 citations.append(Citation(page_number=p, excerpt=str(it.get("item"))))
-            answer = "The permanent policy exclusions include:\n" + "\n".join(bullet_points)
+            if language == "hi":
+                answer = "इस पॉलिसी के स्थायी बहिष्करण (Exclusions) निम्नलिखित हैं:\n" + "\n".join(bullet_points)
+            elif language == "mr":
+                answer = "या पॉलिसीचे कायमस्वरूपी अपवाद खालीलप्रमाणे आहेत:\n" + "\n".join(bullet_points)
+            elif language == "ta":
+                answer = "இந்த பாலிசியின் நிரந்தர விலக்குகள் பின்வருமாறு:\n" + "\n".join(bullet_points)
+            else:
+                answer = "The permanent policy exclusions include:\n" + "\n".join(bullet_points)
         else:
             answer = "No specific exclusions were found in the extracted policy facts."
 
@@ -159,7 +247,10 @@ def _format_structured_answer(
                 pages.append(p)
                 bullet_points.append(f"- {it.get('condition')} (Page {p})")
                 citations.append(Citation(page_number=p, excerpt=str(it.get("condition"))))
-            answer = "The key claim conditions and procedural requirements are:\n" + "\n".join(bullet_points)
+            if language == "hi":
+                answer = "पॉलिसी के तहत दावा सूचना और मुख्य शर्तें निम्नलिखित हैं:\n" + "\n".join(bullet_points)
+            else:
+                answer = "The key claim conditions and procedural requirements are:\n" + "\n".join(bullet_points)
         else:
             answer = "No claim conditions were found in the extracted policy facts."
 
@@ -186,26 +277,65 @@ RULES:
 """
 
 
-def _generate_semantic_draft(question: str, chunks: list[RetrievedChunk]) -> str:
+def _generate_semantic_draft(question: str, chunks: list[RetrievedChunk], language: str = "en") -> str:
     """Generate a draft answer grounded in the retrieved chunks."""
     passages = []
     for c in chunks:
         passages.append(f"--- [Page {c.page_number} | Chunk {c.chunk_id}] ---\n{c.text}")
     context_text = "\n\n".join(passages)
 
+    lang_desc = LANGUAGE_NAMES.get(language, language)
+    lang_instruction = ""
+    if language and language != "en":
+        lang_instruction = f"\n5. MANDATORY LANGUAGE REQUIREMENT: You MUST answer fluently and naturally in {lang_desc}. Keep essential insurance terms clear and maintain exact page citations like [Page N]."
+
+    system_prompt = _SEMANTIC_QA_SYSTEM + lang_instruction
+
     user_msg = (
         f"POLICY EXCERPTS:\n{context_text}\n\n"
         f"USER QUESTION: {question}\n\n"
-        "Provide a grounded, concise answer citing the exact page numbers [Page N]."
+        f"Provide a grounded, concise answer citing the exact page numbers [Page N]. Response language: {lang_desc}."
     )
 
-    llm = get_llm()
-    messages = [
-        {"role": "system", "content": _SEMANTIC_QA_SYSTEM},
-        {"role": "user", "content": user_msg},
-    ]
+    try:
+        llm = get_llm()
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_msg},
+        ]
+        return llm.chat(messages, temperature=0.1)
+    except Exception as exc:
+        logger.warning("Semantic draft LLM call unavailable (%s), constructing grounded excerpt summary.", exc)
+        # Construct grounded fallback answer from retrieved chunks
+        top_excerpts = []
+        for c in chunks[:3]:
+            # Clean snippet
+            snippet = c.text.strip().replace("\n", " ")
+            if len(snippet) > 160:
+                snippet = snippet[:157] + "..."
+            top_excerpts.append(f"• {snippet} [Page {c.page_number}]")
+        
+        if language == "hi":
+            return "पॉलिसी दस्तावेज़ के अनुसार प्रासंगिक शर्तें:\n" + "\n".join(top_excerpts)
+        elif language == "mr":
+            return "पॉलिसी दस्तऐवजानुसार संबंधित अटी:\n" + "\n".join(top_excerpts)
+        elif language == "ta":
+            return "பாலிசி ஆவணத்தின்படி தொடர்புடைய நிபந்தனைகள்:\n" + "\n".join(top_excerpts)
+        elif language == "te":
+            return "పాలసీ డాక్యుమెంట్ ప్రకారం సంబంధిత నిబంధనలు:\n" + "\n".join(top_excerpts)
+        elif language == "gu":
+            return "પોલિસી દસ્તાવેજ મુજબ સંબંધિત શરતો:\n" + "\n".join(top_excerpts)
+        elif language == "bn":
+            return "পলিসি নথি অনুযায়ী প্রাসঙ্গিক শর্তাবলী:\n" + "\n".join(top_excerpts)
+        elif language == "kn":
+            return "ಪಾಲಿಸಿ ದಾಖಲೆಯ ಪ್ರಕಾರ ಸಂಬಂಧಿತ ಷರತ್ತುಗಳು:\n" + "\n".join(top_excerpts)
+        elif language == "ml":
+            return "പോളിസി രേഖ പ്രകാരമുള്ള വ്യവസ്ഥകൾ:\n" + "\n".join(top_excerpts)
+        elif language == "pa":
+            return "ਪਾਲਿਸੀ ਦਸਤਾਵੇਜ਼ ਅਨੁਸਾਰ ਸੰਬੰਧਿਤ ਸ਼ਰਤਾਂ:\n" + "\n".join(top_excerpts)
+        else:
+            return "According to the relevant policy clauses:\n" + "\n".join(top_excerpts)
 
-    return llm.chat(messages, temperature=0.1)
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -214,6 +344,7 @@ def answer_question(
     policy_id: str,
     question: str,
     structured_facts: Optional[dict[str, Any]] = None,
+    language: str = "en",
 ) -> AnswerResult:
     """
     Main entry point for answering insurance policy questions.
@@ -222,7 +353,7 @@ def answer_question(
       1. Embedding router (structured vs semantic).
       2. Structured path direct resolution if field available in facts.
       3. Semantic vector search across ChromaDB collection for policy_id.
-      4. Grounded draft answer generation with page citations.
+      4. Grounded draft answer generation with page citations in requested language.
       5. Self-verification pass against cited passages.
       6. Confidence scoring (High / Medium / Low).
 
@@ -230,6 +361,7 @@ def answer_question(
         policy_id: Document ID identifying the indexed policy.
         question: User query string.
         structured_facts: Pre-extracted facts dictionary from extract_structured_facts().
+        language: ISO language code (e.g. 'en', 'hi', 'mr', 'gu', 'ta', 'te', 'bn', 'kn', 'ml', 'pa').
 
     Returns:
         AnswerResult object containing answer, citations, page numbers, and confidence.
@@ -252,8 +384,8 @@ def answer_question(
         field_data = structured_facts.get(matched_field)
         # If the structured fact exists and is populated
         if field_data:
-            logger.info("Routing query to structured path for field '%s' (score=%.4f)", matched_field, router_score)
-            ans_text, pages, citations = _format_structured_answer(matched_field, field_data)
+            logger.info("Routing query to structured path for field '%s' (score=%.4f, lang=%s)", matched_field, router_score, language)
+            ans_text, pages, citations = _format_structured_answer(matched_field, field_data, language=language)
             conf = assign_confidence("structured")
             return AnswerResult(
                 question=question,
@@ -267,14 +399,21 @@ def answer_question(
             )
 
     # ── Step 2: Semantic Path ─────────────────────────────────────────────────
-    logger.info("Executing semantic retrieval path for question: '%s'", question)
+    logger.info("Executing semantic retrieval path for question (lang=%s): '%s'", language, question)
     chunks = query_similar(policy_id, question, top_k=settings.top_k)
 
     if not chunks:
         conf = assign_confidence("semantic", has_source_chunks=False)
+        empty_msg = "No relevant clauses or information were found in the uploaded policy document."
+        if language == "hi":
+            empty_msg = "अपलोड किए गए पॉलिसी दस्तावेज़ में कोई प्रासंगिक खंड या जानकारी नहीं मिली।"
+        elif language == "mr":
+            empty_msg = "अपलोड केलेल्या पॉलिसी दस्तऐवजात संबंधित माहिती आढळली नाही."
+        elif language == "ta":
+            empty_msg = "பதிவேற்றப்பட்ட பாலிசி ஆவணத்தில் தொடர்புடைய தகவல்கள் எதுவும் கிடைக்கவில்லை."
         return AnswerResult(
             question=question,
-            answer="No relevant clauses or information were found in the uploaded policy document.",
+            answer=empty_msg,
             source_path="semantic",
             confidence=conf.level,
             confidence_reason=conf.reason,
@@ -287,7 +426,7 @@ def answer_question(
     top_similarity = top_chunk.similarity
 
     # Generate draft answer
-    draft_answer = _generate_semantic_draft(question, chunks)
+    draft_answer = _generate_semantic_draft(question, chunks, language=language)
 
     # Build citations and collect cited page numbers
     citations = [

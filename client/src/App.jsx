@@ -7,6 +7,8 @@ import ChatBox from './components/chat/ChatBox';
 import CostEstimatorView from './components/cost/CostEstimatorView';
 import ComparisonView from './components/comparison/ComparisonView';
 import { LiquidBlob, Starfield } from './components/common/LiquidBlob';
+import SecurityModal from './components/common/SecurityModal';
+import CookieConsentBanner from './components/common/CookieConsentBanner';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
@@ -16,6 +18,7 @@ export default function App() {
   const [policies, setPolicies]             = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [chatTargetPolicy, setChatTargetPolicy] = useState(null);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
 
   const fetchPolicies = async () => {
     try {
@@ -73,7 +76,15 @@ export default function App() {
   }
 
   // ── Not logged in → Landing Page ───────────────────────
-  if (!user) return <LandingPage />;
+  if (!user) {
+    return (
+      <>
+        <LandingPage onOpenSecurityModal={() => setIsSecurityModalOpen(true)} />
+        <CookieConsentBanner onOpenSecurityModal={() => setIsSecurityModalOpen(true)} />
+        <SecurityModal isOpen={isSecurityModalOpen} onClose={() => setIsSecurityModalOpen(false)} />
+      </>
+    );
+  }
 
   // ── Render view ────────────────────────────────────────
   const renderView = () => {
@@ -136,16 +147,28 @@ export default function App() {
         </div>
       )}
 
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <MobileTopBar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MobileTopBar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+        />
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-6xl w-full mx-auto">
           <div key={activeTab} className="animate-fade-in">
             {renderView()}
           </div>
         </main>
       </div>
+
+      {/* Cookie Notice & Security Architecture Modal */}
+      <CookieConsentBanner onOpenSecurityModal={() => setIsSecurityModalOpen(true)} />
+      <SecurityModal isOpen={isSecurityModalOpen} onClose={() => setIsSecurityModalOpen(false)} />
     </div>
   );
 }

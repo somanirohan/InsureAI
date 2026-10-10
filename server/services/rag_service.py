@@ -42,6 +42,7 @@ class RagService:
         policy_id: Optional[str],
         question: str,
         plain_language_requested: bool = False,
+        language: str = "en",
     ) -> Dict[str, Any]:
         """
         Main RAG question-answering entrypoint for FastAPI.
@@ -132,9 +133,10 @@ class RagService:
 
         # 5. Call the advanced RAG orchestrator in a worker thread via asyncio.to_thread
         logger.info(
-            "Running RAG query for user %s, policy %s: '%s'",
+            "Running RAG query for user %s, policy %s (lang=%s): '%s'",
             user_id,
             actual_policy_id,
+            language,
             question[:50],
         )
         answer_result: AnswerResult = await asyncio.to_thread(
@@ -142,6 +144,7 @@ class RagService:
             policy_id=actual_policy_id,
             question=question,
             structured_facts=structured_facts,
+            language=language,
         )
 
         # 6. Map verification correctly

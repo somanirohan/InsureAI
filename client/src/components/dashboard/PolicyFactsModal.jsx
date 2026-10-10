@@ -1,18 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, BookOpen, Tag, Percent, Clock, AlertTriangle, ShieldCheck, ArrowUpRight } from 'lucide-react';
-
-const CATEGORY_META = {
-  coverage_category:  { label: 'Coverage',       color: 'text-blue-400' },
-  sum_insured:        { label: 'Sum Insured',     color: 'text-brand-500' },
-  sub_limit:          { label: 'Sub-Limit',       color: 'text-purple-400' },
-  waiting_period:     { label: 'Waiting Period',  color: 'text-amber-400' },
-  exclusion:          { label: 'Exclusion',       color: 'text-red-400' },
-  room_rent_limit:    { label: 'Room Rent',       color: 'text-orange-400' },
-  co_payment:         { label: 'Co-Payment',      color: 'text-yellow-400' },
-  deductible:         { label: 'Deductible',      color: 'text-pink-400' },
-  claim_condition:    { label: 'Claim Condition', color: 'text-cyan-400' },
-};
+import { useLanguage } from '../../context/LanguageContext';
 
 const CONFIDENCE_STYLE = {
   high:   'status-ready',
@@ -21,6 +10,20 @@ const CONFIDENCE_STYLE = {
 };
 
 export default function PolicyFactsModal({ policy, isOpen, onClose }) {
+  const { t } = useLanguage();
+
+  const CATEGORY_META = {
+    coverage_category:  { label: t('facts_modal.categories.coverage', 'Coverage'),                 color: 'text-blue-400' },
+    sum_insured:        { label: t('facts_modal.categories.sum_insured', 'Sum Insured'),           color: 'text-brand-500' },
+    sub_limit:          { label: t('facts_modal.categories.sub_limit', 'Sub-Limit'),               color: 'text-purple-400' },
+    waiting_period:     { label: t('facts_modal.categories.waiting_period', 'Waiting Period'),     color: 'text-amber-400' },
+    exclusion:          { label: t('facts_modal.categories.exclusion', 'Exclusion'),               color: 'text-red-400' },
+    room_rent_limit:    { label: t('facts_modal.categories.room_rent_limit', 'Room Rent'),         color: 'text-orange-400' },
+    co_payment:         { label: t('facts_modal.categories.co_payment', 'Co-Payment'),             color: 'text-yellow-400' },
+    deductible:         { label: t('facts_modal.categories.deductible', 'Deductible'),             color: 'text-pink-400' },
+    claim_condition:    { label: t('facts_modal.categories.claim_condition', 'Claim Condition'),   color: 'text-cyan-400' },
+  };
+
   if (!isOpen || !policy) return null;
 
   const facts = policy.facts || [];
@@ -44,13 +47,13 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
               {policy.insurer_name || policy.file_name}
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
-              {facts.length} extracted facts · {Object.keys(grouped).length} categories
+              {facts.length} {t('facts_modal.extracted_facts', 'extracted facts')} · {Object.keys(grouped).length} {t('facts_modal.categories_count', 'categories')}
             </p>
           </div>
           <button
             onClick={onClose}
             className="btn btn-ghost p-2 rounded-xl"
-            aria-label="Close"
+            aria-label={t('common.close', 'Close')}
           >
             <X size={16} />
           </button>
@@ -60,7 +63,7 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-area">
           {facts.length === 0 ? (
             <div className="text-center py-12 text-zinc-500 text-sm">
-              No facts extracted yet. Policy may still be processing.
+              {t('facts_modal.no_facts', 'No facts extracted yet. Policy may still be processing.')}
             </div>
           ) : (
             Object.entries(grouped).map(([category, categoryFacts]) => {
@@ -144,7 +147,7 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                               <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
                                 {fact.source_page && (
                                   <span className="px-1.5 py-0.5 rounded bg-white/[0.04] text-zinc-400 font-mono text-[10px]">
-                                    Page {fact.source_page}
+                                    {t('common.page', 'Page')} {fact.source_page}
                                   </span>
                                 )}
                                 {fact.source_section && (
