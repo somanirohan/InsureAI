@@ -9,7 +9,7 @@ should import `settings` from here so the source of truth stays in one place.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -64,9 +64,14 @@ class Settings(BaseSettings):
     embedding_api_model: str = "text-embedding-3-small"
 
     # ── Vector store ──────────────────────────────────────────────────────────
-    # ChromaDB in embedded (local) mode — no separate server needed.
-    # The directory will be created automatically on first write.
+    # ChromaDB: local embedded directory or hosted remote instance (HttpClient/CloudClient)
     chroma_persist_dir: str = "./chroma_store"
+    chroma_host: str = ""                # e.g. "my-chroma.onrender.com" or "localhost"
+    chroma_port: Optional[int] = None    # e.g. 8000, 443
+    chroma_ssl: bool = False             # Set to True for https:// hosted Chroma
+    chroma_api_key: str = ""             # Optional Chroma auth token/header
+    chroma_tenant: str = "default_tenant"
+    chroma_database: str = "default_database"
 
     # ── Chunking ─────────────────────────────────────────────────────────────
     chunk_size: int = 500          # target tokens per chunk (approximate)

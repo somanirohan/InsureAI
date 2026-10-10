@@ -71,5 +71,21 @@ class ServerSettings(BaseSettings):
     def chroma_persist_dir(self) -> str:
         return app_settings.chroma_persist_dir
 
+    @property
+    def chroma_host(self) -> str:
+        return app_settings.chroma_host
+
+    @property
+    def chroma_port(self) -> Optional[int]:
+        return app_settings.chroma_port
+
+    @property
+    def chroma_ssl(self) -> bool:
+        return app_settings.chroma_ssl
+
+    @property
+    def chroma_api_key(self) -> str:
+        return app_settings.chroma_api_key
+
 
 settings = ServerSettings()

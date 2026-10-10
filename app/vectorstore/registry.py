@@ -49,16 +49,69 @@ _CHROMA_CLIENT: Optional[chromadb.ClientAPI] = None
 
 
 def get_chroma_client() -> chromadb.ClientAPI:
-    """Get or initialize singleton persistent ChromaDB client."""
+    """Get or initialize singleton ChromaDB client (supports hosted HttpClient or local PersistentClient)."""
     global _CHROMA_CLIENT
     if _CHROMA_CLIENT is None:
-        persist_path = Path(settings.chroma_persist_dir).resolve()
-        persist_path.mkdir(parents=True, exist_ok=True)
-        logger.info("Initializing ChromaDB persistent client at: %s", persist_path)
-        _CHROMA_CLIENT = chromadb.PersistentClient(
-            path=str(persist_path),
-            settings=ChromaSettings(anonymized_telemetry=False),
-        )
+        if getattr(settings, "chroma_host", None):
+            host = settings.chroma_host.strip()
+            # Clean protocol if included in chroma_host (e.g. https://my-chroma.onrender.com)
+            ssl = getattr(settings, "chroma_ssl", False)
+            if host.startswith("https://"):
+                host = host[8:]
+                ssl = True
+            elif host.startswith("http://"):
+                host = host[7:]
+
+            # Remove port if embedded in host string
+            port = getattr(settings, "chroma_port", None)
+            if ":" in host:
+                parts = host.split(":")
+                host = parts[0]
+                try:
+                    port = int(parts[1])
+                except ValueError:
+                    pass
+
+            if port is None:
+                port = 443 if ssl else 8000
+
+            headers = {}
+            api_key = getattr(settings, "chroma_api_key", "").strip()
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+                headers["X-Chroma-Token"] = api_key
+
+            tenant = getattr(settings, "chroma_tenant", "default_tenant")
+            database = getattr(settings, "chroma_database", "default_database")
+
+            # Check if using Chroma Cloud (api.trychroma.com)
+            if "trychroma.com" in host.lower():
+                logger.info("Connecting to Chroma Cloud (tenant=%s, database=%s)", tenant, database)
+                _CHROMA_CLIENT = chromadb.CloudClient(
+                    api_key=api_key,
+                    tenant=tenant,
+                    database=database,
+                    settings=ChromaSettings(anonymized_telemetry=False),
+                )
+            else:
+                logger.info("Connecting to hosted ChromaDB at %s:%s (ssl=%s, tenant=%s, database=%s)", host, port, ssl, tenant, database)
+                _CHROMA_CLIENT = chromadb.HttpClient(
+                    host=host,
+                    port=port,
+                    ssl=ssl,
+                    headers=headers if headers else None,
+                    tenant=tenant,
+                    database=database,
+                    settings=ChromaSettings(anonymized_telemetry=False),
+                )
+        else:
+            persist_path = Path(settings.chroma_persist_dir).resolve()
+            persist_path.mkdir(parents=True, exist_ok=True)
+            logger.info("Initializing local ChromaDB persistent client at: %s", persist_path)
+            _CHROMA_CLIENT = chromadb.PersistentClient(
+                path=str(persist_path),
+                settings=ChromaSettings(anonymized_telemetry=False),
+            )
     return _CHROMA_CLIENT
 
 
