@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import api from '../services/api';
-import { Spinner, EmptyState, ErrorBanner } from '../components/common/ui';
+import { Spinner, Skeleton, EmptyState, ErrorBanner } from '../components/common/ui';
 
 import TreatmentForm from './TreatmentForm';
 import EligibilityCard from './EligibilityCard';
@@ -298,8 +298,29 @@ export default function ClaimsWorkflowView({ policies = [] }) {
         </div>
 
         {loadingClaims ? (
-          <div className="flex justify-center py-16">
-            <Spinner size="md" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map(idx => (
+              <div
+                key={idx}
+                className="bg-white border border-[#062327]/10 rounded-3xl p-6 flex flex-col justify-between gap-5 shadow-xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <Skeleton className="h-4 w-24 rounded-md" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <Skeleton className="h-5 w-3/4 mb-2 rounded-md" />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                    <Skeleton className="h-3.5 w-1/2 rounded-md" />
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-[#062327]/08 flex items-center justify-between">
+                  <Skeleton className="h-3.5 w-20 rounded-md" />
+                  <Skeleton className="h-4 w-24 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : claims.length === 0 ? (
           <EmptyState
