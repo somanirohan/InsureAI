@@ -31,6 +31,7 @@ import { VoiceInputButton, VoiceInputBanner } from './VoiceInput';
 
 
 
+
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5001/api/chat/ws';
 
 const SAMPLE_QUESTIONS = [
@@ -1278,10 +1279,14 @@ export default function ChatBox({ initialPolicy, policies }) {
             <button
               type="submit"
               disabled={loading || !input.trim() || isVoiceTranscribing}
-              className="btn-pill-lime h-12 w-12 p-0 rounded-2xl flex-shrink-0 flex items-center justify-center cursor-pointer disabled:opacity-40 shadow-sm"
+              className="btn-pill-lime h-12 w-12 p-0 rounded-2xl flex-shrink-0 flex items-center justify-center cursor-pointer disabled:opacity-40 shadow-sm text-[#062327]"
               aria-label="Send message"
             >
-              {loading ? <Spinner size={16} className="text-[#062327]" /> : <Send size={16} className="stroke-[2.5]" />}
+              {loading ? (
+                <Spinner size={18} className="text-[#062327] shrink-0" />
+              ) : (
+                <Send size={18} className="text-[#062327] shrink-0 stroke-[#062327] stroke-[2.2] translate-x-px" />
+              )}
             </button>
           </div>
           <p className="text-[11px] text-[#558187] mt-2.5 text-center font-medium">
