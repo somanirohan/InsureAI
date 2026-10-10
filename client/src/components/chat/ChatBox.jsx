@@ -101,7 +101,7 @@ function ConversationItem({
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/[0.08] border border-brand-500/40 animate-fade-in my-0.5">
+      <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#f5f8f8] border border-[#062327]/20 animate-fade-in my-0.5">
         <input
           ref={editInputRef}
           type="text"
@@ -111,18 +111,18 @@ function ConversationItem({
             if (e.key === 'Enter') onSaveRename(conv._id);
             if (e.key === 'Escape') onCancelRename();
           }}
-          className="bg-transparent text-xs text-zinc-100 flex-1 min-w-0 outline-none px-1"
+          className="bg-transparent text-xs text-[#062327] flex-1 min-w-0 outline-none px-1 font-medium"
         />
         <button
           onClick={() => onSaveRename(conv._id)}
-          className="p-1 hover:text-brand-400 text-zinc-400 transition-colors"
+          className="p-1 hover:text-[#062327] text-[#558187] transition-colors"
           title="Save title"
         >
           <Check size={12} />
         </button>
         <button
           onClick={onCancelRename}
-          className="p-1 hover:text-zinc-200 text-zinc-500 transition-colors"
+          className="p-1 hover:text-[#062327] text-[#558187] transition-colors"
           title="Cancel"
         >
           <X size={12} />
@@ -133,18 +133,18 @@ function ConversationItem({
 
   if (isConfirmingDelete) {
     return (
-      <div className="flex items-center justify-between px-2.5 py-2 rounded-xl bg-red-500/10 border border-red-500/25 animate-fade-in my-0.5 text-2xs">
-        <span className="text-red-400 font-medium truncate">Delete this chat?</span>
+      <div className="flex items-center justify-between px-2.5 py-2 rounded-xl bg-rose-50 border border-rose-200 animate-fade-in my-0.5 text-2xs">
+        <span className="text-rose-700 font-medium truncate">Delete this chat?</span>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={() => onConfirmDelete(conv._id)}
-            className="px-2 py-0.5 rounded bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+            className="px-2 py-0.5 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors"
           >
             Delete
           </button>
           <button
             onClick={onCancelDelete}
-            className="px-2 py-0.5 rounded bg-white/[0.08] text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="px-2 py-0.5 rounded bg-white text-[#558187] hover:text-[#062327] border border-[#062327]/10 transition-colors"
           >
             Cancel
           </button>
@@ -157,18 +157,18 @@ function ConversationItem({
     <div
       onClick={() => onSelect(conv._id)}
       className={`
-        group relative flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl text-xs cursor-pointer transition-all duration-150 my-0.5
+        group relative flex items-center justify-between gap-2 px-3.5 py-3 rounded-2xl text-xs cursor-pointer transition-all duration-150 my-1
         ${isActive
-          ? 'bg-brand-500/15 text-zinc-100 font-medium border border-brand-500/25 shadow-sm'
-          : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent'
+          ? 'bg-[#d2f57b]/25 text-[#062327] font-bold border-2 border-[#062327] shadow-sm'
+          : 'text-[#558187] hover:text-[#062327] hover:bg-[#f5f8f8] border border-transparent'
         }
       `}
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <MessageSquare
-          size={13}
+          size={14}
           className={`flex-shrink-0 transition-colors ${
-            isActive ? 'text-brand-400' : 'text-zinc-500 group-hover:text-zinc-400'
+            isActive ? 'text-[#062327] stroke-[2.2]' : 'text-[#558187] group-hover:text-[#062327]'
           }`}
         />
         <div className="min-w-0 flex-1">
@@ -176,7 +176,7 @@ function ConversationItem({
             {conv.title || 'Untitled session'}
           </span>
           {conv.policy_name && (
-            <span className="block truncate text-[10px] text-zinc-600 font-normal leading-tight mt-0.5">
+            <span className="block truncate text-[10px] text-[#558187] font-normal leading-tight mt-0.5">
               {conv.policy_name}
             </span>
           )}
@@ -187,17 +187,17 @@ function ConversationItem({
       <div className="hidden group-hover:flex items-center gap-1 flex-shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => onStartRename(e, conv)}
-          className="p-1 rounded hover:bg-white/[0.1] text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-[#062327]/10 text-[#558187] hover:text-[#062327] transition-colors cursor-pointer"
           title="Rename conversation"
         >
-          <Edit2 size={11} />
+          <Edit2 size={12} />
         </button>
         <button
           onClick={(e) => onStartDelete(e, conv)}
-          className="p-1 rounded hover:bg-red-500/15 text-zinc-400 hover:text-red-400 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-rose-50 text-[#558187] hover:text-rose-600 transition-colors cursor-pointer"
           title="Delete conversation"
         >
-          <Trash2 size={11} />
+          <Trash2 size={12} />
         </button>
       </div>
     </div>
@@ -230,20 +230,20 @@ function ChatSidebarContent({
   wsConnected,
 }) {
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden bg-white">
       {/* New conversation button */}
-      <div className="p-3 border-b border-white/[0.06]">
+      <div className="p-3.5 border-b border-[#062327]/08">
         <button
           onClick={onNewChat}
-          className="btn btn-secondary w-full gap-2 text-xs font-medium justify-center py-2.5 rounded-xl border border-white/[0.10] hover:border-white/[0.20] transition-all"
+          className="btn-pill-lime w-full gap-2 text-xs font-bold justify-center py-3 flex items-center cursor-pointer shadow-md"
         >
-          <Plus size={14} className="text-brand-400" />
-          <span>New conversation</span>
+          <Plus size={16} className="stroke-[2.5]" />
+          <span>New consultation</span>
         </button>
       </div>
 
       {/* Policy scope selector */}
-      <div className="p-3 border-b border-white/[0.06]">
+      <div className="p-3.5 border-b border-[#062327]/08">
         <Select
           label="Policy Scope"
           value={selectedPolicyId}
@@ -253,43 +253,43 @@ function ChatSidebarContent({
       </div>
 
       {/* Search filter */}
-      <div className="px-3 pt-2.5 pb-1">
+      <div className="px-3.5 pt-3 pb-1">
         <div className="relative">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#558187]" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search past chats..."
-            className="w-full pl-7 pr-6 py-1.5 text-xs rounded-lg bg-white/[0.04] border border-white/[0.06] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-brand-500/40 transition-colors"
+            placeholder="Search past consultations…"
+            className="w-full pl-8 pr-7 py-2 text-xs rounded-xl bg-[#f5f8f8] border border-[#062327]/12 text-[#062327] placeholder-[#558187] focus:outline-none focus:border-[#062327] transition-colors"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#558187] hover:text-[#062327]"
             >
-              <X size={11} />
+              <X size={12} />
             </button>
           )}
         </div>
       </div>
 
       {/* Conversation list */}
-      <div className="flex-1 overflow-y-auto px-2 py-1 scroll-area">
+      <div className="flex-1 overflow-y-auto px-2.5 py-1.5 scroll-area">
         {groupedConversations.length === 0 ? (
-          <div className="text-center py-8 px-4">
-            <MessageSquare size={20} className="text-zinc-700 mx-auto mb-2 opacity-60" />
-            <p className="text-xs text-zinc-600">
-              {searchQuery ? 'No chats found matching search' : 'No previous conversations'}
+          <div className="text-center py-10 px-4">
+            <MessageSquare size={22} className="text-[#558187] mx-auto mb-2 opacity-50" />
+            <p className="text-xs text-[#558187]">
+              {searchQuery ? 'No chats found matching search' : 'No previous consultations'}
             </p>
           </div>
         ) : (
           groupedConversations.map(group => (
             <div key={group.title} className="mb-3">
-              <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-wider px-2 py-1">
+              <p className="text-[10px] font-bold text-[#558187] uppercase tracking-wider px-3 py-1">
                 {group.title}
               </p>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {group.items.map(c => (
                   <ConversationItem
                     key={c._id}
@@ -315,7 +315,7 @@ function ChatSidebarContent({
       </div>
 
       {/* Plain language toggle */}
-      <div className="p-3 border-t border-white/[0.06] bg-[#0c0c10]/40">
+      <div className="p-3.5 border-t border-[#062327]/08 bg-[#f9fbfb]">
         <Toggle
           checked={plainLanguageMode}
           onChange={setPlainLanguageMode}
@@ -325,12 +325,12 @@ function ChatSidebarContent({
       </div>
 
       {/* Streaming connection status */}
-      <div className={`px-4 py-2 flex items-center justify-between border-t border-white/[0.04] text-2xs ${wsConnected ? 'text-brand-500' : 'text-zinc-600'}`}>
+      <div className={`px-4 py-2.5 flex items-center justify-between border-t border-[#062327]/08 text-[11px] font-semibold ${wsConnected ? 'text-emerald-600' : 'text-[#558187]'}`}>
         <div className="flex items-center gap-1.5">
-          {wsConnected ? <Wifi size={10} /> : <WifiOff size={10} />}
+          {wsConnected ? <Wifi size={11} /> : <WifiOff size={11} />}
           <span>{wsConnected ? 'Streaming active' : 'REST API mode'}</span>
         </div>
-        <span className="text-zinc-600 font-mono">v1.2</span>
+        <span className="text-[#558187] font-mono text-[10px]">v1.2</span>
       </div>
     </div>
   );
@@ -343,19 +343,19 @@ function MessageBubble({ msg, plainLanguageMode }) {
 
   return (
     <div
-      className={`flex items-start gap-3 animate-fade-in ${isUser ? 'flex-row-reverse' : ''}`}
+      className={`flex items-start gap-3.5 animate-fade-in ${isUser ? 'flex-row-reverse' : ''}`}
     >
       {/* Avatar */}
       <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+        className={`w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm ${
           isUser
-            ? 'bg-brand-500/15 border border-brand-500/25'
-            : 'bg-white/[0.06] border border-white/[0.08]'
+            ? 'bg-[#f5f8f8] border border-[#062327]/15 text-[#062327]'
+            : 'bg-[#d2f57b] text-[#062327] border-2 border-[#062327] font-bold'
         }`}
       >
         {isUser
-          ? <User size={13} className="text-brand-500" />
-          : <Bot size={13} className="text-zinc-400" />
+          ? <User size={15} className="stroke-[2.2]" />
+          : <Bot size={16} className="stroke-[2.5]" />
         }
       </div>
 
@@ -363,14 +363,14 @@ function MessageBubble({ msg, plainLanguageMode }) {
       <div className={`max-w-2xl min-w-0 ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
         {/* Meta row (assistant only) */}
         {!isUser && (msg.query_type || msg.confidence_level || msg.verification_passed) && (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
             {msg.query_type && (
-              <span className="text-[10px] font-medium text-zinc-600 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full">
-                {msg.query_type === 'structured' ? 'Structured lookup' : 'Semantic search'}
+              <span className="text-[10px] font-bold text-[#2d6a71] bg-[#f0fbfb] border border-[#062327]/10 px-2.5 py-0.5 rounded-full">
+                {msg.query_type === 'structured' ? 'Structured Lookup' : 'Semantic Search'}
               </span>
             )}
             {msg.confidence_level && (
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                 msg.confidence_level === 'high'   ? 'status-ready' :
                 msg.confidence_level === 'medium' ? 'status-pending' :
                 'status-error'
@@ -379,9 +379,9 @@ function MessageBubble({ msg, plainLanguageMode }) {
               </span>
             )}
             {msg.verification_passed && (
-              <span className="text-[10px] flex items-center gap-1 text-brand-500">
-                <ShieldCheck size={10} />
-                Verified
+              <span className="text-[11px] font-bold flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                <ShieldCheck size={12} className="stroke-[2.5]" />
+                Zero Hallucinations Verified
               </span>
             )}
           </div>
@@ -389,16 +389,16 @@ function MessageBubble({ msg, plainLanguageMode }) {
 
         {/* Content */}
         <div
-          className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+          className={`px-5 py-4 rounded-3xl text-sm leading-relaxed shadow-sm ${
             isUser
-              ? 'bg-brand-500/12 border border-brand-500/20 text-zinc-100 rounded-tr-sm'
-              : 'bg-white/[0.04] border border-white/[0.07] text-zinc-200 rounded-tl-sm'
+              ? 'bg-[#062327] border border-[#062327] text-white rounded-tr-sm'
+              : 'bg-[#f8fbfb] border border-[#062327]/10 text-[#062327] rounded-tl-sm'
           }`}
         >
           {msg.streaming ? (
             <span>
               {content}
-              <span className="inline-block w-0.5 h-4 bg-brand-500 ml-0.5 animate-pulse-dot" />
+              <span className="inline-block w-1.5 h-4 bg-[#062327] ml-1 animate-pulse-dot" />
             </span>
           ) : (
             <span className="whitespace-pre-line">{content}</span>
@@ -407,14 +407,14 @@ function MessageBubble({ msg, plainLanguageMode }) {
 
         {/* Citations */}
         {!isUser && msg.citations?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-0.5">
+          <div className="flex flex-wrap gap-1.5 mt-1">
             {msg.citations.map((cite, i) => (
               <span
                 key={i}
-                className="text-[10px] text-zinc-500 bg-white/[0.03] border border-white/[0.06] px-2 py-0.5 rounded-full"
+                className="text-[10px] font-semibold text-[#558187] bg-white border border-[#062327]/10 px-2.5 py-1 rounded-full flex items-center gap-1 hover:border-[#062327]/25 hover:bg-[#f5f8f8] transition-colors shadow-xs"
               >
-                <BookOpen size={9} className="inline mr-1" />
-                p.{cite.page_number || '?'} · {cite.section_heading || 'Policy clause'}
+                <BookOpen size={10} className="text-[#062327]" />
+                <span>p.{cite.page_number || '?'} · {cite.section_heading || 'Policy contract clause'}</span>
               </span>
             ))}
           </div>
@@ -428,18 +428,18 @@ function MessageBubble({ msg, plainLanguageMode }) {
 function TypingIndicator({ statusMsg }) {
   return (
     <div className="flex items-start gap-3 animate-fade-in">
-      <div className="w-7 h-7 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Bot size={13} className="text-zinc-400" />
+      <div className="w-8 h-8 rounded-2xl bg-[#f5f8f8] border border-[#062327]/10 flex items-center justify-center flex-shrink-0 mt-0.5 text-[#558187]">
+        <Bot size={15} />
       </div>
-      <div className="px-4 py-3 bg-white/[0.04] border border-white/[0.07] rounded-2xl rounded-tl-sm">
+      <div className="px-4 py-3 bg-[#f5f8f8] border border-[#062327]/10 rounded-2xl rounded-tl-sm">
         {statusMsg ? (
-          <p className="text-xs text-zinc-500 italic">{statusMsg}</p>
+          <p className="text-xs text-[#558187] italic">{statusMsg}</p>
         ) : (
           <div className="flex items-center gap-1.5 py-0.5">
             {[0, 0.2, 0.4].map((delay, i) => (
               <span
                 key={i}
-                className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse-dot"
+                className="w-1.5 h-1.5 rounded-full bg-[#062327] animate-pulse-dot"
                 style={{ animationDelay: `${delay}s` }}
               />
             ))}
@@ -836,9 +836,9 @@ export default function ChatBox({ initialPolicy, policies }) {
   );
 
   return (
-    <div className="flex gap-4 h-[calc(100dvh-8rem)] lg:h-[calc(100dvh-5rem)]">
+    <div className="flex gap-5 h-[calc(100dvh-8rem)] lg:h-[calc(100dvh-5rem)]">
       {/* ─── Desktop Sidebar ────────────────────────── */}
-      <aside className="hidden lg:flex flex-col w-64 flex-shrink-0 surface rounded-2xl overflow-hidden border border-white/[0.06]">
+      <aside className="hidden lg:flex flex-col w-72 flex-shrink-0 rounded-3xl overflow-hidden border border-[#062327]/10 shadow-sm bg-white">
         <ChatSidebarContent
           onNewChat={startNewChat}
           policyOptions={policyOptions}
@@ -871,21 +871,21 @@ export default function ChatBox({ initialPolicy, policies }) {
           {/* Backdrop */}
           <div
             onClick={() => setMobileDrawerOpen(false)}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-[#062327]/40 backdrop-blur-sm transition-opacity"
           />
 
           {/* Drawer content */}
-          <div className="relative w-72 max-w-[85vw] h-full surface border-r border-white/[0.08] shadow-2xl flex flex-col z-10 animate-fade-in">
-            <div className="p-3 border-b border-white/[0.06] flex items-center justify-between">
-              <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                <History size={14} className="text-brand-400" />
-                Conversation History
+          <div className="relative w-72 max-w-[85vw] h-full bg-white border-r border-[#062327]/10 shadow-2xl flex flex-col z-10 animate-fade-in">
+            <div className="p-4 border-b border-[#062327]/08 flex items-center justify-between bg-white">
+              <span className="font-headline text-sm font-bold text-[#062327] flex items-center gap-2">
+                <History size={16} className="text-[#062327]" />
+                Consultation History
               </span>
               <button
                 onClick={() => setMobileDrawerOpen(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
+                className="p-1.5 rounded-xl text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
             <div className="flex-1 overflow-hidden">
@@ -919,18 +919,18 @@ export default function ChatBox({ initialPolicy, policies }) {
       )}
 
       {/* ─── Main chat area ──────────────────────────── */}
-      <div className="flex-1 flex flex-col surface rounded-2xl overflow-hidden min-w-0 border border-white/[0.06]">
+      <div className="flex-1 flex flex-col rounded-3xl overflow-hidden min-w-0 border border-[#062327]/10 shadow-sm bg-white">
         {/* Mobile: scope + history toggle bar */}
-        <div className="lg:hidden flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.06] bg-[#0c0c10]/70">
+        <div className="lg:hidden flex items-center gap-2.5 px-4 py-3 border-b border-[#062327]/08 bg-[#f5f8f8]">
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className="btn btn-ghost px-2.5 py-1.5 text-xs gap-1.5 rounded-xl border border-white/[0.08]"
+            className="px-3 py-1.5 text-xs gap-1.5 flex items-center rounded-xl bg-white border border-[#062327]/12 text-[#062327] font-bold shadow-xs cursor-pointer"
             title="Chat history"
           >
-            <History size={14} className="text-brand-400" />
-            <span className="text-zinc-300">Chats</span>
+            <History size={14} className="text-[#062327]" />
+            <span className="text-[#062327] font-bold">Chats</span>
             {conversations.length > 0 && (
-              <span className="text-[10px] text-zinc-500 bg-white/[0.06] px-1.5 py-0.2 rounded-full">
+              <span className="text-[10px] text-[#062327] bg-[#d2f57b] font-black px-1.5 py-0.2 rounded-full">
                 {conversations.length}
               </span>
             )}
@@ -939,7 +939,7 @@ export default function ChatBox({ initialPolicy, policies }) {
           <select
             value={selectedPolicyId}
             onChange={e => setSelectedPolicyId(e.target.value)}
-            className="input-field text-xs flex-1 py-1.5"
+            className="input-field text-xs flex-1 py-1.5 rounded-xl bg-white text-[#062327]"
           >
             {policyOptions.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -948,10 +948,10 @@ export default function ChatBox({ initialPolicy, policies }) {
 
           <button
             onClick={startNewChat}
-            className="btn btn-ghost p-2 rounded-xl flex-shrink-0 border border-white/[0.08]"
+            className="w-8 h-8 rounded-xl bg-[#d2f57b] text-[#062327] border border-[#062327]/20 flex items-center justify-center flex-shrink-0 cursor-pointer font-bold shadow-xs"
             title="New conversation"
           >
-            <Plus size={15} className="text-brand-400" />
+            <Plus size={16} className="stroke-[2.5]" />
           </button>
         </div>
 
@@ -959,31 +959,31 @@ export default function ChatBox({ initialPolicy, policies }) {
         <div
           ref={scrollAreaRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-5 scroll-area relative"
+          className="flex-1 overflow-y-auto px-5 sm:px-7 py-6 space-y-6 scroll-area relative bg-[#fcfefe]"
         >
           {loadingChat ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <Spinner size={24} className="text-brand-400 mb-3" />
-              <p className="text-xs text-zinc-500">Loading conversation history...</p>
+              <Spinner size={26} className="text-[#062327] mb-3" />
+              <p className="text-xs font-semibold text-[#558187]">Loading consultation history…</p>
             </div>
           ) : messages.length === 0 && !loading ? (
             // Empty state
-            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-12 max-w-sm mx-auto">
-              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-4">
-                <Bot size={20} className="text-zinc-400" />
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-12 max-w-md mx-auto">
+              <div className="w-14 h-14 rounded-3xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center mb-5 text-[#062327] shadow-sm">
+                <Bot size={24} className="stroke-[2.5]" />
               </div>
-              <h3 className="text-sm font-semibold text-zinc-200 mb-1.5">
+              <h3 className="font-headline text-lg sm:text-xl font-bold text-[#062327] mb-2">
                 Policy Intelligence Assistant
               </h3>
-              <p className="text-xs text-zinc-500 leading-relaxed mb-6">
-                Ask anything about coverage amounts, waiting periods, exclusions, ICU caps, or claim procedures. Answers are cited back to exact policy pages.
+              <p className="text-xs sm:text-sm text-[#558187] leading-relaxed mb-6 font-medium">
+                Ask anything about room-rent sub-limits, waiting periods, modern treatments, or co-pays. Every answer is grounded with verbatim page citations.
               </p>
-              <div className="grid grid-cols-1 gap-2 w-full">
+              <div className="grid grid-cols-1 gap-2.5 w-full">
                 {SAMPLE_QUESTIONS.map((q, i) => (
                   <button
                     key={i}
                     onClick={() => setInput(q)}
-                    className="text-left px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-brand-500/30 hover:bg-white/[0.05] text-xs text-zinc-400 hover:text-zinc-200 transition-all duration-150"
+                    className="text-left px-4 py-3 rounded-2xl bg-white border border-[#062327]/10 hover:border-[#062327]/30 hover:bg-[#f5f8f8] text-xs font-semibold text-[#062327] transition-all duration-150 cursor-pointer shadow-xs"
                   >
                     "{q}"
                   </button>
@@ -1011,15 +1011,15 @@ export default function ChatBox({ initialPolicy, policies }) {
         {showScrollBtn && (
           <button
             onClick={() => scrollToBottom()}
-            className="absolute bottom-24 right-6 p-2 rounded-full bg-[#1e1e23] border border-white/[0.10] text-zinc-400 hover:text-zinc-200 shadow-lg transition-all animate-fade-in"
+            className="absolute bottom-28 right-8 p-2.5 rounded-full bg-white border border-[#062327]/15 text-[#062327] hover:bg-[#f5f8f8] shadow-md transition-all animate-fade-in cursor-pointer"
           >
-            <ChevronDown size={15} />
+            <ChevronDown size={16} />
           </button>
         )}
 
         {/* Error bar */}
         {error && (
-          <div className="px-4 pb-2">
+          <div className="px-5 pb-2">
             <ErrorBanner message={error} onDismiss={() => setError(null)} />
           </div>
         )}
@@ -1027,7 +1027,7 @@ export default function ChatBox({ initialPolicy, policies }) {
         {/* Input area */}
         <form
           onSubmit={handleSend}
-          className="px-4 pb-4 pt-3 border-t border-white/[0.06] bg-[#0a0a0c]/80 backdrop-blur-sm"
+          className="px-5 pb-5 pt-3 border-t border-[#062327]/08 bg-white/95 backdrop-blur-md"
         >
           {/* Mobile: plain language toggle */}
           <div className="lg:hidden flex items-center gap-3 mb-3">
@@ -1060,7 +1060,7 @@ export default function ChatBox({ initialPolicy, policies }) {
             onErrorDismiss={() => setVoiceError(null)}
           />
 
-          <div className="flex gap-2 items-end">
+          <div className="flex gap-2.5 items-end">
             <div className="flex-1 relative">
               <textarea
                 ref={inputRef}
@@ -1072,19 +1072,18 @@ export default function ChatBox({ initialPolicy, policies }) {
                 placeholder={
                   isVoiceListening
                     ? isVoicePauseDetected
-                      ? "⏸️ Pause detected — click 'Use Transcript' to insert in 0s, or continue speaking..."
+                      ? "⏸️ Pause detected — click 'Use Transcript' to insert, or keep speaking..."
                       : isVoiceSpeaking
-                      ? "🎙️ Listening... Streaming words onto screen (ChatGPT style)"
+                      ? "🎙️ Listening... Streaming words onto screen..."
                       : "Listening... speak now or press Alt+V to finish"
                     : isVoiceTranscribing
                     ? "Transcribing with Whisper Turbo..."
-                    : "Ask about coverage, exclusions, waiting periods…"
+                    : "Ask about room rent limits, exclusions, ICU caps, or claim procedures…"
                 }
                 className="
-                  input-field resize-none py-3 pr-12 leading-relaxed
-                  max-h-32 overflow-y-auto rounded-xl
+                  input-field resize-none py-3.5 pr-12 leading-relaxed
+                  max-h-32 overflow-y-auto rounded-2xl bg-[#f5f8f8] text-[#062327] placeholder-[#558187] focus:bg-white focus:border-[#062327] border-[#062327]/12
                 "
-                style={{ height: 'auto' }}
                 onInput={e => {
                   e.target.style.height = 'auto';
                   e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
@@ -1106,19 +1105,18 @@ export default function ChatBox({ initialPolicy, policies }) {
             <button
               type="submit"
               disabled={loading || !input.trim() || isVoiceTranscribing}
-              className="btn btn-primary h-11 w-11 p-0 rounded-xl flex-shrink-0"
+              className="btn-pill-lime h-12 w-12 p-0 rounded-2xl flex-shrink-0 flex items-center justify-center cursor-pointer disabled:opacity-40 shadow-sm"
               aria-label="Send message"
             >
-              {loading ? <Spinner size={15} className="text-black" /> : <Send size={15} />}
+              {loading ? <Spinner size={16} className="text-[#062327]" /> : <Send size={16} className="stroke-[2.5]" />}
             </button>
           </div>
-          <p className="text-2xs text-zinc-600 mt-2 text-center">
+          <p className="text-[11px] text-[#558187] mt-2.5 text-center font-medium">
             {wsConnected ? 'Streaming via WebSocket' : 'REST API mode'}
-            {selectedPolicyId ? '' : ' · All policies'}
+            {selectedPolicyId ? '' : ' · Searching across all policies'}
             {' · WebRTC Instant Voice (Alt+V)'}
-            {' · Chats saved automatically'}
+            {' · Fully grounded with contract citations'}
           </p>
-
         </form>
       </div>
     </div>

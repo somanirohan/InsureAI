@@ -1,5 +1,5 @@
 /**
- * Shared UI primitive components — Apple HIG-inspired, minimal.
+ * Shared UI primitive components — landing-page light theme.
  * Import from here to keep design consistent across all views.
  */
 import React, { useState, useRef, useEffect } from 'react';
@@ -34,15 +34,15 @@ export function StatusBadge({ status }) {
 // ─── Metric Card ───────────────────────────────────────────
 export function MetricCard({ label, value, sub, accent }) {
   return (
-    <div className="surface p-5 flex flex-col gap-1">
-      <p className="label-xs">{label}</p>
+    <div className="bg-white border border-[#062327]/10 p-5 flex flex-col gap-1 rounded-2xl shadow-sm">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187]">{label}</p>
       <p
-        className="text-2xl font-semibold tracking-tight leading-none mt-1"
-        style={{ color: accent ? '#e8c97e' : '#f0f0f8' }}
+        className="font-headline text-2xl font-bold tracking-tight leading-none mt-1"
+        style={{ color: accent ? '#0b3d45' : '#062327' }}
       >
         {value}
       </p>
-      {sub && <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{sub}</p>}
+      {sub && <p className="text-xs mt-1 text-[#558187]">{sub}</p>}
     </div>
   );
 }
@@ -52,8 +52,8 @@ export function SectionHeader({ title, subtitle, action }) {
   return (
     <div className="flex items-start justify-between gap-4 mb-6">
       <div>
-        <h2 className="text-base font-semibold text-zinc-100 tracking-tight">{title}</h2>
-        {subtitle && <p className="text-sm text-zinc-500 mt-0.5">{subtitle}</p>}
+        <h2 className="font-headline text-lg font-bold text-[#062327] tracking-tight">{title}</h2>
+        {subtitle && <p className="text-sm text-[#558187] mt-0.5">{subtitle}</p>}
       </div>
       {action && <div className="flex-shrink-0">{action}</div>}
     </div>
@@ -65,13 +65,13 @@ export function EmptyState({ icon: Icon, title, description, action }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-16 px-6">
       {Icon && (
-        <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/[0.06] flex items-center justify-center mb-4">
-          <Icon size={20} className="text-zinc-500" />
+        <div className="w-14 h-14 rounded-3xl bg-[#f5f8f8] border border-[#062327]/10 flex items-center justify-center mb-4 text-[#062327] shadow-sm">
+          <Icon size={24} className="stroke-[2.2]" />
         </div>
       )}
-      <h3 className="text-sm font-medium text-zinc-200 mb-1">{title}</h3>
-      <p className="text-xs text-zinc-500 max-w-xs leading-relaxed">{description}</p>
-      {action && <div className="mt-5">{action}</div>}
+      <h3 className="font-headline text-base font-bold text-[#062327] mb-1.5">{title}</h3>
+      <p className="text-xs sm:text-sm text-[#558187] max-w-sm leading-relaxed">{description}</p>
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }
@@ -80,13 +80,13 @@ export function EmptyState({ icon: Icon, title, description, action }) {
 export function ErrorBanner({ message, onDismiss }) {
   if (!message) return null;
   return (
-    <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/8 border border-red-500/20 text-sm text-red-400 mb-4">
+    <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-sm text-rose-700 mb-5 leading-relaxed">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="flex-shrink-0 mt-0.5">
         <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5c.4 0 .7.3.7.7v3.4c0 .4-.3.7-.7.7s-.7-.3-.7-.7V5.2c0-.4.3-.7.7-.7zm0 6.5a.85.85 0 1 1 0-1.7.85.85 0 0 1 0 1.7z"/>
       </svg>
       <span className="flex-1">{message}</span>
       {onDismiss && (
-        <button onClick={onDismiss} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+        <button onClick={onDismiss} className="text-rose-400 hover:text-rose-600 transition-colors cursor-pointer">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
             <path d="M10.95 3.05a.7.7 0 0 0-.99 0L7 6.01 4.04 3.05a.7.7 0 1 0-.99.99L6.01 7 3.05 9.96a.7.7 0 0 0 .99.99L7 7.99l2.96 2.96a.7.7 0 0 0 .99-.99L7.99 7l2.96-2.96a.7.7 0 0 0 0-.99z"/>
           </svg>
@@ -106,15 +106,15 @@ export function Spinner({ size = 16, className = '' }) {
       fill="none"
       className={`animate-spin ${className}`}
     >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.15" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.2" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
 
 // ─── Skeleton ──────────────────────────────────────────────
 export function Skeleton({ className = '' }) {
-  return <div className={`skeleton ${className}`} />;
+  return <div className={`skeleton rounded-xl ${className}`} />;
 }
 
 // ─── Divider ───────────────────────────────────────────────
@@ -136,25 +136,25 @@ export function Toggle({ checked, onChange, label, description, disabled }) {
         />
         <div
           className={`
-            w-9 h-5 rounded-full transition-all duration-200
-            peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-zinc-900
+            w-10 h-6 rounded-full transition-all duration-200
+            peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white
           `}
           style={{
-            background: checked ? 'rgba(200,169,110,0.85)' : 'rgba(255,255,255,0.10)',
-            border: checked ? 'none' : '1px solid rgba(255,255,255,0.10)',
+            background: checked ? '#d2f57b' : '#f0f3f3',
+            border: checked ? '1.5px solid #062327' : '1.5px solid rgba(6,35,39,0.18)',
           }}
         />
         <div
           className={`
-            absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200
-            ${checked ? 'translate-x-4' : 'translate-x-0.5'}
+            absolute top-1 w-4 h-4 rounded-full shadow-sm transition-all duration-200
+            ${checked ? 'translate-x-5 bg-[#062327]' : 'translate-x-1 bg-white'}
           `}
         />
       </div>
       {(label || description) && (
         <div>
-          {label && <p className="text-sm font-medium text-zinc-200">{label}</p>}
-          {description && <p className="text-xs text-zinc-500">{description}</p>}
+          {label && <p className="text-xs sm:text-sm font-bold text-[#062327]">{label}</p>}
+          {description && <p className="text-xs text-[#558187]">{description}</p>}
         </div>
       )}
     </label>
@@ -225,7 +225,7 @@ export function Select({ label, value, onChange, options = [], disabled, placeho
 
   return (
     <div className={`relative ${className}`}>
-      {label && <label className="label-xs block mb-2">{label}</label>}
+      {label && <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-2">{label}</label>}
 
       <button
         ref={triggerRef}
@@ -239,19 +239,19 @@ export function Select({ label, value, onChange, options = [], disabled, placeho
         }}
         className="input-field cursor-pointer flex items-center justify-between gap-2 text-left"
         style={{
-          borderColor: isOpen ? 'rgba(200, 169, 110, 0.50)' : undefined,
-          boxShadow: isOpen ? '0 0 0 3px rgba(200, 169, 110, 0.12)' : undefined,
+          borderColor: isOpen ? '#062327' : undefined,
+          boxShadow: isOpen ? '0 0 0 3px rgba(6, 35, 39, 0.10)' : undefined,
           userSelect: 'none',
         }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className={`truncate text-xs ${selectedOption ? 'text-zinc-100 font-medium' : 'text-zinc-500'}`}>
+        <span className={`truncate text-xs ${selectedOption ? 'text-[#062327] font-medium' : 'text-[#558187]'}`}>
           {displayText}
         </span>
         <ChevronDown
           size={14}
-          className={`text-zinc-400 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-amber-300' : ''}`}
+          className={`text-[#558187] flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#062327]' : ''}`}
         />
       </button>
 
@@ -260,22 +260,20 @@ export function Select({ label, value, onChange, options = [], disabled, placeho
         <div
           ref={menuRef}
           role="listbox"
-          className="fixed z-[9999] p-1 rounded-xl shadow-2xl overflow-y-auto scroll-area animate-fade-in"
+          className="fixed z-[9999] p-1.5 rounded-2xl shadow-2xl overflow-y-auto scroll-area animate-fade-in"
           style={{
             top: menuPos.top !== undefined ? `${menuPos.top}px` : undefined,
             bottom: menuPos.bottom !== undefined ? `${menuPos.bottom}px` : undefined,
             left: `${menuPos.left}px`,
             width: `${menuPos.width}px`,
             maxHeight: `${menuPos.maxHeight}px`,
-            background: 'rgba(18, 18, 28, 0.98)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.15)',
+            background: '#ffffff',
+            border: '1.5px solid rgba(6, 35, 39, 0.12)',
+            boxShadow: '0 16px 48px rgba(6, 35, 39, 0.16)',
           }}
         >
           {options.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-zinc-500 text-center">
+            <div className="px-3 py-2 text-xs text-[#558187] text-center">
               No options available
             </div>
           ) : (
@@ -291,15 +289,15 @@ export function Select({ label, value, onChange, options = [], disabled, placeho
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between gap-2 transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-amber-400/15 text-amber-200 font-semibold'
-                      : 'text-zinc-300 hover:bg-white/[0.06] hover:text-white font-normal'
+                      ? 'bg-[#d2f57b] text-[#062327] font-bold shadow-sm'
+                      : 'text-[#062327] hover:bg-[#f5f8f8] hover:text-[#0b3d45] font-normal'
                   }`}
                 >
                   <span className="truncate">{opt.label}</span>
                   {isSelected && (
-                    <Check size={13} className="text-amber-300 flex-shrink-0" />
+                    <Check size={14} className="text-[#062327] stroke-[2.5] flex-shrink-0" />
                   )}
                 </button>
               );
@@ -319,7 +317,7 @@ export function Input({ label, type = 'text', value, onChange, placeholder, disa
       {label && <label className="label-xs block mb-2">{label}</label>}
       <div className="relative">
         {Icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#558187]">
             <Icon size={14} />
           </div>
         )}

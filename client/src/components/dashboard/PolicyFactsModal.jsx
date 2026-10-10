@@ -3,15 +3,15 @@ import { createPortal } from 'react-dom';
 import { X, BookOpen, Tag, Percent, Clock, AlertTriangle, ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 const CATEGORY_META = {
-  coverage_category:  { label: 'Coverage',       color: 'text-blue-400' },
-  sum_insured:        { label: 'Sum Insured',     color: 'text-brand-500' },
-  sub_limit:          { label: 'Sub-Limit',       color: 'text-purple-400' },
-  waiting_period:     { label: 'Waiting Period',  color: 'text-amber-400' },
-  exclusion:          { label: 'Exclusion',       color: 'text-red-400' },
-  room_rent_limit:    { label: 'Room Rent',       color: 'text-orange-400' },
-  co_payment:         { label: 'Co-Payment',      color: 'text-yellow-400' },
-  deductible:         { label: 'Deductible',      color: 'text-pink-400' },
-  claim_condition:    { label: 'Claim Condition', color: 'text-cyan-400' },
+  coverage_category:  { label: 'Coverage',       color: 'text-sky-600' },
+  sum_insured:        { label: 'Sum Insured',     color: 'text-[#0b3d45]' },
+  sub_limit:          { label: 'Sub-Limit',       color: 'text-violet-600' },
+  waiting_period:     { label: 'Waiting Period',  color: 'text-amber-600' },
+  exclusion:          { label: 'Exclusion',       color: 'text-rose-600' },
+  room_rent_limit:    { label: 'Room Rent',       color: 'text-orange-600' },
+  co_payment:         { label: 'Co-Payment',      color: 'text-yellow-700' },
+  deductible:         { label: 'Deductible',      color: 'text-pink-600' },
+  claim_condition:    { label: 'Claim Condition', color: 'text-cyan-700' },
 };
 
 const CONFIDENCE_STYLE = {
@@ -34,42 +34,49 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+      style={{ background: 'rgba(6, 35, 39, 0.25)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full sm:max-w-2xl max-h-[90dvh] sm:max-h-[80vh] bg-[#1e1e23] border border-white/[0.10] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-lg animate-slide-up overflow-hidden">
+      <div
+        className="w-full sm:max-w-2xl max-h-[90dvh] sm:max-h-[82vh] rounded-t-[28px] sm:rounded-[32px] flex flex-col shadow-[0_24px_80px_rgba(6,35,39,0.25)] animate-slide-up overflow-hidden"
+        style={{
+          background: '#ffffff',
+          border: '1.5px solid rgba(6, 35, 39, 0.12)',
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] flex-shrink-0">
+        <div className="flex items-center justify-between px-7 py-5 border-b border-[#062327]/10 flex-shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-zinc-100">
+            <h2 className="font-headline text-lg font-bold text-[#062327] tracking-tight">
               {policy.insurer_name || policy.file_name}
             </h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              {facts.length} extracted facts · {Object.keys(grouped).length} categories
+            <p className="text-xs text-[#558187] mt-0.5 font-medium">
+              {facts.length} extracted facts · {Object.keys(grouped).length} contract categories
             </p>
           </div>
           <button
             onClick={onClose}
-            className="btn btn-ghost p-2 rounded-xl"
+            className="text-[#558187] hover:text-[#062327] p-2 rounded-xl hover:bg-[#062327]/08 transition-colors cursor-pointer"
             aria-label="Close"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-area">
+        <div className="flex-1 overflow-y-auto px-7 py-6 space-y-6 scroll-area">
           {facts.length === 0 ? (
-            <div className="text-center py-12 text-zinc-500 text-sm">
+            <div className="text-center py-12 text-[#558187] text-sm">
               No facts extracted yet. Policy may still be processing.
             </div>
           ) : (
             Object.entries(grouped).map(([category, categoryFacts]) => {
-              const meta = CATEGORY_META[category] || { label: category, color: 'text-zinc-400' };
+              const meta = CATEGORY_META[category] || { label: category, color: 'text-[#558187]' };
               return (
                 <section key={category}>
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`text-xs font-semibold ${meta.color}`}>{meta.label}</span>
-                    <div className="flex-1 h-px bg-white/[0.06]" />
+                    <div className="flex-1 h-px bg-[#062327]/08" />
                     <span className="label-xs">{categoryFacts.length}</span>
                   </div>
                   <div className="space-y-2">
@@ -98,57 +105,57 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                       return (
                         <div
                           key={fact.fact_id || fact._id}
-                          className="surface-inset rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-white/[0.04]"
+                          className="bg-[#f5f8f8] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#062327]/08 hover:border-[#062327]/18 transition-colors"
                         >
                           <div className="flex-1 min-w-0">
                             {isExclusion ? (
                               <div className="flex items-start gap-2.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-2 flex-shrink-0" />
-                                <p className="text-sm text-zinc-200 leading-relaxed font-normal">
+                                <span className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
+                                <p className="text-sm text-[#062327] leading-relaxed font-normal">
                                   {fact.fact_value}
                                 </p>
                               </div>
                             ) : isWaiting ? (
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <p className="text-sm font-medium text-zinc-100">
+                                <p className="text-sm font-bold text-[#062327]">
                                   {waitingCond}
                                 </p>
                                 {waitingPeriod && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 whitespace-nowrap self-start sm:self-auto">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/20 whitespace-nowrap self-start sm:self-auto">
                                     {waitingPeriod}
                                   </span>
                                 )}
                               </div>
                             ) : isClaim ? (
                               <div className="flex items-start gap-2.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2 flex-shrink-0" />
-                                <p className="text-sm text-zinc-200 leading-relaxed">
+                                <span className="w-2 h-2 rounded-full bg-sky-500 mt-1.5 flex-shrink-0" />
+                                <p className="text-sm text-[#062327] leading-relaxed">
                                   {fact.fact_value}
                                 </p>
                               </div>
                             ) : (
                               <div>
-                                <p className="text-xs font-medium text-zinc-400 capitalize mb-1">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1">
                                   {fact.fact_key?.replace(/_/g, ' ') || 'Detail'}
                                 </p>
-                                <p className="text-base font-semibold text-zinc-100">
+                                <p className="font-headline text-base font-bold text-[#062327]">
                                   {fact.fact_value}
                                   {fact.unit && fact.unit !== 'INR' && (
-                                    <span className="text-xs text-zinc-400 font-normal ml-1.5">{fact.unit}</span>
+                                    <span className="text-xs text-[#558187] font-normal ml-1.5">{fact.unit}</span>
                                   )}
                                 </p>
                               </div>
                             )}
 
                             {(fact.source_page || fact.source_section) && (
-                              <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+                              <div className="mt-2 flex items-center gap-2 text-[11px] text-[#558187]">
                                 {fact.source_page && (
-                                  <span className="px-1.5 py-0.5 rounded bg-white/[0.04] text-zinc-400 font-mono text-[10px]">
+                                  <span className="px-2 py-0.5 rounded-full bg-[#062327]/08 text-[#062327] font-mono text-[10px] font-bold">
                                     Page {fact.source_page}
                                   </span>
                                 )}
                                 {fact.source_section && (
-                                  <span>· {fact.source_section}</span>
+                                  <span className="text-[#558187]">· {fact.source_section}</span>
                                 )}
                               </div>
                             )}

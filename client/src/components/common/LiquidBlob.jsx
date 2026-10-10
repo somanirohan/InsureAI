@@ -52,7 +52,7 @@ export function LiquidBlob({ className = '' }) {
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          background: 'radial-gradient(ellipse, rgba(180,140,60,0.18) 0%, rgba(100,80,200,0.08) 50%, transparent 75%)',
+          background: 'radial-gradient(ellipse, rgba(210,245,123,0.16) 0%, rgba(14,62,70,0.25) 50%, transparent 75%)',
           filter: 'blur(40px)',
           transform: 'scale(1.3)',
           animation: 'blobGlow 5s ease-in-out infinite',
@@ -66,17 +66,17 @@ export function LiquidBlob({ className = '' }) {
           width: '100%',
           height: '100%',
           background: `
-            radial-gradient(ellipse at 35% 30%, rgba(240,200,100,0.55) 0%, transparent 55%),
-            radial-gradient(ellipse at 70% 70%, rgba(60,40,160,0.65) 0%, transparent 55%),
-            radial-gradient(ellipse at 20% 75%, rgba(30,100,200,0.45) 0%, transparent 50%),
-            radial-gradient(ellipse at 80% 25%, rgba(180,120,40,0.50) 0%, transparent 45%),
-            linear-gradient(135deg, rgba(20,14,50,0.95) 0%, rgba(10,8,30,0.98) 100%)
+            radial-gradient(ellipse at 35% 30%, rgba(210,245,123,0.45) 0%, transparent 55%),
+            radial-gradient(ellipse at 70% 70%, rgba(14,62,70,0.75) 0%, transparent 55%),
+            radial-gradient(ellipse at 20% 75%, rgba(56,189,248,0.35) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 25%, rgba(110,231,183,0.40) 0%, transparent 45%),
+            linear-gradient(135deg, rgba(6,35,39,0.95) 0%, rgba(4,24,27,0.98) 100%)
           `,
           boxShadow: `
-            inset 0 2px 40px rgba(240,210,120,0.25),
-            inset 0 -2px 30px rgba(40,20,100,0.40),
-            0 0 80px rgba(200,160,60,0.15),
-            0 0 40px rgba(80,60,200,0.10)
+            inset 0 2px 40px rgba(210,245,123,0.22),
+            inset 0 -2px 30px rgba(4,24,27,0.60),
+            0 0 80px rgba(210,245,123,0.12),
+            0 0 40px rgba(14,62,70,0.25)
           `,
         }}
       >
@@ -89,7 +89,7 @@ export function LiquidBlob({ className = '' }) {
             width: '45%',
             height: '35%',
             background: `
-              radial-gradient(ellipse at 40% 40%, rgba(255,235,180,0.55) 0%, rgba(255,220,130,0.20) 50%, transparent 75%)
+              radial-gradient(ellipse at 40% 40%, rgba(240,255,200,0.50) 0%, rgba(210,245,123,0.18) 50%, transparent 75%)
             `,
             borderRadius: '50% 70% 60% 50%',
             filter: 'blur(6px)',
@@ -106,7 +106,7 @@ export function LiquidBlob({ className = '' }) {
             width: '55%',
             height: '30%',
             background: `
-              radial-gradient(ellipse, rgba(180,160,220,0.30) 0%, transparent 70%)
+              radial-gradient(ellipse, rgba(110,231,183,0.25) 0%, transparent 70%)
             `,
             borderRadius: '60% 40% 50% 60%',
             filter: 'blur(12px)',
@@ -114,7 +114,7 @@ export function LiquidBlob({ className = '' }) {
           }}
         />
 
-        {/* ── Gold rim ring (the golden ring from the reference) ── */}
+        {/* ── Lime rim ring ── */}
         <div
           style={{
             position: 'absolute',
@@ -123,7 +123,7 @@ export function LiquidBlob({ className = '' }) {
             right: '10%',
             height: '40%',
             background: `
-              radial-gradient(ellipse at 50% 80%, rgba(200,160,60,0.70) 0%, rgba(230,190,80,0.40) 30%, transparent 65%)
+              radial-gradient(ellipse at 50% 80%, rgba(210,245,123,0.60) 0%, rgba(14,62,70,0.40) 30%, transparent 65%)
             `,
             filter: 'blur(8px)',
             borderRadius: '50%',
@@ -140,8 +140,8 @@ export function LiquidBlob({ className = '' }) {
             width: '65%',
             height: '60%',
             background: `
-              radial-gradient(ellipse at 50% 40%, rgba(240,210,120,0.20) 0%, transparent 60%),
-              radial-gradient(ellipse at 30% 70%, rgba(80,60,200,0.18) 0%, transparent 60%)
+              radial-gradient(ellipse at 50% 40%, rgba(210,245,123,0.18) 0%, transparent 60%),
+              radial-gradient(ellipse at 30% 70%, rgba(14,62,70,0.25) 0%, transparent 60%)
             `,
             filter: 'blur(4px)',
             opacity: 0.7,

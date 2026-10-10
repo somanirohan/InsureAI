@@ -1,21 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Shield, ArrowRight, Lock, CheckCircle, ChevronRight,
   FileText, Brain, TrendingUp, AlertTriangle, X, Mail,
-  User, Phone, Menu, DollarSign, GitCompare, Sparkles,
-  CheckCircle2, AlertCircle, Check, Activity, Layers,
-  Search, ArrowUpRight, ShieldCheck, Scale, Zap,
+  User, Phone, Menu, DollarSign, Sparkles, CheckCircle2,
+  AlertCircle, Check, Activity, Search, ArrowUpRight,
+  ShieldCheck, Zap, Heart, Clock, HelpCircle, Layers,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Spinner } from '../common/ui';
-import { LiquidBlob, Starfield } from '../common/LiquidBlob';
 
 /* ─────────────────────────────────────────────────────────────
-   INLINE AUTH DRAWER
-   Slides in from the right; dummy credentials pre-filled
+   CLOVER WATERMARK BLOOM
+   Matches the organic geometric floral background of Chainly
+   ───────────────────────────────────────────────────────────── */
+function CloverBloom({ color = 'rgba(255,255,255,0.035)', size = 320, className = '', style = {} }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 200 200"
+      className={`pointer-events-none select-none absolute ${className}`}
+      style={style}
+      aria-hidden="true"
+    >
+      <circle cx="100" cy="65" r="46" fill={color} />
+      <circle cx="135" cy="100" r="46" fill={color} />
+      <circle cx="100" cy="135" r="46" fill={color} />
+      <circle cx="65" cy="100" r="46" fill={color} />
+      <circle cx="100" cy="100" r="38" fill={color} />
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HAND-DRAWN DOODLE ARROW
+   ───────────────────────────────────────────────────────────── */
+function DoodleArrow({ className = '', style = {} }) {
+  return (
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" className={className} style={style} aria-hidden="true">
+      <path
+        d="M6 10 C18 14, 32 20, 30 34 M30 34 L22 32 M30 34 L33 26"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INLINE AUTH DRAWER (Styled in Chainly Petrol Teal & Lime)
    ───────────────────────────────────────────────────────────── */
 function AuthDrawer({ onClose, defaultTab = 'login' }) {
-  const [isLogin, setIsLogin] = useState(defaultTab === 'login');
+  const [isLogin, setIsLogin]   = useState(defaultTab === 'login');
   const [fullName, setFullName] = useState('');
   const [email, setEmail]       = useState('alex@insurai.com');
   const [password, setPassword] = useState('Shield@2024');
@@ -24,7 +63,6 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
   const [loading, setLoading]   = useState(false);
   const { login, register }     = useAuth();
 
-  // Reset credentials when switching tabs
   const switchTab = (toLogin) => {
     setIsLogin(toLogin);
     setError(null);
@@ -55,107 +93,67 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
   };
 
   const fieldStyle = {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.09)',
-    borderRadius: '12px',
-    padding: '12px 14px 12px 38px',
+    background: '#04181b',
+    border: '1.5px solid rgba(255,255,255,0.12)',
+    borderRadius: '16px',
+    padding: '13px 14px 13px 40px',
     fontSize: '14px',
     fontFamily: 'inherit',
-    color: '#f0f0f8',
+    color: '#ffffff',
     width: '100%',
     outline: 'none',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
-    letterSpacing: '-0.01em',
-  };
-
-  const handleFieldFocus = e => {
-    e.target.style.borderColor = 'rgba(200,169,110,0.50)';
-    e.target.style.boxShadow   = '0 0 0 3px rgba(200,169,110,0.10)';
-  };
-  const handleFieldBlur  = e => {
-    e.target.style.borderColor = 'rgba(255,255,255,0.09)';
-    e.target.style.boxShadow   = 'none';
+    transition: 'all 0.2s ease',
   };
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40"
-        style={{ background: 'rgba(0,0,4,0.70)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        className="fixed inset-0 z-50 transition-opacity"
+        style={{ background: 'rgba(5, 23, 27, 0.72)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
         onClick={onClose}
       />
-
-      {/* Drawer panel */}
       <div
-        className="fixed top-0 right-0 bottom-0 z-50 flex flex-col animate-slide-in"
+        className="fixed top-3 right-3 bottom-3 sm:top-5 sm:right-5 sm:bottom-5 z-50 flex flex-col rounded-[28px] sm:rounded-[36px] overflow-hidden animate-slide-in"
         style={{
-          width: '100%',
-          maxWidth: '420px',
-          background: 'rgba(7,7,18,0.98)',
-          borderLeft: '1px solid rgba(255,255,255,0.07)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
-          boxShadow: '-32px 0 100px rgba(0,0,0,0.70)',
+          width: 'calc(100% - 24px)',
+          maxWidth: '430px',
+          background: '#07262b',
+          border: '1.5px solid rgba(255,255,255,0.14)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)',
         }}
       >
-        {/* Drawer header */}
-        <div
-          className="flex items-center justify-between px-8 pt-8 pb-5"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-        >
+        {/* Header */}
+        <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(200,169,110,0.30)',
-                boxShadow: '0 0 16px rgba(200,169,110,0.15)',
-              }}
-            >
-              <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
+            <div className="w-10 h-10 rounded-2xl bg-[#d2f57b] flex items-center justify-center p-2 text-[#062327] font-black text-lg border-2 border-[#062327]">
+              <Shield size={20} className="stroke-[2.5]" />
             </div>
             <div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: '#f0f0f8', letterSpacing: '-0.02em' }}>InsurAI</p>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.01em' }}>Policy Intelligence</p>
+              <p className="font-headline text-lg font-bold text-white tracking-tight leading-tight">InsurAI</p>
+              <p className="text-xs text-[#a0c5c9]">Policy Intelligence</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            style={{
-              color: 'rgba(255,255,255,0.30)',
-              padding: '8px',
-              borderRadius: '10px',
-              transition: 'all 0.15s',
-              lineHeight: 1,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#f0f0f8'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.30)'; e.currentTarget.style.background = 'transparent'; }}
+            className="text-white/50 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
           >
-            <X size={17} />
+            <X size={19} />
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-8 py-7">
-
-          {/* Headline */}
-          <div className="mb-7">
-            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#f0f0f8', letterSpacing: '-0.03em', lineHeight: 1.2, marginBottom: '6px' }}>
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-7 py-6">
+          <div className="mb-6">
+            <h2 className="font-headline text-2xl font-bold text-white mb-1.5">
               {isLogin ? 'Welcome back' : 'Create account'}
             </h2>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', letterSpacing: '-0.01em', lineHeight: 1.6 }}>
-              {isLogin
-                ? 'Sign in to access your policy intelligence dashboard.'
-                : 'Get started with AI-powered insurance analysis.'}
+            <p className="text-sm text-[#b2d5d9] leading-relaxed">
+              {isLogin ? 'Sign in to access your grounded policy intelligence.' : 'Start analyzing your health insurance in minutes.'}
             </p>
           </div>
 
-          {/* Tab toggle */}
-          <div
-            className="flex p-1 mb-6 rounded-2xl"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-          >
+          {/* Toggle pill */}
+          <div className="flex p-1 mb-6 rounded-full bg-[#051c20] border border-white/10">
             {['Sign In', 'Register'].map((label, i) => {
               const active = i === 0 ? isLogin : !isLogin;
               return (
@@ -164,20 +162,11 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
                   id={`drawer-tab-${i === 0 ? 'login' : 'register'}`}
                   type="button"
                   onClick={() => switchTab(i === 0)}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    fontSize: '13px',
-                    fontWeight: active ? 600 : 400,
-                    borderRadius: '14px',
-                    border: active ? '1px solid rgba(200,169,110,0.28)' : '1px solid transparent',
-                    background: active ? 'rgba(200,169,110,0.12)' : 'transparent',
-                    color: active ? '#e8c97e' : 'rgba(255,255,255,0.35)',
-                    transition: 'all 0.2s',
-                    letterSpacing: '-0.01em',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
+                  className={`flex-1 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-[#d2f57b] text-[#062327] shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                  }`}
                 >
                   {label}
                 </button>
@@ -185,144 +174,98 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
             })}
           </div>
 
-          {/* Error */}
           {error && (
-            <div
-              className="flex items-start gap-2.5 mb-5 p-4 rounded-xl"
-              style={{ background: 'rgba(220,60,60,0.07)', border: '1px solid rgba(220,60,60,0.20)', color: '#f07070', fontSize: '12px', lineHeight: 1.6 }}
-            >
-              <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
+            <div className="flex items-start gap-2.5 mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs leading-relaxed">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Form */}
-          <form id="drawer-auth-form" onSubmit={handleSubmit}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-              {!isLogin && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                    Full Name
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
-                    <input
-                      id="drawer-fullname"
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={e => setFullName(e.target.value)}
-                      placeholder="Your full name"
-                      style={fieldStyle}
-                      onFocus={handleFieldFocus}
-                      onBlur={handleFieldBlur}
-                    />
-                  </div>
-                </div>
-              )}
-
+          <form id="drawer-auth-form" onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                  Email address
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Full Name</label>
+                <div className="relative">
+                  <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                   <input
-                    id="drawer-email"
-                    type="email"
+                    id="drawer-fullname"
+                    type="text"
                     required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    placeholder="Alex Morgan"
                     style={fieldStyle}
-                    onFocus={handleFieldFocus}
-                    onBlur={handleFieldBlur}
                   />
                 </div>
               </div>
+            )}
 
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Email address</label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                <input
+                  id="drawer-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  style={fieldStyle}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Password</label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                <input
+                  id="drawer-password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={fieldStyle}
+                />
+              </div>
+            </div>
+
+            {!isLogin && (
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                  Password
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Phone (optional)</label>
+                <div className="relative">
+                  <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                   <input
-                    id="drawer-password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    id="drawer-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
                     style={fieldStyle}
-                    onFocus={handleFieldFocus}
-                    onBlur={handleFieldBlur}
                   />
                 </div>
               </div>
+            )}
 
-              {!isLogin && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.30)', marginBottom: '8px' }}>
-                    Phone <span style={{ textTransform: 'none', fontWeight: 400, color: 'rgba(255,255,255,0.20)' }}>(optional)</span>
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <Phone size={13} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.22)', pointerEvents: 'none' }} />
-                    <input
-                      id="drawer-phone"
-                      type="tel"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      placeholder="+91 98765 43210"
-                      style={{ ...fieldStyle, paddingLeft: '38px' }}
-                      onFocus={handleFieldFocus}
-                      onBlur={handleFieldBlur}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div style={{ paddingTop: '6px' }}>
-                <button
-                  id="drawer-submit"
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '14px',
-                    borderRadius: '16px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.01em',
-                    fontFamily: 'inherit',
-                    border: 'none',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
-                    color: '#1a1000',
-                    boxShadow: '0 4px 24px rgba(200,169,110,0.32)',
-                    opacity: loading ? 0.65 : 1,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { if (!loading) { e.currentTarget.style.boxShadow='0 8px 32px rgba(200,169,110,0.50)'; e.currentTarget.style.transform='translateY(-1px)'; }}}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow='0 4px 24px rgba(200,169,110,0.32)'; e.currentTarget.style.transform='translateY(0)'; }}
-                >
-                  {loading && <Spinner size={14} />}
-                  <span>{loading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Sign In' : 'Create Account')}</span>
-                  {!loading && <ArrowRight size={14} />}
-                </button>
-              </div>
+            <div className="pt-2">
+              <button
+                id="drawer-submit"
+                type="submit"
+                disabled={loading}
+                className="w-full btn-pill-lime py-3.5 px-5 flex items-center justify-center gap-2 text-sm font-bold shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {loading && <Spinner size={15} />}
+                <span>{loading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Sign In' : 'Create Account')}</span>
+                {!loading && <ArrowRight size={16} />}
+              </button>
             </div>
           </form>
 
-          {/* Dummy account note */}
           {isLogin && (
-            <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: 'rgba(255,255,255,0.18)', lineHeight: 1.6 }}>
-              Pre-filled with a demo account. Backend must be running on port 5001.
+            <p className="text-center mt-5 text-[11px] text-[#7da7ac] leading-relaxed">
+              Pre-filled with demo account. Backend runs on port 5001.
             </p>
           )}
         </div>
@@ -332,107 +275,33 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   BENTO GRID COMPONENTS (Modern Apple / Linear Pop-Out System)
-   Zero layout disturbance: Uses a stable grid placeholder so the card
-   floats & pops out above siblings on hover without pushing surrounding cards.
+   FLOATING POLAROID / STICKER CARD (Hero orbits)
    ───────────────────────────────────────────────────────────── */
-function BentoCard({
+function FloatingSticker({
+  imageSrc,
+  label = '',
+  rotation = 0,
   className = '',
-  children,
-  accentColor = '#c8a96e',
-  glowColor = 'rgba(200,169,110,0.12)',
-  title = '',
-  description = '',
+  style = {},
+  animClass = '',
 }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <div
-      className={`relative ${className}`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ zIndex: hovered ? 50 : 1 }}
+      className={`tilted-sticker absolute select-none cursor-pointer ${className}`}
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        '--rot': `${rotation}deg`,
+        ...style,
+      }}
     >
-      {/* Stable layout anchor: guarantees the grid never shifts or recalculates height */}
-      <div
-        className="rounded-3xl p-6 sm:p-7 opacity-0 pointer-events-none select-none invisible"
-        aria-hidden="true"
-      >
-        <h3 className="text-lg sm:text-xl font-bold tracking-tight mb-2">
-          {title}
-        </h3>
-        <p className="text-[13px] sm:text-sm leading-relaxed">
-          {description}
-        </p>
-      </div>
-
-      {/* Floating Pop-Out Card: Floats over the grid smoothly without disturbing siblings */}
-      <div
-        className="absolute top-0 left-0 right-0 rounded-3xl p-6 sm:p-7 flex flex-col justify-start overflow-hidden transition-all duration-300"
-        style={{
-          background: hovered
-            ? 'linear-gradient(145deg, rgba(22,22,38,0.98) 0%, rgba(13,13,22,0.99) 100%)'
-            : 'linear-gradient(145deg, rgba(16,16,28,0.70) 0%, rgba(10,10,18,0.78) 100%)',
-          border: hovered
-            ? `1px solid ${accentColor}66`
-            : '1px solid rgba(255,255,255,0.075)',
-          backdropFilter: 'blur(28px)',
-          WebkitBackdropFilter: 'blur(28px)',
-          transform: hovered ? 'translateY(-6px) scale(1.015)' : 'translateY(0) scale(1)',
-          boxShadow: hovered
-            ? `0 32px 80px -10px rgba(0,0,0,0.95), 0 0 35px ${glowColor}`
-            : '0 6px 20px -6px rgba(0,0,0,0.4)',
-          pointerEvents: 'auto',
-        }}
-      >
-        {/* Ambient background glow orb */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '-25%',
-            right: '-20%',
-            width: '280px',
-            height: '280px',
-            background: glowColor,
-            filter: 'blur(65px)',
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            opacity: hovered ? 0.45 : 0.08,
-            transition: 'opacity 0.35s ease',
-          }}
-        />
-
-        {/* Clean Header: NO icon, NO "hover to view" text */}
-        <div className="relative z-10 w-full">
-          <h3
-            className="text-lg sm:text-xl font-bold tracking-tight text-[#f0f0f8] mb-2 transition-colors duration-200"
-            style={{ letterSpacing: '-0.02em', color: hovered ? '#ffffff' : '#f0f0f8' }}
-          >
-            {title}
-          </h3>
-          <p
-            className="text-[13px] sm:text-sm text-gray-400 leading-relaxed"
-            style={{ color: 'rgba(255,255,255,0.52)', lineHeight: 1.6 }}
-          >
-            {description}
-          </p>
-        </div>
-
-        {/* Expandable Micro-UI Drawer: Smoothly unfolds inside the floating card */}
-        <div
-          className="relative z-10 w-full"
-          style={{
-            display: 'grid',
-            gridTemplateRows: hovered ? '1fr' : '0fr',
-            opacity: hovered ? 1 : 0,
-            transform: hovered ? 'translateY(0)' : 'translateY(8px)',
-            transition: 'grid-template-rows 0.38s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, transform 0.3s ease, margin-top 0.3s ease',
-            marginTop: hovered ? '16px' : '0px',
-          }}
-        >
-          <div style={{ minHeight: 0, overflow: 'hidden' }}>
-            {children}
-          </div>
+      <div className={`bg-white p-2 sm:p-2.5 rounded-2xl sm:rounded-3xl shadow-[0_16px_36px_rgba(6,35,39,0.18)] border border-black/[0.08] flex flex-col items-center ${animClass}`}>
+        <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32 rounded-xl sm:rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center relative">
+          <img
+            src={imageSrc}
+            alt={label || 'Sticker'}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            loading="eager"
+          />
         </div>
       </div>
     </div>
@@ -440,1080 +309,704 @@ function BentoCard({
 }
 
 /* ─────────────────────────────────────────────────────────────
-   LANDING NAVBAR (High-Performance Floating Island)
-   Isolated state + rAF throttle ensures 0 layout reflows and 120 FPS buttery smoothness
+   TYPEWRITER HOOK FOR SCROLL REVEALS
    ───────────────────────────────────────────────────────────── */
-function LandingNavbar({ openAuth, navLinks }) {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenu, setMobileMenu] = useState(false);
+function useTypewriter(fullText, speed = 32, active = false, startDelay = 200) {
+  const [displayText, setDisplayText] = useState('');
+  const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const y = window.scrollY;
-          setScrolled(prev => (y > 35 ? true : y < 15 ? false : prev));
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    if (!active) return;
+    setDisplayText('');
+    setIsDone(false);
 
-  return (
-    <>
-      <header
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          display: 'flex',
-          justifyContent: 'center',
-          padding: '0 16px',
-          pointerEvents: 'none',
-        }}
-      >
-        <nav
-          style={{
-            width: '100%',
-            maxWidth: scrolled ? '720px' : '1140px',
-            transform: scrolled ? 'translate3d(0, 12px, 0)' : 'translate3d(0, 6px, 0)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            pointerEvents: 'all',
-            borderRadius: '999px',
-            padding: scrolled ? '8px 12px 8px 18px' : '14px 22px',
-            background: scrolled ? 'rgba(8, 8, 18, 0.88)' : 'rgba(8, 8, 18, 0)',
-            border: scrolled
-              ? '1px solid rgba(200, 169, 110, 0.28)'
-              : '1px solid rgba(255, 255, 255, 0)',
-            backdropFilter: scrolled ? 'blur(20px)' : 'blur(0px)',
-            WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'blur(0px)',
-            boxShadow: scrolled
-              ? '0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(200, 169, 110, 0.08)'
-              : '0 0 0 rgba(0, 0, 0, 0)',
-            transition: [
-              'max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              'padding 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              'background 0.3s ease',
-              'border-color 0.3s ease',
-              'box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-            ].join(', '),
-            willChange: 'max-width, transform',
-          }}
-        >
-          {/* Logo */}
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(200,169,110,0.35)',
-                boxShadow: '0 0 14px rgba(200,169,110,0.18)',
-                flexShrink: 0,
-                overflow: 'hidden',
-                padding: '2px',
-              }}
-            >
-              <img
-                src="/favicon_io/apple-touch-icon.png"
-                alt="InsurAI Logo"
-                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '7px' }}
-              />
-            </div>
-            <span
-              style={{
-                fontSize: '14px',
-                fontWeight: 650,
-                color: '#f0f0f8',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              InsurAI
-            </span>
-          </button>
+    let idx = 0;
+    const startTimer = setTimeout(() => {
+      const interval = setInterval(() => {
+        idx++;
+        setDisplayText(fullText.slice(0, idx));
+        if (idx >= fullText.length) {
+          clearInterval(interval);
+          setIsDone(true);
+        }
+      }, speed);
 
-          {/* Center Links */}
-          <div
-            className="hidden md:flex"
-            style={{
-              alignItems: 'center',
-              gap: '24px',
-            }}
-          >
-            {navLinks.map(link => (
-              <a
-                key={link}
-                href={`#${link.toLowerCase().replace(/ /g, '-')}`}
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'rgba(255,255,255,0.55)',
-                  textDecoration: 'none',
-                  letterSpacing: '-0.01em',
-                  padding: '6px 12px',
-                  borderRadius: '999px',
-                  transition: 'color 0.15s ease, background 0.15s ease',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.color = '#f0f0f8';
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                {link}
-              </a>
-            ))}
-          </div>
+      return () => clearInterval(interval);
+    }, startDelay);
 
-          {/* Right CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <button
-              id="nav-signin"
-              className="hidden md:flex"
-              onClick={() => openAuth('login')}
-              style={{
-                alignItems: 'center',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'rgba(255,255,255,0.55)',
-                background: 'transparent',
-                border: 'none',
-                borderRadius: '999px',
-                padding: '7px 14px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                letterSpacing: '-0.01em',
-                transition: 'color 0.15s ease, background 0.15s ease',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = '#f0f0f8';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              Sign In
-            </button>
-            <button
-              id="nav-getstarted"
-              onClick={() => openAuth('register')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '13px',
-                fontWeight: 650,
-                letterSpacing: '-0.01em',
-                fontFamily: 'inherit',
-                background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
-                color: '#1a1000',
-                border: 'none',
-                borderRadius: '999px',
-                padding: '8px 18px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(200,169,110,0.30)',
-                transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.boxShadow = '0 6px 24px rgba(200,169,110,0.50)';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(200,169,110,0.30)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              Get Started <ArrowRight size={12} />
-            </button>
+    return () => clearTimeout(startTimer);
+  }, [fullText, speed, active, startDelay]);
 
-            {/* Mobile menu button */}
-            <button
-              className="md:hidden"
-              onClick={() => setMobileMenu(!mobileMenu)}
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                borderRadius: '10px',
-                padding: '7px',
-                color: 'rgba(255,255,255,0.60)',
-                cursor: 'pointer',
-                marginLeft: '4px',
-              }}
-              aria-label="Open mobile menu"
-            >
-              {mobileMenu ? <X size={17} /> : <Menu size={17} />}
-            </button>
-          </div>
-        </nav>
-      </header>
-
-      {/* Mobile menu dropdown */}
-      {mobileMenu && (
-        <div
-          className="fixed top-20 left-4 right-4 z-40 rounded-2xl p-4 animate-slide-up"
-          style={{
-            background: 'rgba(8,8,22,0.97)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            backdropFilter: 'blur(28px)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.60)',
-          }}
-        >
-          {navLinks.map(link => (
-            <a
-              key={link}
-              href={`#${link.toLowerCase().replace(/ /g, '-')}`}
-              onClick={() => setMobileMenu(false)}
-              style={{
-                display: 'block',
-                padding: '12px 14px',
-                fontSize: '14px',
-                color: 'rgba(255,255,255,0.60)',
-                textDecoration: 'none',
-                borderRadius: '12px',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {link}
-            </a>
-          ))}
-          <div
-            style={{
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-              marginTop: '10px',
-              paddingTop: '10px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}
-          >
-            <button
-              onClick={() => {
-                openAuth('login');
-                setMobileMenu(false);
-              }}
-              style={{
-                padding: '12px',
-                borderRadius: '14px',
-                fontSize: '14px',
-                fontWeight: 500,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.09)',
-                color: '#f0f0f8',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => {
-                openAuth('register');
-                setMobileMenu(false);
-              }}
-              style={{
-                padding: '12px',
-                borderRadius: '14px',
-                fontSize: '14px',
-                fontWeight: 650,
-                background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
-                color: '#1a1000',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              Get Started Free
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return { displayText, isDone };
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MAIN LANDING PAGE
+   INTERSECTION OBSERVER HOOK
+   ───────────────────────────────────────────────────────────── */
+function useInView(options = { threshold: 0.15 }) {
+  const ref = useRef(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsInView(true);
+      }
+    }, options);
+
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [options]);
+
+  return [ref, isInView];
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TUBELIGHT FLICKER SIGNATURE WORDMARK (INSURAI)
+   Complete, stretched, deep petrol teal color (#07262b);
+   flickers like an authentic tubelight on scroll and stays on!
+   ───────────────────────────────────────────────────────────── */
+function TubelightWordmark({ inView = false }) {
+  const [hasIgnited, setHasIgnited] = useState(false);
+
+  useEffect(() => {
+    if (inView && !hasIgnited) {
+      setHasIgnited(true);
+    }
+  }, [inView, hasIgnited]);
+
+  return (
+    <div className="relative select-none pointer-events-none w-full flex justify-center -mb-2 sm:-mb-4 md:-mb-6 pt-4 pb-1">
+      <svg
+        viewBox="0 0 1000 125"
+        className={`w-full h-auto max-h-[130px] sm:max-h-[175px] lg:max-h-[210px] overflow-visible transition-all duration-300 ${
+          hasIgnited ? 'tubelight-flicker-on' : 'tubelight-off'
+        }`}
+        style={{
+          filter: hasIgnited ? 'drop-shadow(0 4px 22px rgba(7,38,43,0.18))' : 'none',
+        }}
+        aria-label="INSURAI"
+      >
+        <text
+          x="500"
+          y="100"
+          textAnchor="middle"
+          textLength="980"
+          lengthAdjust="spacingAndGlyphs"
+          fill="#07262b"
+          className="font-headline font-black uppercase"
+          style={{
+            fontFamily: "'Syne', 'Plus Jakarta Sans', -apple-system, sans-serif",
+            fontWeight: 800,
+            fontSize: '114px',
+          }}
+        >
+          INSURAI
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   CAROUSEL CARDS DATA (Infinite Right-to-Left loop)
+   ───────────────────────────────────────────────────────────── */
+const CAROUSEL_CARDS = [
+  {
+    id: 'vector-indexing',
+    tag: 'Instant Vector Indexing',
+    badge: '100% Parsed',
+    title: 'Semantic OCR & Chunking',
+    desc: 'Parses 60+ policy pages in seconds. Every clause, exclusion, and waiting period is indexed with mathematical precision.',
+    visual: (
+      <div className="rounded-2xl overflow-hidden border border-black/[0.08] bg-white p-3.5 shadow-sm">
+        <div className="flex items-center justify-between text-[11px] font-mono text-gray-700 mb-2 font-bold">
+          <span className="flex items-center gap-1.5 text-[#062327]">
+            <FileText size={13} className="text-[#062327]" /> Star_Health_Optima.pdf
+          </span>
+          <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">100% Parsed</span>
+        </div>
+        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+          <div className="bg-[#062327] h-full w-full rounded-full" />
+        </div>
+        <div className="mt-2.5 flex items-center justify-between text-[10px] text-gray-500 font-mono">
+          <span>42 Embeddings Indexed</span>
+          <span className="text-emerald-700 font-semibold">0 Hallucinations</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'clause-radar',
+    tag: 'Trap Detection Radar',
+    badge: 'Live Audit',
+    title: 'Hidden Sub-Limit Scanner',
+    desc: 'Surfaces 1% room-rent capping, co-pay traps, and disease-specific limits before you ever get admitted.',
+    visual: (
+      <div className="relative rounded-2xl overflow-hidden h-36 bg-[#e8f3f4] flex items-center justify-center">
+        <img
+          src="/images/scanner-3d.jpg"
+          alt="3D clause audit scanner"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-white/95 backdrop-blur-md rounded-xl p-2 shadow-md border border-black/10 text-xs">
+          <div className="flex items-center justify-between text-[10px] font-bold text-[#062327]">
+            <span>Robotic Surgery</span>
+            <span className="text-emerald-600 font-bold">100% Covered</span>
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-gray-600 mt-1">
+            <span>Room Rent Cap</span>
+            <span className="text-amber-600 font-bold">1% Sub-Limit Flagged</span>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'deductible-calc',
+    tag: 'Cost Simulation',
+    badge: 'Instant Math',
+    title: 'Out-of-Pocket Estimator',
+    desc: 'Calculate exact hospital bill liabilities in advance with zero surprises on discharge day.',
+    visual: (
+      <div className="bg-white rounded-2xl p-3 border border-black/[0.08] shadow-sm space-y-2.5">
+        <div className="flex items-center justify-between text-xs font-bold text-[#062327]">
+          <span>Cardiac Angioplasty</span>
+          <span className="font-mono text-emerald-700 font-bold">₹3,80,000</span>
+        </div>
+        <div className="w-full h-2.5 rounded-full overflow-hidden flex bg-gray-200">
+          <div className="h-full bg-emerald-500" style={{ width: '85%' }} />
+          <div className="h-full bg-amber-500" style={{ width: '15%' }} />
+        </div>
+        <div className="flex items-center justify-between text-[10px] font-mono">
+          <span className="text-emerald-700 font-bold">Insurer: ₹3,24,000 (85%)</span>
+          <span className="text-amber-700 font-bold">You: ₹56,000 (15%)</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'room-rent-trap',
+    tag: 'Proportional Deduction',
+    badge: 'Trap Alert',
+    title: 'Room Rent Penalty Guard',
+    desc: 'Avoid the dreaded proportional deduction clause where taking an expensive room cuts 40% of surgeon fees.',
+    visual: (
+      <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200/80 shadow-sm">
+        <div className="flex items-center gap-1.5 text-amber-800 font-bold text-xs mb-1">
+          <AlertTriangle size={13} className="text-amber-600" />
+          <span>Clause 4.1.B Flagged</span>
+        </div>
+        <p className="text-[11px] text-amber-900 leading-snug">
+          Suite rooms trigger a <strong>37.5% proportional penalty</strong> on all doctor consultations.
+        </p>
+        <div className="mt-1.5 text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-md inline-block">
+          Deluxe Room Safe (0% Penalty)
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'cashless-network',
+    tag: 'Hospital Verification',
+    badge: '9,800+ Hospitals',
+    title: 'Cashless Network Radar',
+    desc: 'Instantly verify cashless admission status across Apollo, Max, Fortis, Manipal, and regional hospitals.',
+    visual: (
+      <div className="bg-white rounded-2xl p-3 border border-black/[0.08] shadow-sm space-y-1.5">
+        <div className="flex items-center justify-between text-xs font-bold text-[#062327]">
+          <span className="flex items-center gap-1.5"><Heart size={13} className="text-rose-500" /> Max Super Speciality</span>
+          <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded-full">Cashless Active</span>
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-gray-500">
+          <span>TPA Pre-Auth Average</span>
+          <span className="font-bold text-[#062327]">24 Minutes</span>
+        </div>
+        <div className="w-full bg-emerald-500/20 h-1.5 rounded-full overflow-hidden">
+          <div className="bg-emerald-500 h-full w-[95%] rounded-full" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'verbatim-grounding',
+    tag: 'Zero Hallucinations',
+    badge: '99.8% Grounded',
+    title: 'Direct Contract Citations',
+    desc: 'Every answer references the exact page, section, and sub-clause with verbatim excerpt citations.',
+    visual: (
+      <div className="bg-teal-50/80 rounded-2xl p-3 border border-teal-200/60 shadow-sm">
+        <div className="flex items-center justify-between text-[11px] font-mono text-[#062327] font-bold mb-1">
+          <span>Page 38 · Section 3.2</span>
+          <span className="text-teal-700 font-bold">Verbatim Match</span>
+        </div>
+        <p className="text-[11px] text-teal-900 italic leading-snug">
+          "Pre-existing hypertension covered after 24 continuous renewal months."
+        </p>
+      </div>
+    ),
+  },
+];
+
+/* ─────────────────────────────────────────────────────────────
+   MAIN CHAINLY-THEMED LANDING PAGE
    ───────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab]   = useState('login');
+
+  // Hero scroll-driven zoom tracking
+  const [heroProgress, setHeroProgress] = useState(0);
+  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const zoomDistance = 220; // Snappy 220px scroll to reach full screen
+      const p = Math.min(1, Math.max(0, window.scrollY / zoomDistance));
+      setHeroProgress(p);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleMouseMove = (e) => {
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    setMouseOffset({
+      x: ((e.clientX - centerX) / centerX) * 12,
+      y: ((e.clientY - centerY) / centerY) * 12,
+    });
+  };
+
+  // Section 2 scroll reveal & typewriter
+  const [section2Ref, section2InView] = useInView({ threshold: 0.18 });
+  const { displayText: section2Heading, isDone: section2Done } = useTypewriter(
+    'Get covered without holding 60 pages of fine print',
+    30,
+    section2InView
+  );
+
+  // Section 4 scroll reveal & typewriter
+  const [section4Ref, section4InView] = useInView({ threshold: 0.15 });
+  const { displayText: section4Heading, isDone: section4Done } = useTypewriter(
+    'Make your insurance work for you',
+    35,
+    section4InView
+  );
 
   const openAuth = (tab = 'login') => {
     setAuthTab(tab);
     setAuthOpen(true);
   };
 
-  /* ── nav link items ── */
-  const navLinks = ['Features', 'How it works'];
-
   return (
-    <div className="min-h-screen relative overflow-x-clip" style={{ background: '#07070f', color: '#f0f0f8', overflowX: 'clip' }}>
-      <Starfield count={110} />
+    <div className="min-h-screen bg-[#07262b] text-[#062327] font-display selection:bg-[#d2f57b] selection:text-[#062327] relative overflow-x-clip">
 
-      {/* Ambient nebula glow */}
-      <div
-        aria-hidden
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(ellipse at 8% 45%, rgba(55,38,155,0.20) 0%, transparent 55%),
-            radial-gradient(ellipse at 92% 12%, rgba(110,72,18,0.16) 0%, transparent 48%),
-            radial-gradient(ellipse at 55% 90%, rgba(28,18,88,0.28) 0%, transparent 58%)
-          `,
-        }}
-      />
-
-      {/* Floating Island Navbar */}
-      <LandingNavbar openAuth={openAuth} navLinks={navLinks} />
-
-      {/* ══════════════════════════════════════════════════
-          HERO
-          ════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════
+          HERO SECTION: STATIONARY STICKY CANVAS
+          Starts as centered card box; zooms in quickly (~240px scroll) to take whole page.
+          Stays stationary at top while Section 2 slides over it from bottom.
+          ════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════
+          HERO SECTION: STATIONARY STICKY CANVAS
+          Starts as centered card box; zooms in smoothly (~220px scroll) to fill page.
+          Stays stationary at top while Section 2 slides over it from bottom.
+          ════════════════════════════════════════════════════ */}
       <section
-        id="hero"
+        className="sticky top-0 h-screen w-full z-10 flex items-center justify-center overflow-hidden bg-[#07262b] transition-[padding] duration-75"
+        onMouseMove={handleMouseMove}
         style={{
-          position: 'relative',
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          paddingTop: '80px',
+          padding: `${Math.max(0, 24 * (1 - heroProgress * 1.05))}px`,
         }}
       >
-        {/* Big blob — right side */}
+        {/* Subtle background clover blooms in outer teal canvas */}
+        <CloverBloom color="rgba(255,255,255,0.03)" size={420} className="-top-12 -left-20" />
+        <CloverBloom color="rgba(255,255,255,0.025)" size={500} className="top-1/3 -right-24" />
+        <CloverBloom color="rgba(255,255,255,0.03)" size={380} className="bottom-0 left-1/4" />
+
+        {/* Master White Card Canvas that smoothly zooms in with scroll */}
         <div
-          aria-hidden
+          className="bg-[#ffffff] relative flex flex-col justify-between overflow-hidden transition-all duration-75 w-full h-full"
           style={{
-            position: 'absolute',
-            right: '-6%',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 'clamp(460px, 62vw, 940px)',
-            height: 'clamp(460px, 62vw, 940px)',
-            opacity: 0.92,
-            pointerEvents: 'none',
+            maxWidth: heroProgress >= 0.98 ? '100vw' : '1540px',
+            borderRadius: `${Math.max(0, 36 * (1 - heroProgress * 1.1))}px`,
+            boxShadow: heroProgress >= 0.95 ? 'none' : '0 24px 60px rgba(0,0,0,0.30)',
+            border: heroProgress >= 0.92 ? 'none' : '1px solid rgba(255,255,255,0.18)',
+            padding: heroProgress >= 0.95 ? '24px 32px' : '20px 24px sm:28px sm:36px lg:32px 48px',
           }}
         >
-          <LiquidBlob className="w-full h-full" />
-        </div>
+          {/* Subtle inner card watermarks */}
+          <CloverBloom color="rgba(6,35,39,0.02)" size={440} className="-top-20 -right-20" />
+          <CloverBloom color="rgba(6,35,39,0.02)" size={500} className="bottom-10 -left-24" />
 
-        {/* Concentric glow rings */}
-        {[1.0, 0.45, 0.18].map((o, i) => (
-          <div
-            key={i}
-            aria-hidden
-            style={{
-              position: 'absolute',
-              right: `${-14 + i * 10}%`,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: `${58 + i * 18}vw`,
-              height: `${58 + i * 18}vw`,
-              borderRadius: '50%',
-              border: `1px solid rgba(200,169,110,${o * 0.07})`,
-              pointerEvents: 'none',
-              animation: `pulse-soft ${7 + i * 2}s ease-in-out ${i * 1.4}s infinite`,
-            }}
-          />
-        ))}
-
-        {/* Hero content */}
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 10,
-            maxWidth: '1120px',
-            margin: '0 auto',
-            padding: '0 24px',
-            width: '100%',
-          }}
-        >
-          <div className="animate-slide-up" style={{ maxWidth: '580px' }}>
-            {/* Main headline */}
-            <h1
-              style={{
-                fontSize: 'clamp(2.8rem, 5.5vw, 4.8rem)',
-                fontWeight: 760,
-                letterSpacing: '-0.04em',
-                lineHeight: 1.04,
-                color: '#f0f0f8',
-                marginBottom: '28px',
-              }}
-            >
-              Understand every<br />
-              <span
-                style={{
-                  background: 'linear-gradient(135deg, #f5e4a8 0%, #c8a96e 45%, #e8d080 75%, #a07840 100%)',
-                  backgroundSize: '200% 200%',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  animation: 'gradientDrift 5s ease infinite',
-                }}
-              >
-                clause of your policy
+          {/* ── Top Navbar ── */}
+          <header className="relative z-20 flex items-center justify-between pb-3 sm:pb-6 border-b border-black/[0.05] shrink-0">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-[#062327] flex items-center justify-center p-2 text-[#d2f57b]">
+                <Shield size={22} className="stroke-[2.5]" />
+              </div>
+              <span className="font-headline text-2xl sm:text-3xl font-extrabold tracking-tight text-[#062327]">
+                InsurAI
               </span>
+            </div>
+
+            {/* Center & Right Navigation Capsule */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <nav className="hidden md:flex items-center gap-1 bg-[#062327] px-4 py-2 rounded-full text-white text-xs font-bold tracking-wider uppercase">
+                <a href="#features" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
+                  Product
+                </a>
+                <a href="#features" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
+                  Solutions
+                </a>
+                <a href="#how-it-works" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
+                  Security
+                </a>
+                <a href="#features" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
+                  Resources
+                </a>
+              </nav>
+
+              <button
+                id="nav-getstarted"
+                onClick={() => openAuth('register')}
+                className="bg-[#062327] text-white hover:bg-[#0e3b43] text-xs sm:text-sm font-bold tracking-tight px-4 sm:px-5 py-2.5 sm:py-3 rounded-full flex items-center gap-2 transition-all shadow-sm group cursor-pointer"
+              >
+                <span>Get Started</span>
+                <span className="w-5 h-5 rounded-full bg-[#d2f57b] text-[#062327] flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                  <ArrowRight size={11} className="stroke-[3]" />
+                </span>
+              </button>
+            </div>
+          </header>
+
+          {/* ── Hero Center Content (Cleanly Centered, Protected From Card Collisions) ── */}
+          <div className="relative z-20 my-auto py-6 sm:py-10 flex flex-col items-center text-center max-w-2xl lg:max-w-3xl mx-auto px-4">
+            {/* Main Headline */}
+            <h1 className="font-headline text-4xl sm:text-6xl md:text-7xl lg:text-[76px] font-extrabold tracking-tight text-[#062327] leading-[1.02] mb-5">
+              Health Insurance<br className="hidden sm:inline" /> Made Simple
             </h1>
 
-            {/* Subheadline */}
-            <p
-              style={{
-                fontSize: '17px',
-                lineHeight: 1.72,
-                letterSpacing: '-0.015em',
-                color: 'rgba(255,255,255,0.46)',
-                marginBottom: '44px',
-                maxWidth: '440px',
-              }}
-            >
-              Upload your health insurance PDF. Get AI-grounded answers, hidden-clause detection, and cost simulations — instantly, no guesswork.
+            {/* Subtitle */}
+            <p className="text-base sm:text-lg md:text-xl text-[#062327]/70 font-medium max-w-xl mx-auto leading-relaxed mb-7 sm:mb-9">
+              Upload your policy PDF, avoid fine-print traps, and receive AI-grounded claim answers instantly in plain English.
             </p>
 
-            {/* CTAs */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '0' }}>
+            {/* Primary Action Button */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
               <button
-                id="hero-getstarted"
+                id="hero-cta-accept"
                 onClick={() => openAuth('register')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '15px 28px',
-                  borderRadius: '999px',
-                  fontSize: '15px',
-                  fontWeight: 650,
-                  letterSpacing: '-0.02em',
-                  fontFamily: 'inherit',
-                  background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
-                  color: '#1a1000',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 32px rgba(200,169,110,0.40)',
-                  transition: 'all 0.22s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow='0 14px 48px rgba(200,169,110,0.60)'; e.currentTarget.style.transform='translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow='0 8px 32px rgba(200,169,110,0.40)'; e.currentTarget.style.transform='translateY(0)'; }}
+                className="btn-pill-lime px-8 py-3.5 sm:py-4 text-sm sm:text-base font-bold flex items-center gap-2.5 shadow-[0_6px_0_#062327] cursor-pointer"
               >
-                Get Started Free <ArrowRight size={16} />
-              </button>
-              <button
-                id="hero-signin"
-                onClick={() => openAuth('login')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '15px 28px',
-                  borderRadius: '999px',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.02em',
-                  fontFamily: 'inherit',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.72)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(8px)',
-                  transition: 'all 0.20s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.10)'; e.currentTarget.style.color='#f0f0f8'; e.currentTarget.style.borderColor='rgba(255,255,255,0.20)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.06)'; e.currentTarget.style.color='rgba(255,255,255,0.72)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.12)'; }}
-              >
-                Sign In
+                <span>Analyze Policy</span>
+                <span className="w-5 h-5 rounded-full bg-[#062327] text-[#d2f57b] flex items-center justify-center">
+                  <ArrowRight size={11} className="stroke-[3]" />
+                </span>
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Scroll hint */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '32px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            color: 'rgba(255,255,255,0.18)',
-            animation: 'blobFloat 3s ease-in-out infinite',
-          }}
-        >
-          <ChevronRight size={18} style={{ transform: 'rotate(90deg)' }} />
+          {/* ── 4 Orbiting Floating Cards (Symmetrically Placed on Outer Periphery: 2 Left, 2 Right. Never Overlapping) ── */}
+          {/* Card 1: Top-Left */}
+          <FloatingSticker
+            imageSrc="/images/shield-3d.jpg"
+            label="Zero Hidden Traps"
+            rotation={-8}
+            className="hidden lg:block top-20 xl:top-24 left-4 sm:left-6 xl:left-10 2xl:left-14 z-10"
+            animClass="float-anim-1"
+            style={{
+              transform: `translate(${-heroProgress * 45 + mouseOffset.x * 0.8}px, ${-heroProgress * 25 + mouseOffset.y * 0.8}px) rotate(-8deg)`,
+            }}
+          />
+
+          {/* Card 2: Bottom-Left (Separated by ~400px from top card, zero overlap) */}
+          <FloatingSticker
+            imageSrc="/images/scanner-3d.jpg"
+            label="Clause Scanner"
+            rotation={-10}
+            className="hidden lg:block bottom-8 sm:bottom-10 left-4 sm:left-6 xl:left-10 2xl:left-14 z-10"
+            animClass="float-anim-3"
+            style={{
+              transform: `translate(${-heroProgress * 45 + mouseOffset.x * 1.1}px, ${heroProgress * 20 + mouseOffset.y * 1.1}px) rotate(-10deg)`,
+            }}
+          />
+
+          {/* Card 3: Top-Right */}
+          <FloatingSticker
+            imageSrc="/images/cute-sticker.jpg"
+            label="Stress-Free Claims"
+            rotation={7}
+            className="hidden lg:block top-20 xl:top-24 right-4 sm:right-6 xl:right-10 2xl:right-14 z-10"
+            animClass="float-anim-2"
+            style={{
+              transform: `translate(${heroProgress * 45 + mouseOffset.x * 0.8}px, ${-heroProgress * 25 + mouseOffset.y * 0.8}px) rotate(7deg)`,
+            }}
+          />
+
+          {/* Card 4: Bottom-Right (Secure Coverage sleeping fox, replacing the pills card; separated by ~400px from top-right) */}
+          <FloatingSticker
+            imageSrc="/images/sleep-peace.jpg"
+            label="Secure Coverage"
+            rotation={9}
+            className="hidden lg:block bottom-8 sm:bottom-10 right-4 sm:right-6 xl:right-10 2xl:right-14 z-10"
+            animClass="float-anim-4"
+            style={{
+              transform: `translate(${heroProgress * 45 + mouseOffset.x * 1}px, ${heroProgress * 20 + mouseOffset.y * 1}px) rotate(9deg)`,
+            }}
+          />
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════
-          FEATURES (Bento Box Architecture)
-          ════════════════════════════════════════════════ */}
-      <section
-        id="features"
-        style={{
-          position: 'relative',
-          padding: '120px 24px 220px 24px',
-          maxWidth: '1240px',
-          margin: '0 auto',
-        }}
-      >
-        {/* Section header */}
-        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <h2
-            style={{
-              fontSize: 'clamp(2rem, 3.5vw, 3.2rem)',
-              fontWeight: 740,
-              letterSpacing: '-0.04em',
-              lineHeight: 1.12,
-              color: '#f0f0f8',
-              marginBottom: '18px',
-            }}
-          >
-            Everything you need to<br />
-            <span style={{
-              background: 'linear-gradient(135deg, #f5e4a8, #c8a96e)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              color: "#ffffff"
-            }}>master your coverage</span>
-          </h2>
-          <p style={{ fontSize: '15px', lineHeight: 1.75, letterSpacing: '-0.01em', color: 'rgba(255,255,255,0.42)', maxWidth: '480px', margin: '0 auto' }}>
-            Built on an enterprise-grade RAG pipeline — every answer, risk score, and cost projection is mathematically grounded in your exact policy contract.
-          </p>
-        </div>
+      {/* ══════════════════════════════════════════════════════
+          REST OF THE PAGE: SLIDES OVER THE STATIONARY HERO
+          ════════════════════════════════════════════════════ */}
+      <div className="relative z-20" style={{ marginTop: '260px' }}>
+        {/* ══════════════════════════════════════════════════════
+            FEATURE SECTION 1: DEEP PETROL TEAL CARD ON LIME CANVAS
+            Slides over the hero section from bottom as user scrolls down.
+            Text types itself in as it enters view.
+            ════════════════════════════════════════════════════ */}
+        <section
+          ref={section2Ref}
+          className="relative z-20 px-3 sm:px-6 lg:px-10 py-16 sm:py-24 bg-[#d7f49e] text-white rounded-t-[44px] sm:rounded-t-[56px] shadow-[0_-35px_80px_rgba(0,0,0,0.55)]"
+        >
+          {/* Repeating clover blooms in lime canvas */}
+          <CloverBloom color="rgba(195, 235, 120, 0.5)" size={420} className="-top-16 left-8" />
+          <CloverBloom color="rgba(195, 235, 120, 0.45)" size={480} className="bottom-0 right-10" />
 
-        {/* Bento Box Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Card 1: AI Chat Assistant (Spans 2 cols) */}
-          <BentoCard
-            className="md:col-span-2"
-            accentColor="#c8a96e"
-            glowColor="rgba(200,169,110,0.16)"
-            title="Conversational Policy Intelligence"
-            description="Ask complex coverage questions in plain language. InsurAI analyzes your uploaded policy clause-by-clause, retrieving exact citations and legal definitions with zero speculative hallucinations."
-          >
-            {/* Embedded Micro-UI: Interactive Chat & Citation Terminal */}
-            <div
-              className="rounded-2xl overflow-hidden border mt-4"
-              style={{
-                background: 'rgba(8, 8, 16, 0.75)',
-                borderColor: 'rgba(255, 255, 255, 0.08)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
-              }}
-            >
-              {/* Terminal Meta Bar */}
-              <div
-                className="flex items-center justify-between px-4 py-2.5 border-b text-xs flex-wrap gap-2"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  borderColor: 'rgba(255, 255, 255, 0.06)',
-                }}
-              >
-                <div className="flex items-center gap-2 text-gray-300 font-mono text-[11px]">
-                  <FileText size={13} className="text-[#c8a96e]" />
-                  <span>Star_Comprehensive_2024.pdf</span>
-                  <span className="text-gray-500 hidden sm:inline">· 48 Pages Indexed</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-emerald-400 font-mono text-[11px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>99.8% Grounding Score</span>
-                </div>
-              </div>
+          <div className="max-w-[1340px] mx-auto bg-[#07262b] rounded-[32px] sm:rounded-[44px] lg:rounded-[48px] p-8 sm:p-12 lg:p-16 relative shadow-[0_24px_60px_rgba(6,35,39,0.30)] border border-white/10 overflow-hidden">
+            
+            {/* Subtle floral watermark inside dark teal card */}
+            <CloverBloom color="rgba(255,255,255,0.03)" size={500} className="-bottom-20 -left-20" />
+            <CloverBloom color="rgba(255,255,255,0.025)" size={420} className="-top-20 -right-20" />
 
-              {/* Chat Dialogue */}
-              <div className="p-4 sm:p-5 space-y-3.5 text-xs">
-                {/* User Message */}
-                <div className="flex items-start gap-2.5 max-w-[92%] ml-auto justify-end">
-                  <div
-                    className="rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-right"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(200,169,110,0.22), rgba(200,169,110,0.10))',
-                      border: '1px solid rgba(200,169,110,0.3)',
-                      color: '#f0f0f8',
-                    }}
-                  >
-                    <p className="leading-relaxed">
-                      Does my policy cover robotic joint replacement surgery, and what room category can I choose without penalty?
-                    </p>
-                  </div>
-                </div>
-
-                {/* AI Assistant Message */}
-                <div className="flex items-start gap-3 max-w-[96%]">
-                  <div
-                    className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(200,169,110,0.28), rgba(200,169,110,0.08))',
-                      border: '1px solid rgba(200,169,110,0.35)',
-                    }}
-                  >
-                    <Sparkles size={14} className="text-[#e8c97e]" />
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    <div
-                      className="rounded-2xl rounded-tl-sm p-3.5"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.04)',
-                        border: '1px solid rgba(255, 255, 255, 0.07)',
-                        color: '#d4d4e0',
-                        lineHeight: 1.65,
-                      }}
-                    >
-                      <p>
-                        <strong className="text-white">Yes, fully covered.</strong> Under <span className="text-[#e8c97e] font-medium">Section 4.2.1 (Modern & Advanced Procedures)</span>, robotic joint replacement is indemnified up to 100% of Sum Insured (₹15,00,000). You are eligible for a <strong className="text-white">Single Standard Private AC Room</strong> with zero proportionate deduction.
-                      </p>
-
-                      {/* Sourced Citation Pill */}
-                      <div
-                        className="mt-3 p-2.5 rounded-xl border flex items-center justify-between gap-2"
-                        style={{
-                          background: 'rgba(200,169,110,0.06)',
-                          borderColor: 'rgba(200,169,110,0.22)',
-                        }}
-                      >
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                          <span className="text-gray-300 truncate text-[11px]">
-                            <strong className="text-[#e8c97e]">Clause 4.2.1:</strong> "Modern robotic procedures indemnifiable up to Sum Insured..."
-                          </span>
-                        </div>
-                        <span className="shrink-0 text-[10px] font-mono text-gray-400">
-                          Page 19 · Clause 4.2
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Card 2: Red-Flag Detection (Spans 1 col) */}
-          <BentoCard
-            className="md:col-span-1"
-            accentColor="#ef4444"
-            glowColor="rgba(239,68,68,0.14)"
-            title="Hidden Clause & Trap Radar"
-            description="Surfaces punitive room rent caps, sub-limits, and waiting periods buried in cryptic insurance clauses."
-          >
-            {/* Stack of 3 Audit Cards */}
-            <div className="space-y-2.5 mt-3">
-              <div
-                className="p-3 rounded-2xl border transition-all duration-200"
-                style={{
-                  background: 'rgba(239,68,68,0.05)',
-                  borderColor: 'rgba(239,68,68,0.22)',
-                }}
-              >
-                <div className="mb-1">
-                  <span className="text-xs font-semibold text-red-200">1% Room Rent Cap</span>
-                </div>
-                <p className="text-[11px] text-gray-400 leading-normal">
-                  Hospital rooms &gt; ₹10k/day trigger up to 35% proportionate deduction across total bill.
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center relative z-10">
+              
+              {/* Left Content with Typewriter Heading */}
+              <div className="lg:col-span-6 flex flex-col justify-center">
+                <h2 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#d2f57b] tracking-tight leading-[1.08] mb-6 min-h-[72px] sm:min-h-[120px]">
+                  {section2Heading || (section2InView ? '' : 'Get covered without holding 60 pages of fine print')}
+                  {!section2Done && <span className="typewriter-cursor text-[#d2f57b]">|</span>}
+                </h2>
+                <p className="text-base sm:text-lg text-[#b8dfe3] font-normal leading-relaxed mb-8 max-w-lg">
+                  Your hospital shouldn’t surprise you with proportional deductions. InsurAI decodes every waiting period, room-rent cap, and medical exclusion into plain English.
                 </p>
-              </div>
 
-              <div
-                className="p-3 rounded-2xl border transition-all duration-200"
-                style={{
-                  background: 'rgba(245,158,11,0.05)',
-                  borderColor: 'rgba(245,158,11,0.22)',
-                }}
-              >
-                <div className="mb-1">
-                  <span className="text-xs font-semibold text-amber-200">24-Mo PED Waiting</span>
-                </div>
-                <p className="text-[11px] text-gray-400 leading-normal">
-                  Pre-existing diabetes & hypertension claims barred until policy month 25.
-                </p>
-              </div>
-
-              <div
-                className="p-3 rounded-2xl border transition-all duration-200"
-                style={{
-                  background: 'rgba(16,185,129,0.05)',
-                  borderColor: 'rgba(16,185,129,0.22)',
-                }}
-              >
-                <div className="mb-1">
-                  <span className="text-xs font-semibold text-emerald-200">Zero Co-Payment</span>
-                </div>
-                <p className="text-[11px] text-gray-400 leading-normal">
-                  100% claim settlement across 14,000+ cashless network hospitals.
-                </p>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Card 3: Out-of-Pocket Cost Estimator (Spans 1 col) */}
-          <BentoCard
-            className="md:col-span-1"
-            accentColor="#10b981"
-            glowColor="rgba(16,185,129,0.14)"
-            title="Out-of-Pocket Cost Estimator"
-            description="Simulate hospital procedures before admission to know your exact deductible liability in advance."
-          >
-            {/* Interactive Splitter Gauge */}
-            <div
-              className="p-4 rounded-2xl border mt-3 space-y-3"
-              style={{
-                background: 'rgba(10, 18, 14, 0.65)',
-                borderColor: 'rgba(16,185,129,0.2)',
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-300">Cardiac Angioplasty</span>
-                <span className="text-xs font-bold text-white font-mono">₹3,80,000 Est.</span>
-              </div>
-
-              {/* Segmented Two-Tone Bar */}
-              <div className="w-full h-3 rounded-full overflow-hidden flex bg-gray-800">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                  style={{ width: '85%' }}
-                />
-                <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-rose-400 transition-all duration-500"
-                  style={{ width: '15%' }}
-                />
-              </div>
-
-              {/* Bar Legend */}
-              <div className="flex items-center justify-between text-[11px] font-mono">
-                <div className="flex items-center gap-1.5 text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span>Insurer: ₹3,24,000 (85%)</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-amber-400">
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span>You: ₹56,000</span>
-                </div>
-              </div>
-
-              {/* Itemized Breakdown */}
-              <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
-                <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-gray-300">
-                  Consumables: <span className="text-amber-400 font-mono">₹32k</span>
-                </div>
-                <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-gray-300">
-                  Room Diff: <span className="text-amber-400 font-mono">₹24k</span>
-                </div>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Card 4: Clause Extraction (Spans 1 col) */}
-          <BentoCard
-            className="md:col-span-1"
-            accentColor="#8b5cf6"
-            glowColor="rgba(139,92,246,0.14)"
-            title="Instant Clause Extraction"
-            description="Converts 60+ page dense PDFs into structured, queryable data points in seconds."
-          >
-            {/* 2x2 Glass Metric Chips */}
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
-                <div className="text-[10px] text-gray-400 uppercase font-semibold">Sum Insured</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">₹15,00,000</div>
-                <div className="text-[10px] text-purple-300 mt-0.5">+ 100% Super NCB</div>
-              </div>
-              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
-                <div className="text-[10px] text-gray-400 uppercase font-semibold">Room Rent</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">Single AC</div>
-                <div className="text-[10px] text-emerald-400 mt-0.5">Zero Sub-limits</div>
-              </div>
-              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
-                <div className="text-[10px] text-gray-400 uppercase font-semibold">Day Care</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">540+ Types</div>
-                <div className="text-[10px] text-blue-300 mt-0.5">No 24h hospital rule</div>
-              </div>
-              <div className="p-3 rounded-2xl border border-white/5 bg-white/[0.03]">
-                <div className="text-[10px] text-gray-400 uppercase font-semibold">Restoration</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">100% Instant</div>
-                <div className="text-[10px] text-amber-300 mt-0.5">Unlimited Reloads</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-purple-300/80">
-              <Zap size={12} className="text-purple-400 shrink-0" />
-              <span>42 clauses parsed in 1.4s · 100% OCR fidelity</span>
-            </div>
-          </BentoCard>
-
-          {/* Card 5: Confidence Scoring (Spans 1 col) */}
-          <BentoCard
-            className="md:col-span-1"
-            accentColor="#06b6d4"
-            glowColor="rgba(6,182,212,0.14)"
-            title="Calibrated Confidence"
-            description="Every answer is evaluated with strict multi-pass verification against original policy embeddings."
-          >
-            {/* Confidence Gauge & Checklist */}
-            <div
-              className="p-4 rounded-2xl border mt-3 space-y-3"
-              style={{
-                background: 'rgba(8, 18, 24, 0.65)',
-                borderColor: 'rgba(6,182,212,0.2)',
-              }}
-            >
-              <div>
-                <div className="text-2xl font-black tracking-tight text-white font-mono bg-gradient-to-r from-cyan-400 to-[#c8a96e] bg-clip-text text-transparent">
-                  99.4%
-                </div>
-                <div className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">
-                  Grounding Certainty
-                </div>
-              </div>
-
-              <div className="space-y-1.5 pt-1 text-[11px] text-gray-300">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={13} className="text-cyan-400 shrink-0" />
-                  <span>Verbatim clause cross-reference</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={13} className="text-cyan-400 shrink-0" />
-                  <span>Semantic distance &lt; 0.12 verified</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={13} className="text-cyan-400 shrink-0" />
-                  <span>Strict negative constraint checking</span>
-                </div>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Card 6: Policy Comparison Matrix (Spans 3 cols full width) */}
-          <BentoCard
-            className="md:col-span-3"
-            accentColor="#c8a96e"
-            glowColor="rgba(200,169,110,0.14)"
-            title="Multi-Policy Comparative Matrix"
-            description="Compare corporate group insurance, family floaters, and personal covers side-by-side to eliminate redundant premiums and dangerous coverage blindspots."
-          >
-            {/* Interactive Comparative Matrix */}
-            <div
-              className="rounded-2xl overflow-x-auto border mt-4"
-              style={{
-                background: 'rgba(8, 8, 16, 0.75)',
-                borderColor: 'rgba(255, 255, 255, 0.08)',
-              }}
-            >
-              <table className="w-full text-left text-xs min-w-[580px]">
-                <thead>
-                  <tr
-                    className="border-b"
-                    style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      borderColor: 'rgba(255,255,255,0.08)',
-                    }}
+                <div className="flex items-center gap-4">
+                  <button
+                    id="section1-accepting-btn"
+                    onClick={() => openAuth('register')}
+                    className="btn-pill-lime px-7 py-3.5 text-sm font-bold flex items-center gap-2 cursor-pointer"
                   >
-                    <th className="py-3 px-4 text-gray-400 font-medium">Coverage Parameter</th>
-                    <th className="py-3 px-4 font-semibold text-[#f5e4a8]">
-                      Care Supreme (₹10L Base)
-                    </th>
-                    <th className="py-3 px-4 font-semibold text-gray-300">
-                      HDFC ERGO Optima (₹10L Base)
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  <tr>
-                    <td className="py-2.5 px-4 text-gray-300 font-medium">Room Rent Limit</td>
-                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
-                      <CheckCircle2 size={13} />
-                      <span>Single Private AC (No Capping)</span>
-                    </td>
-                    <td className="py-2.5 px-4 text-amber-400 font-mono">1% of Sum Insured (₹10k/day)</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-4 text-gray-300 font-medium">Restoration Benefit</td>
-                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
-                      <CheckCircle2 size={13} />
-                      <span>Unlimited Automatic Reload</span>
-                    </td>
-                    <td className="py-2.5 px-4 text-gray-400">100% Once per Policy Year</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-4 text-gray-300 font-medium">Modern & Robotic Surgery</td>
-                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
-                      <CheckCircle2 size={13} />
-                      <span>100% Sum Insured Covered</span>
-                    </td>
-                    <td className="py-2.5 px-4 text-amber-400 font-mono">50% Sub-limit on Robotic</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-4 text-gray-300 font-medium">Pre-Existing Waiting Period</td>
-                    <td className="py-2.5 px-4 text-gray-400">36 Months Waiting</td>
-                    <td className="py-2.5 px-4 text-emerald-400 font-medium flex items-center gap-1.5">
-                      <CheckCircle2 size={13} />
-                      <span>24 Months Waiting</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div
-                className="p-3 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]"
-                style={{
-                  background: 'rgba(200,169,110,0.05)',
-                  borderColor: 'rgba(200,169,110,0.2)',
-                }}
-              >
-                <div className="flex items-center gap-2 text-gray-300">
-                  <Sparkles size={13} className="text-[#c8a96e]" />
-                  <span>
-                    <strong className="text-white">InsurAI Arbitrage Insight:</strong> Care Supreme saves an estimated ₹1.85L on robotic surgical procedures.
+                    <span>Start Accepting Clarity</span>
+                    <ArrowRight size={15} />
+                  </button>
+                </div>
+
+                {/* Hand-Drawn Doodle Annotation */}
+                <div className="mt-8 flex items-center gap-3">
+                  <DoodleArrow className="text-[#d2f57b] rotate-12" />
+                  <span className="font-handwriting text-2xl text-[#d2f57b] tracking-wide">
+                    Policy jargon for them, cash savings for you!
                   </span>
                 </div>
-                <button
-                  onClick={() => openAuth('register')}
-                  className="inline-flex items-center gap-1 text-[#e8c97e] hover:text-white font-medium transition-colors"
-                >
-                  <span>Compare your policies now</span>
-                  <ArrowUpRight size={13} />
-                </button>
+              </div>
+
+              {/* Right Visual with Overlapping Floating Card */}
+              <div className="lg:col-span-6 relative">
+                {/* Main Photo: Person Working on Laptop */}
+                <div className="rounded-[28px] sm:rounded-[36px] overflow-hidden border-2 border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative">
+                  <img
+                    src="/images/person-laptop.jpg"
+                    alt="Young professional reviewing policy clarity"
+                    className="w-full h-[360px] sm:h-[420px] object-cover"
+                  />
+                </div>
+
+                {/* Overlapping Floating Polaroid Sticker Card */}
+                <div className="absolute -bottom-6 -left-4 sm:-bottom-8 sm:-left-8 select-none z-20">
+                  <div className="bg-white p-2.5 sm:p-3 rounded-2xl sm:rounded-3xl shadow-[0_20px_45px_rgba(0,0,0,0.4)] border border-black/10 -rotate-6 transition-transform hover:rotate-0 duration-300 cursor-pointer">
+                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl sm:rounded-2xl overflow-hidden bg-[#062327]">
+                      <img
+                        src="/images/scanner-3d.jpg"
+                        alt="Instant Clause Detection Scanner"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="mt-2 text-center">
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#062327] text-white text-[11px] font-bold">
+                        Instant Clause Scan
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overlapping Floating Grounding Badge */}
+                <div className="absolute top-6 -right-3 sm:-right-6 bg-[#062327]/90 backdrop-blur-md border border-[#d2f57b]/30 rounded-2xl p-3.5 shadow-xl text-xs text-white max-w-[210px]">
+                  <div className="flex items-center gap-1.5 text-[#d2f57b] font-bold mb-1">
+                    <Sparkles size={13} />
+                    <span>99.8% Grounding</span>
+                  </div>
+                  <p className="text-[11px] text-gray-300 leading-snug">
+                    Section 4.2 cited directly from uploaded PDF.
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            FEATURE SECTION 2 (THIRD SECTION):
+            Cards in an infinite marquee carousel going from right to left in a loop
+            ════════════════════════════════════════════════════ */}
+        <section id="features" className="relative px-3 sm:px-6 lg:px-10 py-16 sm:py-24 bg-[#07262b] overflow-hidden">
+          
+          {/* Subtle background blooms */}
+          <CloverBloom color="rgba(255,255,255,0.03)" size={480} className="top-10 left-10" />
+          <CloverBloom color="rgba(255,255,255,0.025)" size={420} className="bottom-10 right-10" />
+
+          <div className="max-w-[1340px] mx-auto bg-[#ffffff] rounded-[32px] sm:rounded-[44px] lg:rounded-[48px] pt-8 sm:pt-14 pb-10 sm:pb-16 px-4 sm:px-10 lg:px-14 relative shadow-[0_24px_70px_rgba(0,0,0,0.30)] border border-black/10 overflow-hidden">
+            
+            {/* Section Header */}
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-xs font-mono font-bold tracking-widest text-[#062327]/50 uppercase">01-04</span>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-14">
+              <div>
+                <h2 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#062327] tracking-tight">
+                  Everything in<br className="hidden sm:inline" /> one place
+                </h2>
+              </div>
+              <p className="text-base text-[#062327]/70 max-w-md font-medium leading-relaxed">
+                From multi-page policy indexing to hospital room-rent calculators and direct clause chat — all grounded with zero hallucinations.
+              </p>
+            </div>
+
+            {/* ── Infinite Marquee Carousel Track (Right to Left Loop) ── */}
+            <div className="relative overflow-hidden w-full py-4 -mx-4 sm:-mx-10 lg:-mx-14 px-4 sm:px-10 lg:px-14">
+              {/* Left Edge Fade Mask */}
+              <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-r from-white via-white/80 to-transparent z-20" />
+              
+              {/* Right Edge Fade Mask */}
+              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-l from-white via-white/80 to-transparent z-20" />
+
+              {/* Seamless looping carousel track (duplicated array for continuous 0% -> -50% loop) */}
+              <div className="carousel-marquee-track flex gap-6 items-stretch">
+                {[...CAROUSEL_CARDS, ...CAROUSEL_CARDS].map((card, idx) => (
+                  <div
+                    key={`${card.id}-${idx}`}
+                    className="w-[330px] sm:w-[380px] shrink-0 bg-[#f5f8f8] hover:bg-[#edf5f5] rounded-3xl p-6 border border-black/[0.07] hover:border-[#062327]/25 transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-xl hover:-translate-y-1.5 group select-none cursor-pointer"
+                  >
+                    <div>
+                      {/* Top Tag & Badge Pill */}
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#062327]/70 bg-white px-2.5 py-1 rounded-full border border-black/[0.06]">
+                          {card.tag}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full">
+                          {card.badge}
+                        </span>
+                      </div>
+
+                      <h3 className="font-headline text-xl font-bold text-[#062327] mb-2 group-hover:text-[#0b4047] transition-colors">
+                        {card.title}
+                      </h3>
+                      <p className="text-xs text-[#062327]/70 leading-relaxed mb-5">
+                        {card.desc}
+                      </p>
+                    </div>
+
+                    {/* Visual Content Block */}
+                    <div className="mt-auto pt-2">
+                      {card.visual}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </BentoCard>
-        </div>
-      </section>
 
-      {/* ══════════════════════════════════════════════════
-          HOW IT WORKS
-          ════════════════════════════════════════════════ */}
-      <section
-        id="how-it-works"
-        style={{
-          position: 'relative',
-          padding: '140px 24px',
-        }}
-      >
-        {/* Side blob — seamless floating orb */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            left: '-12%',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 'clamp(340px, 42vw, 620px)',
-            height: 'clamp(340px, 42vw, 620px)',
-            opacity: 0.42,
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          <LiquidBlob className="w-full h-full" />
-        </div>
+            {/* Carousel Bottom Explore Row */}
+            <div className="mt-8 pt-4 border-t border-black/[0.05] flex items-center justify-end">
+              <button
+                onClick={() => openAuth('register')}
+                className="text-[#062327] font-bold hover:underline inline-flex items-center gap-1 cursor-pointer text-xs"
+              >
+                <span>Explore all features</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
 
-        <div
-          style={{
-            maxWidth: '1120px',
-            margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '80px',
-            alignItems: 'center',
-          }}
-          className="grid-cols-1 md:grid-cols-2"
-        >
-          {/* Left — steps */}
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h2
-              style={{
-                fontSize: 'clamp(1.9rem, 3vw, 3rem)',
-                fontWeight: 740,
-                letterSpacing: '-0.04em',
-                lineHeight: 1.12,
-                color: '#f0f0f8',
-                marginBottom: '52px',
-              }}
-            >
-              From upload to<br />
-              <span style={{
-                background: 'linear-gradient(135deg, #f5e4a8, #c8a96e)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>insight in minutes</span>
-            </h2>
+          </div>
+        </section>
 
-            {/* Steps */}
-            <div style={{ position: 'relative', paddingLeft: '0' }}>
+        {/* ══════════════════════════════════════════════════════
+            HOW IT WORKS SECTION: 3 CLEAN NUMBERED STEPS
+            ════════════════════════════════════════════════════ */}
+        <section id="how-it-works" className="relative px-3 sm:px-6 lg:px-10 py-16 sm:py-24 bg-[#07262b] text-white">
+          
+          <CloverBloom color="rgba(255,255,255,0.03)" size={500} className="top-1/4 -right-16" />
+
+          <div className="max-w-[1340px] mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-20">
+              <span className="text-xs font-mono font-bold tracking-widest text-[#d2f57b] uppercase">Step-by-step workflow</span>
+              <h2 className="font-headline text-3xl sm:text-5xl font-extrabold text-white tracking-tight mt-2 mb-4">
+                From PDF upload to verified claim answers
+              </h2>
+              <p className="text-sm sm:text-base text-[#b8dfe3]">
+                Simple, transparent, and completely grounded in your insurance company's official policy wording.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               {[
-                { num: '01', title: 'Upload your policy PDF', desc: 'Drag-drop or click to upload. Text is extracted, chunked semantically, and a vector index is built in under 30 seconds.' },
-                { num: '02', title: 'AI extracts key clauses', desc: 'Room rent, co-pay, exclusions, waiting periods, sub-limits — tagged and categorized automatically by the NLP pipeline.' },
-                { num: '03', title: 'Ask anything, compare, estimate', desc: 'Chat with your policy, run cost simulations, compare plans side-by-side. Every answer cites the exact source clause.' },
-              ].map((step, i) => (
+                {
+                  num: '01',
+                  title: 'Upload your policy PDF',
+                  desc: 'Upload any health insurance policy (Star, HDFC Ergo, Care, Bajaj Allianz). Text is vectorized in under 30 seconds.',
+                  badge: 'Instant OCR'
+                },
+                {
+                  num: '02',
+                  title: 'AI scans critical clauses',
+                  desc: 'Sub-limits, room-rent categories, waiting periods, and modern robotic procedures are tagged automatically.',
+                  badge: 'Trap Detection'
+                },
+                {
+                  num: '03',
+                  title: 'Ask questions & simulate bills',
+                  desc: 'Chat in plain English. Every response cites the exact page number and contract clause with verbatim quotes.',
+                  badge: 'Zero Hallucinations'
+                }
+              ].map(step => (
                 <div
                   key={step.num}
-                  style={{
-                    display: 'flex',
-                    gap: '20px',
-                    marginBottom: i < 2 ? '36px' : '0',
-                    animation: 'fadeIn 0.3s ease-out both',
-                    animationDelay: `${i * 0.1}s`,
-                  }}
+                  className="bg-[#051d21] rounded-3xl p-7 border border-white/10 flex flex-col justify-between hover:border-[#d2f57b]/40 transition-colors"
                 >
-                  {/* Number */}
-                  <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0' }}>
-                    <div
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        letterSpacing: '0.02em',
-                        background: 'linear-gradient(135deg, rgba(240,216,152,0.18), rgba(200,169,110,0.10))',
-                        border: '1px solid rgba(200,169,110,0.35)',
-                        color: '#e8c97e',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {step.num}
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <span className="w-12 h-12 rounded-2xl bg-[#d2f57b] text-[#062327] font-headline font-black text-lg flex items-center justify-center">
+                        {step.num}
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-[#d2f57b] font-bold">
+                        {step.badge}
+                      </span>
                     </div>
-                    {i < 2 && (
-                      <div style={{ width: '1px', flex: 1, minHeight: '28px', background: 'linear-gradient(to bottom, rgba(200,169,110,0.25), transparent)', marginTop: '8px' }} />
-                    )}
-                  </div>
-                  {/* Text */}
-                  <div style={{ paddingTop: '6px' }}>
-                    <h4 style={{ fontSize: '15px', fontWeight: 640, letterSpacing: '-0.02em', color: '#f0f0f8', marginBottom: '7px' }}>
+                    <h3 className="font-headline text-xl font-bold text-white mb-3">
                       {step.title}
-                    </h4>
-                    <p style={{ fontSize: '13px', lineHeight: 1.72, letterSpacing: '-0.005em', color: 'rgba(255,255,255,0.38)' }}>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[#a2cbcf] leading-relaxed">
                       {step.desc}
                     </p>
                   </div>
@@ -1521,259 +1014,70 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
+        </section>
 
-          {/* Right — mock AI chat card */}
-          <div className="hidden md:block" style={{ position: 'relative', zIndex: 1 }}>
-            <div
-              className="animate-blob-float"
-              style={{
-                borderRadius: '24px',
-                padding: '1.5px',
-                background: 'linear-gradient(135deg, rgba(200,169,110,0.30), rgba(80,60,200,0.20), rgba(255,255,255,0.04))',
-              }}
-            >
-              <div
-                style={{
-                  borderRadius: '23px',
-                  background: 'rgba(7,7,18,0.97)',
-                  border: '1px solid rgba(255,255,255,0.055)',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Chat header */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '16px 20px',
-                    borderBottom: '1px solid rgba(255,255,255,0.055)',
-                  }}
+        {/* ══════════════════════════════════════════════════════
+            FOOTER / CTA SECTION: WHITE MASTER CARD ON LIME CANVAS
+            Text types itself in, and signature "INSURAI" flickers like a tubelight!
+            ════════════════════════════════════════════════════ */}
+        <section
+          ref={section4Ref}
+          className="relative px-3 sm:px-6 lg:px-10 py-16 sm:py-24 bg-[#d7f49e]"
+        >
+          {/* Clover watermarks in lime background */}
+          <CloverBloom color="rgba(195, 235, 120, 0.55)" size={460} className="-top-10 left-10" />
+          <CloverBloom color="rgba(195, 235, 120, 0.5)" size={480} className="bottom-0 right-10" />
+
+          {/* Master Card with Giant Clipped Footer Typography */}
+          <div className="max-w-[1340px] mx-auto bg-[#ffffff] rounded-[32px] sm:rounded-[44px] lg:rounded-[48px] pt-12 sm:pt-16 lg:pt-20 px-6 sm:px-12 lg:px-16 pb-0 relative shadow-[0_24px_60px_rgba(6,35,39,0.25)] border border-black/10 overflow-hidden flex flex-col justify-between">
+            
+            {/* Top CTA Module with Typewriter Headline */}
+            <div className="text-center max-w-2xl mx-auto relative z-10 mb-8 sm:mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#062327]/[0.05] border border-[#062327]/15 text-[11px] font-extrabold tracking-wider uppercase text-[#062327] mb-6">
+                <span>READY FOR COMPLETE PEACE OF MIND</span>
+              </div>
+
+              <h2 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#062327] tracking-tight leading-[1.05] mb-8 min-h-[48px] sm:min-h-[75px]">
+                {section4Heading || (section4InView ? '' : 'Make your insurance work for you')}
+                {!section4Done && <span className="typewriter-cursor text-[#062327]">|</span>}
+              </h2>
+
+              {/* Lime Pill CTA */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative">
+                <button
+                  id="footer-getstarted-btn"
+                  onClick={() => openAuth('register')}
+                  className="btn-pill-lime px-8 py-4 text-sm sm:text-base font-bold flex items-center gap-2 shadow-[0_6px_0_#062327] cursor-pointer"
                 >
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5cc85c', boxShadow: '0 0 6px #5cc85c', animation: 'pulseDot 2s ease-in-out infinite' }} />
-                  <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.50)', letterSpacing: '-0.01em' }}>
-                    AI Assistant · HDFC ERGO Family Floater
+                  <span>Get Started Free</span>
+                  <ArrowRight size={16} />
+                </button>
+
+                {/* Doodle annotation arrow pointing to the button */}
+                <div className="hidden sm:flex items-center gap-2 absolute -right-40 top-0">
+                  <DoodleArrow className="text-[#062327] rotate-[-45deg]" />
+                  <span className="font-handwriting text-2xl text-[#062327] font-bold">
+                    Start analyzing today!
                   </span>
-                </div>
-                {/* Messages */}
-                <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {/* User msg */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <div
-                      style={{
-                        padding: '11px 16px',
-                        borderRadius: '16px 16px 4px 16px',
-                        fontSize: '13px',
-                        letterSpacing: '-0.01em',
-                        lineHeight: 1.55,
-                        maxWidth: '78%',
-                        background: 'rgba(200,169,110,0.14)',
-                        border: '1px solid rgba(200,169,110,0.24)',
-                        color: '#f0f0f8',
-                      }}
-                    >
-                      What is the room rent limit for my policy?
-                    </div>
-                  </div>
-                  {/* AI msg */}
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '50%',
-                        flexShrink: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, rgba(200,169,110,0.22), rgba(80,60,180,0.28))',
-                        border: '1px solid rgba(200,169,110,0.28)',
-                      }}
-                    >
-                      <Shield size={11} style={{ color: '#c8a96e' }} />
-                    </div>
-                    <div
-                      style={{
-                        padding: '11px 16px',
-                        borderRadius: '4px 16px 16px 16px',
-                        fontSize: '13px',
-                        letterSpacing: '-0.01em',
-                        lineHeight: 1.65,
-                        flex: 1,
-                        background: 'rgba(255,255,255,0.035)',
-                        border: '1px solid rgba(255,255,255,0.07)',
-                        color: 'rgba(255,255,255,0.72)',
-                      }}
-                    >
-                      <p>Your HDFC ERGO Family Floater has <span style={{ color: '#e8c97e', fontWeight: 600 }}>no room rent capping</span> — you can choose any room without proportionate deduction risk.</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
-                        <CheckCircle size={10} style={{ color: '#5cc85c' }} />
-                        <span style={{ fontSize: '11px', color: '#5cc85c', letterSpacing: '0.01em' }}>High confidence · Page 14, §3.2</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
+
+            {/* ── Giant Signature Wordmark: Complete, Stretched & Tubelight Flicker ── */}
+            <TubelightWordmark inView={section4InView} />
+
+
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
+      {/* ── Auth Slide-in Drawer ── */}
+      {authOpen && (
+        <AuthDrawer
+          onClose={() => setAuthOpen(false)}
+          defaultTab={authTab}
+        />
+      )}
 
-      {/* ══════════════════════════════════════════════════
-          FINAL CTA BANNER
-          ════════════════════════════════════════════════ */}
-      <section
-        style={{
-          position: 'relative',
-          padding: '150px 24px 170px',
-          textAlign: 'center',
-        }}
-      >
-        {/* Background blob — seamless floating orb */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            right: '-12%',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 'clamp(400px, 50vw, 750px)',
-            height: 'clamp(400px, 50vw, 750px)',
-            opacity: 0.38,
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          <LiquidBlob className="w-full h-full" />
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: '680px', margin: '0 auto' }}>
-          <h2
-            style={{
-              fontSize: 'clamp(2.2rem, 4.5vw, 4.2rem)',
-              fontWeight: 760,
-              letterSpacing: '-0.04em',
-              lineHeight: 1.07,
-              color: '#f0f0f8',
-              marginBottom: '22px',
-            }}
-          >
-            Your policy has answers.<br />
-            <span
-              style={{
-                background: 'linear-gradient(135deg, #f5e4a8, #c8a96e, #e8d080)',
-                backgroundSize: '200% 200%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                animation: 'gradientDrift 5s ease infinite',
-              }}
-            >
-              InsurAI finds them.
-            </span>
-          </h2>
-          <p
-            style={{
-              fontSize: '16px',
-              lineHeight: 1.75,
-              letterSpacing: '-0.01em',
-              color: 'rgba(255,255,255,0.38)',
-              marginBottom: '44px',
-            }}
-          >
-            Upload your policy and start getting AI-powered clarity — completely free.
-          </p>
-          <button
-            id="final-cta"
-            onClick={() => openAuth('register')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '17px 36px',
-              borderRadius: '999px',
-              fontSize: '16px',
-              fontWeight: 650,
-              letterSpacing: '-0.02em',
-              fontFamily: 'inherit',
-              background: 'linear-gradient(135deg, #f0d898, #c8a96e)',
-              color: '#1a1000',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 10px 44px rgba(200,169,110,0.46)',
-              transition: 'all 0.22s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow='0 18px 56px rgba(200,169,110,0.68)'; e.currentTarget.style.transform='translateY(-3px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow='0 10px 44px rgba(200,169,110,0.46)'; e.currentTarget.style.transform='translateY(0)'; }}
-          >
-            Get Started Free <ArrowRight size={17} />
-          </button>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════
-          FOOTER
-          ════════════════════════════════════════════════ */}
-      <footer
-        style={{
-          position: 'relative',
-          padding: '36px 24px',
-        }}
-      >
-        <div className="w-full max-w-6xl mx-auto h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-8" />
-        <div
-          style={{
-            maxWidth: '1120px',
-            margin: '0 auto',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '16px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '7px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(200,169,110,0.30)',
-                overflow: 'hidden',
-                padding: '2px',
-              }}
-            >
-              <img src="/favicon_io/favicon-32x32.png" alt="InsurAI Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </div>
-            <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.45)' }}>
-              InsurAI
-            </span>
-          </div>
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.01em' }}>
-            © {new Date().getFullYear()} InsurAI
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            {['Privacy', 'Terms', 'Docs'].map(l => (
-              <a
-                key={l}
-                href="#"
-                style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', textDecoration: 'none', letterSpacing: '-0.01em', transition: 'color 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
-              >
-                {l}
-              </a>
-            ))}
-          </div>
-        </div>
-      </footer>
-
-      {/* ── Auth Drawer ── */}
-      {authOpen && <AuthDrawer onClose={() => setAuthOpen(false)} defaultTab={authTab} />}
     </div>
   );
 }

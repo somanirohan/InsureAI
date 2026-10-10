@@ -37,43 +37,36 @@ export function Sidebar({ activeTab, setActiveTab }) {
   return (
     <aside
       className={`hidden lg:flex flex-col flex-shrink-0 h-screen sticky top-0 transition-all duration-300 ease-in-out relative ${
-        collapsed ? 'w-16' : 'w-56'
+        collapsed ? 'w-18' : 'w-60'
       }`}
       style={{
-        background: 'rgba(8,8,18,0.85)',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: '#ffffff',
+        borderRight: '1.5px solid rgba(6,35,39,0.08)',
         zIndex: 20,
       }}
     >
-      {/* Header with 3 lines toggle */}
-      <div className={`pt-6 pb-5 ${collapsed ? 'px-2 flex flex-col items-center gap-3' : 'px-4 flex items-center justify-between'}`}>
+      {/* Header with toggle */}
+      <div className={`pt-6 pb-5 ${collapsed ? 'px-2 flex flex-col items-center gap-3' : 'px-5 flex items-center justify-between'}`}>
         {!collapsed ? (
           <>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className="flex items-center gap-3 group min-w-0"
+              className="flex items-center gap-3 group min-w-0 cursor-pointer"
               title="InsurAI Dashboard"
             >
               <div
-                className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5 group-hover:scale-105 transition-transform"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(200,169,110,0.35)',
-                  boxShadow: '0 0 16px rgba(200,169,110,0.20)',
-                }}
+                className="w-9 h-9 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1 group-hover:scale-105 transition-transform shadow-sm"
               >
-                <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
+                <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
               </div>
               <div className="min-w-0 text-left">
-                <p className="text-sm font-semibold tracking-tight text-[#f0f0f8] truncate">InsurAI</p>
-                <p className="text-[10px] text-white/30 truncate">Policy Intelligence</p>
+                <p className="font-headline text-base font-bold tracking-tight text-[#062327] truncate leading-tight">InsurAI</p>
+                <p className="text-[11px] text-[#558187] truncate font-medium">Policy Intelligence</p>
               </div>
             </button>
             <button
               onClick={toggleSidebar}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors flex-shrink-0"
+              className="p-1.5 rounded-xl text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08 transition-colors flex-shrink-0 cursor-pointer"
               title="Minimize sidebar"
               aria-label="Minimize sidebar"
             >
@@ -84,7 +77,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
           <>
             <button
               onClick={toggleSidebar}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08 transition-colors cursor-pointer"
               title="Expand sidebar"
               aria-label="Expand sidebar"
             >
@@ -92,29 +85,24 @@ export function Sidebar({ activeTab, setActiveTab }) {
             </button>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5 hover:scale-105 transition-transform"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(200,169,110,0.35)',
-                boxShadow: '0 0 16px rgba(200,169,110,0.20)',
-              }}
+              className="w-9 h-9 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1 hover:scale-105 transition-transform cursor-pointer shadow-sm"
               title="InsurAI Dashboard"
             >
-              <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
+              <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
             </button>
           </>
         )}
       </div>
 
-      {/* Navigation: Vertically centered both when expanded and when minimized */}
+      {/* Navigation */}
       <nav
         className={`flex-1 flex flex-col justify-center ${
           collapsed
             ? 'items-center gap-3 px-2'
-            : 'px-3 space-y-1'
+            : 'px-4 space-y-1.5'
         }`}
       >
-        {!collapsed && <p className="label-xs px-2 mb-3">Navigation</p>}
+        {!collapsed && <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] px-3 mb-2">Navigation</p>}
         {navItems.map(({ id, label, icon: Icon }) => {
           const isActive = activeTab === id;
           if (collapsed) {
@@ -123,39 +111,18 @@ export function Sidebar({ activeTab, setActiveTab }) {
                 key={id}
                 id={`nav-${id}`}
                 onClick={() => setActiveTab(id)}
-                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 relative group"
-                style={isActive ? {
-                  background: 'rgba(200,169,110,0.18)',
-                  border: '1px solid rgba(200,169,110,0.35)',
-                  boxShadow: '0 0 14px rgba(200,169,110,0.20)',
-                  color: '#e8c97e',
-                } : {
-                  background: 'transparent',
-                  border: '1px solid transparent',
-                  color: 'rgba(255,255,255,0.40)',
-                }}
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-200 relative group cursor-pointer ${
+                  isActive
+                    ? 'bg-[#d2f57b] text-[#062327] shadow-[0_3px_0_#062327] border-2 border-[#062327] font-bold'
+                    : 'text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08'
+                }`}
                 title={label}
                 aria-label={label}
                 aria-current={isActive ? 'page' : undefined}
-                onMouseEnter={e => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.40)';
-                  }
-                }}
               >
-                <Icon
-                  size={18}
-                  style={{ color: isActive ? '#c8a96e' : 'currentColor' }}
-                />
+                <Icon size={18} className={isActive ? 'stroke-[2.5]' : ''} />
                 {/* Floating tooltip */}
-                <span className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-[#141420] border border-white/10 text-xs font-medium text-white shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                <span className="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-[#062327] text-xs font-bold text-white shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
                   {label}
                 </span>
               </button>
@@ -167,31 +134,18 @@ export function Sidebar({ activeTab, setActiveTab }) {
               key={id}
               id={`nav-${id}`}
               onClick={() => setActiveTab(id)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-              style={isActive ? {
-                background: 'rgba(200,169,110,0.12)',
-                border: '1px solid rgba(200,169,110,0.25)',
-                color: '#e8c97e',
-              } : {
-                background: 'transparent',
-                border: '1px solid transparent',
-                color: 'rgba(255,255,255,0.40)',
-              }}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                isActive
+                  ? 'bg-[#d2f57b] text-[#062327] shadow-[0_3px_0_#062327] border-2 border-[#062327]'
+                  : 'text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08'
+              }`}
               aria-current={isActive ? 'page' : undefined}
-              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background='rgba(255,255,255,0.05)'; e.currentTarget.style.color='rgba(255,255,255,0.70)'; }}}
-              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='rgba(255,255,255,0.40)'; }}}
             >
               <Icon
-                size={14}
-                style={{ color: isActive ? '#c8a96e' : 'rgba(255,255,255,0.35)' }}
+                size={16}
+                className={isActive ? 'stroke-[2.5]' : 'opacity-80'}
               />
               <span className="flex-1 text-left">{label}</span>
-              {isActive && (
-                <div
-                  className="w-1 h-1 rounded-full"
-                  style={{ background: '#c8a96e' }}
-                />
-              )}
             </button>
           );
         })}
@@ -199,60 +153,49 @@ export function Sidebar({ activeTab, setActiveTab }) {
 
       {/* User Footer */}
       <div
-        className={`pb-5 pt-4 ${collapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-3'}`}
-        style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+        className={`pb-5 pt-4 ${collapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}
+        style={{ borderTop: '1.5px solid rgba(6,35,39,0.08)' }}
       >
         {!collapsed ? (
-          <div className="flex items-center gap-3 px-2 py-2 rounded-xl">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-[#f5f8f8] border border-[#062327]/08">
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, rgba(200,169,110,0.20), rgba(80,60,180,0.20))',
-                border: '1px solid rgba(200,169,110,0.25)',
-              }}
+              className="w-8 h-8 rounded-xl bg-[#d2f57b] border-2 border-[#062327] text-[#062327] flex items-center justify-center flex-shrink-0 font-bold"
             >
-              <User size={12} style={{ color: '#c8a96e' }} />
+              <User size={14} className="stroke-[2.5]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate leading-tight" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              <p className="text-xs font-bold text-[#062327] truncate leading-tight">
                 {user?.full_name?.split(' ')[0] || 'User'}
               </p>
-              <p className="text-[10px] truncate leading-tight" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              <p className="text-[11px] text-[#558187] truncate leading-tight">
                 {user?.email || ''}
               </p>
             </div>
             <button
               id="nav-logout"
               onClick={logout}
-              className="btn btn-ghost p-1.5 rounded-lg"
+              className="p-1.5 rounded-xl text-[#558187] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
               title="Logout"
-              style={{ color: 'rgba(255,255,255,0.25)' }}
-              onMouseEnter={e => e.currentTarget.style.color='rgba(220,80,80,0.80)'}
-              onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.25)'}
             >
-              <LogOut size={13} />
+              <LogOut size={14} />
             </button>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(200,169,110,0.20), rgba(80,60,180,0.20))',
-                border: '1px solid rgba(200,169,110,0.25)',
-              }}
+              className="w-9 h-9 rounded-xl bg-[#d2f57b] border-2 border-[#062327] text-[#062327] flex items-center justify-center"
               title={user?.full_name || 'User profile'}
             >
-              <User size={13} style={{ color: '#c8a96e' }} />
+              <User size={15} className="stroke-[2.5]" />
             </div>
             <button
               id="nav-logout"
               onClick={logout}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              className="p-2 rounded-xl text-[#558187] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
               title="Logout"
               aria-label="Logout"
             >
-              <LogOut size={14} />
+              <LogOut size={15} />
             </button>
           </div>
         )}
@@ -271,31 +214,26 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
       <header
         className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3"
         style={{
-          background: 'rgba(8,8,18,0.90)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.95)',
+          borderBottom: '1.5px solid rgba(6,35,39,0.08)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
         }}
       >
         <div className="flex items-center gap-2.5">
           <div
-            className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(200,169,110,0.35)',
-            }}
+            className="w-8 h-8 rounded-xl bg-[#d2f57b] border-2 border-[#062327] overflow-hidden flex items-center justify-center flex-shrink-0 p-1 shadow-sm"
           >
-            <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-md" />
+            <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
           </div>
-          <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>InsurAI</span>
+          <span className="font-headline text-base font-bold text-[#062327] tracking-tight">InsurAI</span>
         </div>
         <button
           onClick={() => setOpen(!open)}
-          className="btn btn-ghost p-2"
+          className="p-2 rounded-xl text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08 cursor-pointer"
           aria-label="Toggle menu"
-          style={{ color: 'rgba(255,255,255,0.60)' }}
         >
-          {open ? <X size={18} /> : <Menu size={18} />}
+          {open ? <X size={20} /> : <Menu size={20} />}
         </button>
       </header>
 
@@ -304,55 +242,51 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
         <>
           <div
             className="fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'rgba(6,35,39,0.25)', backdropFilter: 'blur(8px)' }}
             onClick={() => setOpen(false)}
           />
           <nav
-            className="fixed top-0 left-0 bottom-0 z-50 w-64 flex flex-col py-8 px-4 animate-slide-in"
+            className="fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col py-8 px-5 animate-slide-in"
             style={{
-              background: 'rgba(8,8,22,0.97)',
-              borderRight: '1px solid rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
+              background: '#ffffff',
+              borderRight: '1.5px solid rgba(6,35,39,0.10)',
+              boxShadow: '0 24px 80px rgba(6,35,39,0.18)',
             }}
           >
-            <div className="flex items-center justify-between mb-8 px-2">
-              <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
                 <div
-                  className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 p-0.5"
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(200,169,110,0.35)',
-                  }}
+                  className="w-8 h-8 rounded-xl bg-[#d2f57b] border-2 border-[#062327] overflow-hidden flex items-center justify-center flex-shrink-0 p-1"
                 >
-                  <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-md" />
+                  <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
                 </div>
-                <span className="text-sm font-semibold" style={{ color: '#f0f0f8' }}>InsurAI</span>
+                <div>
+                  <span className="font-headline text-base font-bold text-[#062327] block leading-tight">InsurAI</span>
+                  <span className="text-[11px] text-[#558187]">Policy Intelligence</span>
+                </div>
               </div>
-              <button onClick={() => setOpen(false)} style={{ color: 'rgba(255,255,255,0.40)' }}>
-                <X size={16} />
+              <button
+                onClick={() => setOpen(false)}
+                className="p-2 rounded-xl text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08"
+              >
+                <X size={18} />
               </button>
             </div>
 
-            <div className="space-y-1 flex-1">
+            <div className="space-y-1.5 flex-1">
               {navItems.map(({ id, label, icon: Icon }) => {
                 const isActive = activeTab === id;
                 return (
                   <button
                     key={id}
                     onClick={() => { setActiveTab(id); setOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
-                    style={isActive ? {
-                      background: 'rgba(200,169,110,0.12)',
-                      border: '1px solid rgba(200,169,110,0.25)',
-                      color: '#e8c97e',
-                    } : {
-                      background: 'transparent',
-                      border: '1px solid transparent',
-                      color: 'rgba(255,255,255,0.45)',
-                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-sm font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-[#d2f57b] text-[#062327] shadow-[0_3px_0_#062327] border-2 border-[#062327]'
+                        : 'text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08'
+                    }`}
                   >
-                    <Icon size={14} style={{ color: isActive ? '#c8a96e' : 'rgba(255,255,255,0.35)' }} />
+                    <Icon size={16} className={isActive ? 'stroke-[2.5]' : ''} />
                     {label}
                   </button>
                 );
@@ -361,10 +295,9 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
 
             <button
               onClick={() => { logout(); setOpen(false); }}
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
-              style={{ color: 'rgba(255,255,255,0.30)' }}
+              className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 cursor-pointer"
             >
-              <LogOut size={13} />
+              <LogOut size={15} />
               Logout
             </button>
           </nav>

@@ -1,16 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, RefreshCw, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Calculator,
+  RefreshCw,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  CheckCircle2,
+  TrendingDown,
+  Info,
+  Shield,
+  Layers,
+  History,
+} from 'lucide-react';
 import api from '../../services/api';
 import { Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 
 const TREATMENTS = [
-  { value: 'Knee Replacement',           label: 'Knee Replacement (Orthopedic)' },
-  { value: 'Angioplasty',                label: 'Angioplasty / Stent (Cardiology)' },
-  { value: 'Cataract Surgery',           label: 'Cataract Surgery (Daycare)' },
-  { value: 'Appendectomy',               label: 'Appendectomy (General Surgery)' },
-  { value: 'Gallbladder Removal',        label: 'Gallbladder Removal (Laparoscopic)' },
-  { value: 'Cardiac Bypass (CABG)',      label: 'Cardiac Bypass CABG' },
-  { value: 'Chemotherapy (per cycle)',   label: 'Chemotherapy (per cycle)' },
+  { value: 'Knee Replacement',         label: 'Knee Replacement (Orthopedic)' },
+  { value: 'Angioplasty',              label: 'Angioplasty / Stent (Cardiology)' },
+  { value: 'Cataract Surgery',         label: 'Cataract Surgery (Daycare)' },
+  { value: 'Appendectomy',             label: 'Appendectomy (General Surgery)' },
+  { value: 'Gallbladder Removal',      label: 'Gallbladder Removal (Laparoscopic)' },
+  { value: 'Cardiac Bypass (CABG)',    label: 'Cardiac Bypass CABG' },
+  { value: 'Chemotherapy (per cycle)', label: 'Chemotherapy (per cycle)' },
 ];
 
 const HOSPITAL_TIERS = [
@@ -27,39 +40,67 @@ const WHATIF_VARS = [
 
 const WHATIF_VALUES = {
   hospital_tier: [
-    { value: 'tier_2', label: 'Tier 2 Hospital' },
-    { value: 'tier_3', label: 'Tier 3 Hospital' },
+    { value: 'tier_2', label: 'Tier 2 Hospital (Non-Metro)' },
+    { value: 'tier_3', label: 'Tier 3 Hospital (Semi-Urban)' },
   ],
   rider: [
     { value: 'zero_copay_rider', label: 'Enable Zero Co-Pay Rider' },
   ],
   sum_insured: [
-    { value: '2000000', label: '₹20 Lakh' },
-    { value: '5000000', label: '₹50 Lakh' },
+    { value: '2000000', label: '₹20 Lakh Sum Insured' },
+    { value: '5000000', label: '₹50 Lakh Sum Insured' },
   ],
 };
 
-// ─── Currency formatter ────────────────────────────────────
-const fmt = (n) => n !== undefined && n !== null ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
-const pct = (a, b) => b ? `${Math.round((a / b) * 100)}%` : '—';
+// ─── Currency & Percentage Formatters (Professional Clean Figures) ─────────
+const fmt = (n) =>
+  n !== undefined && n !== null ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
 
+const pct = (a, b) =>
+  b && b > 0 ? `${Math.round((Number(a) / Number(b)) * 100)}%` : '0%';
 
-// ─── Breakdown row ─────────────────────────────────────────
-function BreakdownRow({ label, value, accent, note, deduction }) {
+// ─── Itemized Audit Breakdown Row ──────────────────────────────────────────
+function AuditRow({ label, value, type = 'normal', note, isDeduction = false }) {
   return (
-    <div className={`flex items-start justify-between py-3 border-b border-white/[0.05] last:border-0 gap-4 ${accent ? 'border-0 pt-3' : ''}`}>
-      <div className="flex-1">
-        <p className={`text-sm ${accent ? 'font-semibold text-zinc-100' : 'text-zinc-400'}`}>{label}</p>
-        {note && <p className="text-xs text-zinc-600 mt-0.5">{note}</p>}
+    <div className={`py-3.5 border-b border-[#062327]/[0.06] last:border-0 ${type === 'total' ? 'bg-[#f4faf7] -mx-4 sm:-mx-6 px-4 sm:px-6 rounded-2xl border-0 my-1 py-4' : ''}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {type === 'deduction' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
+            )}
+            {type === 'total' && (
+              <CheckCircle2 size={16} className="text-emerald-700 flex-shrink-0" />
+            )}
+            <p className={`text-xs sm:text-sm ${
+              type === 'total'
+                ? 'font-bold text-[#062327]'
+                : type === 'deduction'
+                ? 'font-medium text-[#1e3e44]'
+                : 'font-semibold text-[#062327]'
+            }`}>
+              {label}
+            </p>
+          </div>
+          {note && (
+            <div className="mt-1 pl-3.5 border-l-2 border-amber-300 text-[11px] text-[#558187] leading-relaxed">
+              {note}
+            </div>
+          )}
+        </div>
+
+        <div className="text-right flex-shrink-0">
+          <p className={`text-xs sm:text-sm font-bold font-sans tabular-nums tracking-tight ${
+            type === 'total'
+              ? 'text-emerald-800 text-sm sm:text-base'
+              : type === 'deduction'
+              ? 'text-rose-700'
+              : 'text-[#062327]'
+          }`}>
+            {isDeduction ? '− ' : ''}{value}
+          </p>
+        </div>
       </div>
-      <p className={`text-sm font-mono font-semibold flex-shrink-0 ${
-        accent === 'green' ? 'text-brand-500' :
-        accent === 'red'   ? 'text-red-400' :
-        deduction          ? 'text-amber-400' :
-        'text-zinc-200'
-      }`}>
-        {deduction ? '-' : ''}{value}
-      </p>
     </div>
   );
 }
@@ -75,11 +116,11 @@ export default function CostEstimatorView({ policies }) {
   const [history, setHistory]                 = useState([]);
   const [error, setError]                     = useState(null);
 
-  // What-if
-  const [whatIfVar, setWhatIfVar]     = useState('hospital_tier');
-  const [whatIfVal, setWhatIfVal]     = useState('tier_2');
-  const [whatIfLoading, setWhatIfLoading] = useState(false);
-  const [showWhatIf, setShowWhatIf]   = useState(false);
+  // What-if simulator
+  const [whatIfVar, setWhatIfVar]             = useState('hospital_tier');
+  const [whatIfVal, setWhatIfVal]             = useState('tier_2');
+  const [whatIfLoading, setWhatIfLoading]     = useState(false);
+  const [showWhatIf, setShowWhatIf]           = useState(true);
 
   useEffect(() => {
     if (policies.length > 0 && !selectedPolicyId) {
@@ -92,7 +133,9 @@ export default function CostEstimatorView({ policies }) {
     try {
       const res = await api.get('/cost/history');
       setHistory(res.data.estimates || []);
-      if (res.data.estimates?.length > 0) setEstimate(res.data.estimates[0]);
+      if (res.data.estimates?.length > 0 && !estimate) {
+        setEstimate(res.data.estimates[0]);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -114,7 +157,7 @@ export default function CostEstimatorView({ policies }) {
       setEstimate(res.data.estimate);
       fetchHistory();
     } catch (err) {
-      setError(err.response?.data?.error || 'Calculation failed. Please try again.');
+      setError(err.response?.data?.error || 'Calculation failed. Please check inputs and try again.');
     } finally {
       setLoading(false);
     }
@@ -140,43 +183,82 @@ export default function CostEstimatorView({ policies }) {
   const breakdown = estimate?.cost_breakdown || {};
   const variants  = estimate?.what_if_variants || [];
 
+  const selectedPolicy = policies.find(p => p._id === selectedPolicyId);
+
   const policyOptions = policies.map(p => ({
     value: p._id,
-    label: `${p.insurer_name} (₹${p.sum_insured ? (p.sum_insured / 100000).toFixed(1) + 'L' : 'N/A'})`,
+    label: `${p.insurer_name} (${p.sum_insured ? '₹' + (p.sum_insured / 100000).toFixed(1) + 'L' : 'Policy'})`,
   }));
 
+  // Calculations for progress bar
+  const totalCost = estimate?.estimated_total_cost || 0;
+  const coveredAmount = estimate?.covered_amount || 0;
+  const outOfPocket = estimate?.out_of_pocket_amount || 0;
+  const coveredPctNum = totalCost > 0 ? Math.round((coveredAmount / totalCost) * 100) : 0;
+  const outOfPocketPctNum = Math.max(0, 100 - coveredPctNum);
 
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Cost Estimator</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">
-          Calculate out-of-pocket expenses based on room-rent limits, co-pay, and deductibles
-        </p>
+    <div className="space-y-8">
+      {/* ─── Page Header ────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
+              Cost Estimator & Bill Audit
+            </h1>
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/15">
+              Smart Simulator
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium max-w-2xl">
+            Simulate hospitalization out-of-pocket expenses and hidden room-rent sub-limit penalties with clause-level precision.
+          </p>
+        </div>
+
+        {selectedPolicy && (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-[#062327]/10 shadow-sm self-start sm:self-auto">
+            <Shield size={15} className="text-[#062327]" />
+            <div className="text-xs">
+              <span className="text-[#558187] font-medium">Active Policy: </span>
+              <strong className="text-[#062327] font-bold">{selectedPolicy.insurer_name}</strong>
+            </div>
+          </div>
+        )}
       </div>
 
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* ─── Input form ─────────────────────────────── */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="surface p-5 space-y-4">
-            <p className="text-sm font-semibold text-zinc-200 pb-3 border-b border-white/[0.06]">
-              Estimation Inputs
-            </p>
+      {/* ─── Main Two-Column Layout ──────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
+        {/* ─── Left Column: Parameters & History (4 cols) ────── */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Estimation Parameters Card */}
+          <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm">
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#062327]/08">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#d2f57b] border border-[#062327]/20 flex items-center justify-center text-[#062327] shadow-xs">
+                  <Calculator size={16} className="stroke-[2.2]" />
+                </div>
+                <div>
+                  <h2 className="font-headline text-sm font-bold text-[#062327] leading-tight">
+                    Simulation Parameters
+                  </h2>
+                  <p className="text-[11px] text-[#558187]">Admission & hospital specifications</p>
+                </div>
+              </div>
+            </div>
 
             <form onSubmit={handleCalculate} className="space-y-4">
               {policies.length > 0 ? (
                 <Select
-                  label="Policy"
+                  label="Policy Document"
                   value={selectedPolicyId}
                   onChange={setSelectedPolicyId}
                   options={policyOptions}
                 />
               ) : (
-                <div className="text-xs text-zinc-500 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  Upload a policy first to calculate costs.
+                <div className="text-xs text-[#558187] p-3.5 rounded-2xl bg-[#f5f8f8] border border-[#062327]/10">
+                  Upload an insurance policy first to calculate costs.
                 </div>
               )}
 
@@ -188,7 +270,7 @@ export default function CostEstimatorView({ policies }) {
               />
 
               <Select
-                label="Hospital Tier"
+                label="Hospital Tier Category"
                 value={hospitalTier}
                 onChange={setHospitalTier}
                 options={HOSPITAL_TIERS}
@@ -196,195 +278,420 @@ export default function CostEstimatorView({ policies }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label-xs block mb-2">Room Rent/Day (₹)</label>
-                  <input
-                    type="number"
-                    value={roomRentPerDay}
-                    onChange={e => setRoomRentPerDay(Number(e.target.value))}
-                    min={1000}
-                    step={500}
-                    className="input-field"
-                  />
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-1.5">
+                    Room Rent (₹/Day)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#558187]">₹</span>
+                    <input
+                      type="number"
+                      value={roomRentPerDay}
+                      onChange={e => setRoomRentPerDay(Number(e.target.value))}
+                      min={1000}
+                      step={500}
+                      className="input-field pl-7 font-sans font-bold text-sm text-[#062327] tabular-nums"
+                    />
+                  </div>
                 </div>
+
                 <div>
-                  <label className="label-xs block mb-2">Stay (Days)</label>
-                  <input
-                    type="number"
-                    value={stayDays}
-                    onChange={e => setStayDays(Number(e.target.value))}
-                    min={1}
-                    max={90}
-                    className="input-field"
-                  />
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-1.5">
+                    Stay Duration
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={stayDays}
+                      onChange={e => setStayDays(Number(e.target.value))}
+                      min={1}
+                      max={90}
+                      className="input-field pr-12 font-sans font-bold text-sm text-[#062327] tabular-nums"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#558187]">
+                      Days
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading || !selectedPolicyId}
-                className="btn btn-primary w-full py-2.5 font-semibold"
-              >
-                {loading ? <><Spinner size={14} className="text-black" /> Calculating…</> : <>
-                  <Calculator size={14} /> Calculate Breakdown
-                </>}
-              </button>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={loading || !selectedPolicyId}
+                  className="btn-pill-lime w-full py-3.5 px-6 font-bold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+                >
+                  {loading ? (
+                    <>
+                      <Spinner size={15} className="text-[#062327]" />
+                      <span>Calculating Bill Breakdown…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Calculator size={16} />
+                      <span>Calculate Bill Breakdown</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
           </div>
 
-          {/* History */}
+          {/* Previous Estimates List */}
           {history.length > 0 && (
-            <div className="surface p-4">
-              <p className="label-xs mb-3">Previous Estimates</p>
-              <div className="space-y-1 max-h-44 overflow-y-auto scroll-area">
-                {history.map(est => (
-                  <button
-                    key={est._id}
-                    onClick={() => setEstimate(est)}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all ${
-                      estimate?._id === est._id
-                        ? 'bg-white/[0.07] text-zinc-200'
-                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <span className="truncate mr-2">{est.treatment_name}</span>
-                    <span className="font-mono text-zinc-400 flex-shrink-0">
-                      {fmt(est.out_of_pocket_amount)} OOP
-                    </span>
-                  </button>
-                ))}
+            <div className="bg-white border border-[#062327]/10 rounded-3xl p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-1.5">
+                  <History size={14} className="text-[#558187]" />
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187]">
+                    Recent Simulations
+                  </p>
+                </div>
+                <span className="text-[10px] text-[#558187] font-semibold">
+                  {history.length} saved
+                </span>
+              </div>
+
+              <div className="space-y-1.5 max-h-56 overflow-y-auto scroll-area pr-0.5">
+                {history.map(est => {
+                  const isCurrent = estimate?._id === est._id;
+                  return (
+                    <button
+                      key={est._id}
+                      onClick={() => setEstimate(est)}
+                      className={`w-full text-left px-3.5 py-3 rounded-2xl text-xs flex items-center justify-between transition-all cursor-pointer ${
+                        isCurrent
+                          ? 'bg-[#d2f57b]/25 border-2 border-[#062327] text-[#062327] font-bold shadow-xs'
+                          : 'text-[#558187] hover:text-[#062327] hover:bg-[#f5f8f8] border border-transparent'
+                      }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <span className="block truncate font-semibold text-[#062327]">
+                          {est.treatment_name}
+                        </span>
+                        <span className="block text-[10px] text-[#558187] capitalize mt-0.5 font-medium">
+                          {est.hospital_tier?.replace('_', ' ')} · {est.stay_days || 4}d
+                        </span>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="font-sans font-bold text-xs text-[#062327] tabular-nums block">
+                          {fmt(est.out_of_pocket_amount)}
+                        </span>
+                        <span className="text-[10px] text-rose-600 font-semibold block uppercase">
+                          OOP Share
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
-        {/* ─── Results ─────────────────────────────────── */}
-        <div className="lg:col-span-3 space-y-4">
+        {/* ─── Right Column: Audit Results & Breakdown (8 cols) ─ */}
+        <div className="lg:col-span-8 space-y-6">
           {estimate ? (
             <>
-              {/* Summary metrics */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="surface p-4">
-                  <p className="label-xs mb-2">Total Bill</p>
-                  <p className="text-xl font-semibold text-zinc-100 tracking-tight">{fmt(estimate.estimated_total_cost)}</p>
-                  <p className="text-xs text-zinc-500 mt-1 capitalize">{estimate.hospital_tier?.replace('_', ' ')}</p>
+              {/* ── Card 1: Cohesive Executive Summary Panel ── */}
+              <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#062327]/08 gap-2">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block">
+                      Audited Estimate For
+                    </span>
+                    <h2 className="font-headline text-lg sm:text-xl font-bold text-[#062327]">
+                      {estimate.treatment_name}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#f5f8f8] text-[#2d6a71] border border-[#062327]/10 capitalize">
+                      {estimate.hospital_tier?.replace('_', ' ')}
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#f5f8f8] text-[#2d6a71] border border-[#062327]/10">
+                      {estimate.stay_days || 4} Days Stay
+                    </span>
+                  </div>
                 </div>
-                <div className="surface p-4 border-brand-500/20">
-                  <p className="label-xs mb-2 text-brand-500">Insurer Pays</p>
-                  <p className="text-xl font-semibold text-brand-500 tracking-tight">{fmt(estimate.covered_amount)}</p>
-                  <p className="text-xs text-brand-500/60 mt-1">{pct(estimate.covered_amount, estimate.estimated_total_cost)} covered</p>
+
+                {/* 3 Metric Summary Cards in clean harmonious grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Total Bill */}
+                  <div className="bg-[#f8fbfb] border border-[#062327]/08 p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1.5">
+                        Total Hospital Bill
+                      </p>
+                      <p className="font-sans text-2xl sm:text-3xl font-extrabold text-[#062327] tabular-nums tracking-tight">
+                        {fmt(estimate.estimated_total_cost)}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-[#558187] mt-3 font-medium flex items-center gap-1">
+                      <span>Gross hospital charges</span>
+                    </p>
+                  </div>
+
+                  {/* Insurer Pays */}
+                  <div className="bg-emerald-50/70 border border-emerald-200 p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                          Insurer Pays
+                        </p>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                          {pct(estimate.covered_amount, estimate.estimated_total_cost)}
+                        </span>
+                      </div>
+                      <p className="font-sans text-2xl sm:text-3xl font-extrabold text-emerald-900 tabular-nums tracking-tight">
+                        {fmt(estimate.covered_amount)}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-emerald-700 mt-3 font-semibold flex items-center gap-1">
+                      <CheckCircle2 size={13} className="text-emerald-700" />
+                      <span>Net admissible claim</span>
+                    </p>
+                  </div>
+
+                  {/* Patient Out-of-Pocket */}
+                  <div className="bg-rose-50/80 border border-rose-200 p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-rose-700">
+                          Your Out-of-Pocket
+                        </p>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
+                          {pct(estimate.out_of_pocket_amount, estimate.estimated_total_cost)}
+                        </span>
+                      </div>
+                      <p className="font-sans text-2xl sm:text-3xl font-extrabold text-rose-700 tabular-nums tracking-tight">
+                        {fmt(estimate.out_of_pocket_amount)}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-rose-600 mt-3 font-semibold flex items-center gap-1">
+                      <AlertTriangle size={13} className="text-rose-600" />
+                      <span>Direct self contribution</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="surface p-4 border-red-500/20">
-                  <p className="label-xs mb-2 text-red-400">Your Share</p>
-                  <p className="text-xl font-semibold text-red-400 tracking-tight">{fmt(estimate.out_of_pocket_amount)}</p>
-                  <p className="text-xs text-red-400/60 mt-1">Out-of-pocket</p>
+
+                {/* Visual Bill Coverage Proportion Bar */}
+                <div className="bg-[#f8fbfb] p-4 rounded-2xl border border-[#062327]/08 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-[#062327] flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" />
+                      Insurer Covered: <strong className="font-bold">{pct(estimate.covered_amount, estimate.estimated_total_cost)}</strong>
+                    </span>
+                    <span className="font-semibold text-rose-700 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                      Patient Out-of-Pocket: <strong className="font-bold">{pct(estimate.out_of_pocket_amount, estimate.estimated_total_cost)}</strong>
+                    </span>
+                  </div>
+
+                  {/* Dual-color bar */}
+                  <div className="w-full h-3 rounded-full bg-zinc-200 overflow-hidden flex shadow-inner">
+                    <div
+                      style={{ width: `${coveredPctNum}%` }}
+                      className="bg-emerald-600 transition-all duration-500 rounded-l-full"
+                      title={`Insurer Coverage: ${coveredPctNum}%`}
+                    />
+                    <div
+                      style={{ width: `${outOfPocketPctNum}%` }}
+                      className="bg-rose-500 transition-all duration-500 rounded-r-full"
+                      title={`Out-of-Pocket: ${outOfPocketPctNum}%`}
+                    />
+                  </div>
                 </div>
               </div>
 
-
-              {/* Detailed breakdown */}
-              <div className="surface p-5">
-                <p className="text-sm font-medium text-zinc-300 mb-2">Detailed Audit</p>
+              {/* ── Card 2: Detailed Audit & Deductions Breakdown ── */}
+              <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
                 <div>
-                  <BreakdownRow label="Base Hospital & Surgical Charges" value={fmt(breakdown.base_hospital_charges)} />
-                  {breakdown.room_rent_copay_penalty > 0 && (
-                    <BreakdownRow
-                      label="Room Rent Proportionate Deduction"
-                      note={`Policy cap: ₹${breakdown.room_rent_cap_per_day?.toLocaleString('en-IN')}/day`}
-                      value={fmt(breakdown.room_rent_copay_penalty)}
-                      deduction
-                    />
-                  )}
-                  {breakdown.copay_percentage > 0 && (
-                    <BreakdownRow
-                      label={`Co-Payment (${breakdown.copay_percentage}%)`}
-                      value={fmt(breakdown.copay_amount)}
-                      deduction
-                    />
-                  )}
-                  <BreakdownRow
-                    label="Excluded Items (IRDAI non-payables)"
-                    value={fmt(breakdown.excluded_items_cost)}
-                    deduction
+                  <h3 className="font-headline text-base sm:text-lg font-bold text-[#062327]">
+                    Detailed Audit & Deductions Breakdown
+                  </h3>
+                  <p className="text-xs text-[#558187] mt-0.5">
+                    Itemized transparent audit showing applicable penalties, IRDAI excluded non-payables, and patient co-shares.
+                  </p>
+                </div>
+
+                <div className="divide-y divide-[#062327]/[0.06]">
+                  {/* Gross Charges */}
+                  <AuditRow
+                    label="Base Hospital & Surgical Charges"
+                    value={fmt(breakdown.base_hospital_charges)}
+                    type="normal"
                   />
-                  <div className="border-t border-white/[0.08] pt-3">
-                    <BreakdownRow
-                      label="Net Admissible Claim"
-                      value={fmt(breakdown.final_payable_by_insurer)}
-                      accent="green"
+
+                  {/* Room Rent Proportionate Penalty */}
+                  {breakdown.room_rent_copay_penalty > 0 ? (
+                    <AuditRow
+                      label="Room Rent Proportionate Deduction"
+                      note={`Your ₹${roomRentPerDay.toLocaleString('en-IN')}/day room exceeded your policy sub-limit of ₹${breakdown.room_rent_cap_per_day?.toLocaleString('en-IN')}/day. A proportionate deduction was applied across associated doctor and surgical charges.`}
+                      value={fmt(breakdown.room_rent_copay_penalty)}
+                      type="deduction"
+                      isDeduction
+                    />
+                  ) : (
+                    <div className="py-3 flex items-center justify-between text-xs text-[#558187]">
+                      <span className="flex items-center gap-1.5 text-[#2d6a71]">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
+                        Room Rent Sub-Limit: Within ₹{breakdown.room_rent_cap_per_day?.toLocaleString('en-IN') || '10,000'}/day limit (No Penalty)
+                      </span>
+                      <span className="font-sans font-semibold text-[#558187]">₹0</span>
+                    </div>
+                  )}
+
+                  {/* Co-Payment */}
+                  {breakdown.copay_percentage > 0 && (
+                    <AuditRow
+                      label={`Mandatory Co-Payment (${breakdown.copay_percentage}%)`}
+                      note={`Tier-based or age-based co-pay requirement clause.`}
+                      value={fmt(breakdown.copay_amount)}
+                      type="deduction"
+                      isDeduction
+                    />
+                  )}
+
+                  {/* Excluded Items */}
+                  <AuditRow
+                    label="Excluded Items & Consumables (IRDAI Non-Payables)"
+                    note="Standard exclusions: PPE kits, hygiene supplies, administrative registration, and non-medical consumables."
+                    value={fmt(breakdown.excluded_items_cost)}
+                    type="deduction"
+                    isDeduction
+                  />
+
+                  {/* Total Out-of-pocket */}
+                  <div className="pt-2">
+                    <AuditRow
+                      label="Total Out-of-Pocket Expense Paid by You"
+                      value={fmt(estimate.out_of_pocket_amount)}
+                      type="normal"
+                    />
+                  </div>
+
+                  {/* Net Admissible Claim */}
+                  <div className="pt-2">
+                    <AuditRow
+                      label="Net Admissible Claim Settled by Insurer"
+                      value={fmt(breakdown.final_payable_by_insurer || estimate.covered_amount)}
+                      type="total"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* What-If simulator */}
-              <div className="surface">
-                <button
-                  onClick={() => setShowWhatIf(v => !v)}
-                  className="w-full px-5 py-4 flex items-center justify-between text-sm font-medium text-zinc-300 hover:bg-white/[0.02] transition-colors rounded-2xl"
-                >
-                  <div className="flex items-center gap-2">
-                    <RefreshCw size={14} className="text-brand-500" />
-                    What-If Simulator
+              {/* ── Card 3: What-If Scenario Simulator ──────── */}
+              <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-headline text-base sm:text-lg font-bold text-[#062327]">
+                      What-If Scenario Optimizer
+                    </h3>
+                    <p className="text-xs text-[#558187] mt-0.5">
+                      Simulate alternative decisions to slash your out-of-pocket expenses before scheduling hospitalization.
+                    </p>
                   </div>
-                  {showWhatIf ? <ChevronUp size={15} className="text-zinc-500" /> : <ChevronDown size={15} className="text-zinc-500" />}
-                </button>
+                  <button
+                    onClick={() => setShowWhatIf(v => !v)}
+                    className="p-1.5 rounded-xl hover:bg-[#f5f8f8] text-[#558187] hover:text-[#062327] transition-colors cursor-pointer"
+                  >
+                    {showWhatIf ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </button>
+                </div>
 
                 {showWhatIf && (
-                  <div className="px-5 pb-5 border-t border-white/[0.06] pt-4 space-y-4">
-                    <p className="text-xs text-zinc-500">
-                      Simulate alternative scenarios to see how decisions affect your out-of-pocket cost.
-                    </p>
+                  <div className="space-y-4 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                      <div className="sm:col-span-5">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-1.5">
+                          Variable To Change
+                        </label>
+                        <Select
+                          value={whatIfVar}
+                          onChange={(v) => {
+                            setWhatIfVar(v);
+                            setWhatIfVal(WHATIF_VALUES[v][0].value);
+                          }}
+                          options={WHATIF_VARS}
+                        />
+                      </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Select
-                        value={whatIfVar}
-                        onChange={(v) => {
-                          setWhatIfVar(v);
-                          setWhatIfVal(WHATIF_VALUES[v][0].value);
-                        }}
-                        options={WHATIF_VARS}
-                        className="flex-1"
-                      />
-                      <Select
-                        value={whatIfVal}
-                        onChange={setWhatIfVal}
-                        options={WHATIF_VALUES[whatIfVar] || []}
-                        className="flex-1"
-                      />
-                      <button
-                        onClick={handleWhatIf}
-                        disabled={whatIfLoading}
-                        className="btn btn-primary gap-2 whitespace-nowrap"
-                      >
-                        {whatIfLoading ? <Spinner size={13} className="text-black" /> : <ArrowRight size={13} />}
-                        {whatIfLoading ? 'Simulating…' : 'Simulate'}
-                      </button>
+                      <div className="sm:col-span-4">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-1.5">
+                          Alternative Option
+                        </label>
+                        <Select
+                          value={whatIfVal}
+                          onChange={setWhatIfVal}
+                          options={WHATIF_VALUES[whatIfVar] || []}
+                        />
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <button
+                          onClick={handleWhatIf}
+                          disabled={whatIfLoading}
+                          className="btn-pill-lime w-full py-3 px-4 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+                        >
+                          {whatIfLoading ? (
+                            <Spinner size={14} className="text-[#062327]" />
+                          ) : (
+                            <ArrowRight size={14} className="stroke-[2.5]" />
+                          )}
+                          <span>{whatIfLoading ? 'Simulating…' : 'Simulate'}</span>
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Variants */}
+                    {/* Calculated Scenarios */}
                     {variants.length > 0 && (
-                      <div className="space-y-2 mt-2">
-                        <p className="label-xs">Scenario Results</p>
-                        {variants.map(v => (
-                          <div
-                            key={v.variant_id}
-                            className="surface-inset rounded-xl p-3.5 flex items-center justify-between gap-4"
-                          >
-                            <div>
-                              <p className="text-xs font-medium text-zinc-300 capitalize">
-                                {v.changed_variable?.replace(/_/g, ' ')}
-                                <span className="text-brand-500 ml-1">→ {v.new_value}</span>
-                              </p>
-                              <p className="text-2xs text-zinc-500 mt-0.5">
-                                Total: {fmt(v.recalculated_total_cost)} · Insurer: {fmt(v.recalculated_covered_amount)}
-                              </p>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <p className="text-2xs text-zinc-500 uppercase">New OOP</p>
-                              <p className="text-sm font-semibold text-brand-500">{fmt(v.recalculated_out_of_pocket)}</p>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="space-y-3 mt-4 pt-4 border-t border-[#062327]/08">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187]">
+                          Calculated Alternative Scenarios
+                        </p>
+                        <div className="grid grid-cols-1 gap-3">
+                          {variants.map(v => {
+                            const diff = (estimate?.out_of_pocket_amount || 0) - (v.recalculated_out_of_pocket || 0);
+                            const isCheaper = diff > 0;
+                            return (
+                              <div
+                                key={v.variant_id}
+                                className="bg-[#f8fbfb] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#062327]/08 hover:border-[#062327]/20 transition-all"
+                              >
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-[#062327] capitalize">
+                                      {v.changed_variable?.replace(/_/g, ' ')}
+                                    </span>
+                                    <span className="text-[#0b3d45] font-bold text-xs">
+                                      → {v.new_value?.replace(/_/g, ' ')}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-[#558187]">
+                                    Total: {fmt(v.recalculated_total_cost)} · Covered: {fmt(v.recalculated_covered_amount)}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center sm:flex-col sm:items-end justify-between gap-1 flex-shrink-0">
+                                  {isCheaper && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                                      <TrendingDown size={12} />
+                                      Saves {fmt(diff)}!
+                                    </span>
+                                  )}
+                                  <div className="text-right">
+                                    <span className="text-[10px] text-[#558187] uppercase font-bold block">
+                                      New Out-of-Pocket
+                                    </span>
+                                    <span className="font-sans text-base sm:text-lg font-bold text-[#062327] tabular-nums">
+                                      {fmt(v.recalculated_out_of_pocket)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -392,12 +699,17 @@ export default function CostEstimatorView({ policies }) {
               </div>
             </>
           ) : (
-            <div className="surface h-80 flex items-center justify-center">
-              <EmptyState
-                icon={Calculator}
-                title="No estimate yet"
-                description="Select a policy and treatment, then click Calculate to see the detailed cost breakdown."
-              />
+            /* Empty State */
+            <div className="bg-white border border-[#062327]/10 rounded-3xl h-96 flex flex-col items-center justify-center p-8 text-center shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-[#f5f8f8] border border-[#062327]/10 flex items-center justify-center text-[#062327] mb-4">
+                <Calculator size={24} className="stroke-[2.2]" />
+              </div>
+              <h3 className="font-headline text-lg font-bold text-[#062327] mb-1.5">
+                Ready to Audit Your Medical Bill
+              </h3>
+              <p className="text-xs sm:text-sm text-[#558187] max-w-md leading-relaxed mb-5">
+                Select your policy and treatment procedure, specify the room rent per day, and click <strong>Calculate Bill Breakdown</strong> to uncover hidden deductions.
+              </p>
             </div>
           )}
         </div>
