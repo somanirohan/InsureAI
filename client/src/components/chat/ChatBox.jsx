@@ -495,6 +495,115 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
   );
 }
 
+// ─── Lightweight Markdown Message Renderer ────────────────────────────────
+function renderFormattedText(text) {
+  if (!text) return null;
+
+  // Split lines to properly format paragraphs, numbered lists, bullet lists
+  const lines = text.split('\n');
+  const elements = [];
+  let currentList = null;
+
+  const renderInlineFormatted = (str) => {
+    // Matches **bold**, `code`, and [Page X] or [Page X, Y]
+    const parts = str.split(/(\*\*[^*]+\*\*|`[^`]+`|\[Page\s+[^\]]+\])/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong key={idx} className="font-bold text-[#062327]">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+        return (
+          <code key={idx} className="bg-[#062327]/08 px-1.5 py-0.5 rounded text-xs font-mono text-[#062327]">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      if (/^\[Page\s+[^\]]+\]$/.test(part)) {
+        return (
+          <span key={idx} className="inline-block bg-[#062327]/08 text-[#2d6a71] text-xs font-semibold px-1.5 py-0.2 rounded-md mx-0.5 border border-[#062327]/10">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  const flushList = () => {
+    if (currentList) {
+      if (currentList.type === 'ol') {
+        elements.push(
+          <ol key={`list-${elements.length}`} className="my-2 space-y-1.5 pl-5 list-decimal text-sm">
+            {currentList.items.map((it, i) => (
+              <li key={i} className="leading-relaxed">
+                {renderInlineFormatted(it)}
+              </li>
+            ))}
+          </ol>
+        );
+      } else {
+        elements.push(
+          <ul key={`list-${elements.length}`} className="my-2 space-y-1.5 pl-5 list-disc text-sm">
+            {currentList.items.map((it, i) => (
+              <li key={i} className="leading-relaxed">
+                {renderInlineFormatted(it)}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      currentList = null;
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      flushList();
+      continue;
+    }
+
+    // Numbered list: e.g. "1. **Hospitalization:** ..." or "1. Text"
+    const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (numMatch) {
+      if (!currentList || currentList.type !== 'ol') {
+        flushList();
+        currentList = { type: 'ol', items: [] };
+      }
+      currentList.items.push(numMatch[2]);
+      continue;
+    }
+
+    // Bullet list: e.g. "- Item" or "* Item"
+    const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/);
+    if (bulletMatch) {
+      if (!currentList || currentList.type !== 'ul') {
+        flushList();
+        currentList = { type: 'ul', items: [] };
+      }
+      currentList.items.push(bulletMatch[1]);
+      continue;
+    }
+
+    // Normal paragraph
+    flushList();
+    elements.push(
+      <p key={`p-${elements.length}`} className="mb-2.5 last:mb-0 leading-relaxed">
+        {renderInlineFormatted(rawLine)}
+      </p>
+    );
+  }
+
+  flushList();
+  return <div className="space-y-1">{elements}</div>;
+}
+
 // ─── Message bubble ────────────────────────────────────────────────────────
 function MessageBubble({ msg, plainLanguageMode }) {
   const isUser = msg.role === 'user';
@@ -555,10 +664,10 @@ function MessageBubble({ msg, plainLanguageMode }) {
           }`}
         >
           {msg.streaming ? (
-            <span>
-              {content}
-              <span className="inline-block w-1.5 h-4 bg-[#062327] ml-1 animate-pulse-dot" />
-            </span>
+            <div>
+              {renderFormattedText(content)}
+              <span className="inline-block w-1.5 h-4 bg-[#062327] ml-1 align-middle animate-pulse-dot" />
+            </div>
           ) : (
             <>
               {msg.checklist && msg.checklist.length > 0 ? (
@@ -573,7 +682,11 @@ function MessageBubble({ msg, plainLanguageMode }) {
                   />
                 </div>
               ) : (
-                <span className="whitespace-pre-line">{content}</span>
+                isUser ? (
+                  <span className="whitespace-pre-line">{content}</span>
+                ) : (
+                  renderFormattedText(content)
+                )
               )}
             </>
           )}
