@@ -6,7 +6,7 @@
 
 // ─── API ───────────────────────────────────────────────────
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || '/api';
+  import.meta.env.B_URL || '/api';
 
 export const WS_CHAT_URL =
   import.meta.env.VITE_WS_URL ||

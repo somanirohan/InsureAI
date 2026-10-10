@@ -51,7 +51,7 @@ npm install
 ### 2. Configure Environment
 Copy `.env.example` to `.env`:
 ```env
-VITE_API_URL=http://localhost:5001/api
+B_URL=http://localhost:5001/api
 VITE_WS_URL=ws://localhost:5001/api/chat/ws
 ```
 
