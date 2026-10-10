@@ -81,7 +81,7 @@ export default function DocumentChecklistSection({
     switch (status) {
       case 'validated':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#dcfce7] text-[#15803d] border border-[#22c55e]/30">
             <CheckCircle2 size={12} />
             Validated
           </span>
@@ -89,14 +89,14 @@ export default function DocumentChecklistSection({
       case 'needs_confirmation':
       case 'flagged':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fef3c7] text-[#b45309] border border-[#f59e0b]/30">
             <AlertTriangle size={12} />
             Needs Confirmation
           </span>
         );
       case 'uploaded':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#dbeafe] text-[#1e40af] border border-[#3b82f6]/30">
             <Clock size={12} />
             Uploaded
           </span>
@@ -104,7 +104,7 @@ export default function DocumentChecklistSection({
       case 'required':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fee2e2] text-[#b91c1c] border border-[#ef4444]/30">
             Required
           </span>
         );
@@ -112,15 +112,15 @@ export default function DocumentChecklistSection({
   };
 
   return (
-    <div className="surface p-6 rounded-2xl border border-white/[0.08] flex flex-col gap-6">
+    <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-6">
       <div>
         <div className="flex items-center gap-2">
-          <FileCheck size={18} className="text-amber-400" />
-          <h3 className="text-sm font-semibold text-zinc-100 tracking-tight">
+          <FileCheck size={18} className="text-[#062327]" />
+          <h3 className="font-headline text-base font-bold text-[#062327] tracking-tight">
             Policy-Cited Claim Readiness Checklist
           </h3>
         </div>
-        <p className="text-xs text-zinc-400 mt-1">
+        <p className="text-xs text-[#558187] mt-1 font-medium">
           Each requirement is extracted from your policy. Upload the cited document for each slot to satisfy claim submission.
         </p>
       </div>
@@ -132,9 +132,9 @@ export default function DocumentChecklistSection({
 
           return (
             <div key={stage} className="flex flex-col gap-3">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-[#558187] flex items-center gap-2">
                 <span>{STAGE_LABELS[stage]}</span>
-                <span className="text-[10px] text-zinc-500 font-normal">({items.length} requirements)</span>
+                <span className="text-[10px] text-[#558187] font-medium">({items.length} requirements)</span>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -146,25 +146,25 @@ export default function DocumentChecklistSection({
                   return (
                     <div
                       key={item.item_id}
-                      className={`p-4 rounded-xl border transition-all ${
+                      className={`p-4 rounded-2xl border transition-all ${
                         item.status === 'validated'
-                          ? 'bg-emerald-500/[0.02] border-emerald-500/20'
+                          ? 'bg-[#f0fdf4]/50 border-[#22c55e]/25'
                           : item.status === 'needs_confirmation' || item.status === 'flagged'
-                          ? 'bg-amber-500/[0.02] border-amber-500/30'
-                          : 'bg-white/[0.02] border-white/[0.06]'
+                          ? 'bg-[#fffbeb] border-[#f59e0b]/30'
+                          : 'bg-[#f5f8f8] border-[#062327]/10'
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-xs font-medium text-zinc-200">
+                            <span className="text-xs font-bold text-[#062327]">
                               {item.label}
                             </span>
                             {item.page_cite && (
                               <CitationBadge citation={`Page ${item.page_cite}`} />
                             )}
                             {item.deadline && (
-                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-zinc-300">
+                              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white border border-[#062327]/15 text-[#062327] shadow-2xs">
                                 ⏱ Deadline: {item.deadline}
                               </span>
                             )}
@@ -175,7 +175,7 @@ export default function DocumentChecklistSection({
                         <div className="flex items-center gap-2.5 flex-shrink-0">
                           {renderStatusBadge(item.status)}
 
-                          <label className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-xl border border-white/[0.1] hover:border-white/[0.2] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-200 flex items-center gap-1.5 transition-all">
+                          <label className="cursor-pointer text-xs font-bold px-3.5 py-1.5 rounded-full border border-[#062327]/15 hover:border-[#062327]/30 bg-white hover:bg-[#f5f8f8] text-[#062327] flex items-center gap-1.5 transition-all shadow-sm">
                             {isUploading ? (
                               <>
                                 <Spinner size="xs" />
@@ -199,10 +199,10 @@ export default function DocumentChecklistSection({
                           {doc && (
                             <button
                               onClick={() => setExpandedDoc(isExpanded ? null : item.item_id)}
-                              className="p-1.5 rounded-lg hover:bg-white/[0.05] text-zinc-400 hover:text-zinc-200 transition-colors"
+                              className="p-1.5 rounded-full hover:bg-black/5 text-[#558187] hover:text-[#062327] transition-colors"
                               title={isExpanded ? 'Collapse extracted data' : 'View extracted data'}
                             >
-                              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                             </button>
                           )}
                         </div>
@@ -210,16 +210,16 @@ export default function DocumentChecklistSection({
 
                       {/* Uploaded document details card */}
                       {doc && (
-                        <div className={`mt-3 pt-3 border-t border-white/[0.05] flex flex-col gap-3 ${!isExpanded ? 'hidden' : ''}`}>
-                          <div className="flex items-center justify-between text-xs text-zinc-400">
+                        <div className={`mt-3 pt-3 border-t border-[#062327]/08 flex flex-col gap-3 ${!isExpanded ? 'hidden' : ''}`}>
+                          <div className="flex items-center justify-between text-xs text-[#558187]">
                             <div className="flex items-center gap-2 truncate">
-                              <FileText size={14} className="text-amber-400 flex-shrink-0" />
-                              <span className="font-mono text-zinc-300 truncate">{doc.filename}</span>
+                              <FileText size={15} className="text-[#062327] flex-shrink-0" />
+                              <span className="font-mono text-[#062327] font-semibold truncate">{doc.filename}</span>
                             </div>
                             {doc.needs_confirmation && (
                               <button
                                 onClick={() => startEditing(doc)}
-                                className="text-[11px] text-amber-400 hover:text-amber-300 underline font-medium"
+                                className="text-[11px] text-[#b45309] hover:text-[#92400e] underline font-bold"
                               >
                                 Edit / Confirm Values
                               </button>
@@ -227,24 +227,24 @@ export default function DocumentChecklistSection({
                           </div>
 
                           {/* Extracted fields list */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white/[0.02] p-3 rounded-lg text-[11px]">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-3 rounded-xl border border-[#062327]/08 text-[11px] shadow-2xs">
                             <div>
-                              <span className="text-zinc-500 block">Patient Name</span>
-                              <span className="text-zinc-200 font-medium">{doc.extracted_fields?.patient_name || '—'}</span>
+                              <span className="text-[#558187] block font-medium">Patient Name</span>
+                              <span className="text-[#062327] font-bold">{doc.extracted_fields?.patient_name || '—'}</span>
                             </div>
                             <div>
-                              <span className="text-zinc-500 block">Dates</span>
-                              <span className="text-zinc-200 font-medium">
+                              <span className="text-[#558187] block font-medium">Dates</span>
+                              <span className="text-[#062327] font-bold">
                                 {doc.extracted_fields?.admission_date || '—'} to {doc.extracted_fields?.discharge_date || '—'}
                               </span>
                             </div>
                             <div>
-                              <span className="text-zinc-500 block">Diagnosis</span>
-                              <span className="text-zinc-200 font-medium truncate block">{doc.extracted_fields?.diagnosis || '—'}</span>
+                              <span className="text-[#558187] block font-medium">Diagnosis</span>
+                              <span className="text-[#062327] font-bold truncate block">{doc.extracted_fields?.diagnosis || '—'}</span>
                             </div>
                             <div>
-                              <span className="text-zinc-500 block">Billed Total</span>
-                              <span className="text-zinc-200 font-medium">
+                              <span className="text-[#558187] block font-medium">Billed Total</span>
+                              <span className="text-[#062327] font-bold">
                                 {doc.extracted_fields?.total_amount ? `₹${Number(doc.extracted_fields.total_amount).toLocaleString('en-IN')}` : '—'}
                               </span>
                             </div>
@@ -252,12 +252,12 @@ export default function DocumentChecklistSection({
 
                           {/* Validation Issues Alert */}
                           {doc.validation_issues?.length > 0 && (
-                            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex flex-col gap-1 text-xs text-amber-300">
-                              <div className="font-semibold flex items-center gap-1.5">
-                                <AlertTriangle size={13} />
+                            <div className="p-3.5 rounded-xl bg-[#fffbeb] border border-[#f59e0b]/30 flex flex-col gap-1 text-xs text-[#92400e]">
+                              <div className="font-bold flex items-center gap-1.5 text-[#b45309]">
+                                <AlertTriangle size={14} />
                                 <span>Validation Attention Required</span>
                               </div>
-                              <ul className="list-disc list-inside text-[11px] text-amber-300/80 space-y-0.5">
+                              <ul className="list-disc list-inside text-[11px] text-[#92400e]/90 space-y-0.5 font-medium">
                                 {doc.validation_issues.map((iss, i) => (
                                   <li key={i}>{iss}</li>
                                 ))}
@@ -267,48 +267,48 @@ export default function DocumentChecklistSection({
 
                           {/* Confirmation Editor */}
                           {editingDocId === doc.document_id && (
-                            <div className="p-4 rounded-xl bg-black/40 border border-amber-500/30 flex flex-col gap-3">
-                              <div className="text-xs font-semibold text-amber-300">
+                            <div className="p-5 rounded-2xl bg-[#ffffff] border-2 border-[#062327]/20 shadow-md flex flex-col gap-4">
+                              <div className="text-xs font-bold text-[#062327]">
                                 Verify & Confirm Extracted Fields
                               </div>
-                              <p className="text-[11px] text-zinc-400">
+                              <p className="text-[11px] text-[#558187] font-medium">
                                 Correct any OCR recognition errors below. Confirming will mark this document validated.
                               </p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                 <div>
-                                  <label className="text-zinc-400 block mb-1">Patient Name</label>
+                                  <label className="text-[#062327] font-bold block mb-1">Patient Name</label>
                                   <input
                                     type="text"
                                     value={editFields.patient_name}
                                     onChange={e => setEditFields({ ...editFields, patient_name: e.target.value })}
-                                    className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.1] text-zinc-100"
+                                    className="w-full bg-[#f5f8f8] border border-[#062327]/15 rounded-xl px-3 py-2 text-[#062327] font-medium"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-zinc-400 block mb-1">Total Billed Amount (₹)</label>
+                                  <label className="text-[#062327] font-bold block mb-1">Total Billed Amount (₹)</label>
                                   <input
                                     type="number"
                                     value={editFields.total_amount}
                                     onChange={e => setEditFields({ ...editFields, total_amount: e.target.value })}
-                                    className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.1] text-zinc-100"
+                                    className="w-full bg-[#f5f8f8] border border-[#062327]/15 rounded-xl px-3 py-2 text-[#062327] font-medium"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-zinc-400 block mb-1">Admission Date</label>
+                                  <label className="text-[#062327] font-bold block mb-1">Admission Date</label>
                                   <input
                                     type="date"
                                     value={editFields.admission_date}
                                     onChange={e => setEditFields({ ...editFields, admission_date: e.target.value })}
-                                    className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.1] text-zinc-100"
+                                    className="w-full bg-[#f5f8f8] border border-[#062327]/15 rounded-xl px-3 py-2 text-[#062327] font-medium"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-zinc-400 block mb-1">Diagnosis</label>
+                                  <label className="text-[#062327] font-bold block mb-1">Diagnosis</label>
                                   <input
                                     type="text"
                                     value={editFields.diagnosis}
                                     onChange={e => setEditFields({ ...editFields, diagnosis: e.target.value })}
-                                    className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.1] text-zinc-100"
+                                    className="w-full bg-[#f5f8f8] border border-[#062327]/15 rounded-xl px-3 py-2 text-[#062327] font-medium"
                                   />
                                 </div>
                               </div>
@@ -316,7 +316,7 @@ export default function DocumentChecklistSection({
                                 <button
                                   type="button"
                                   onClick={() => setEditingDocId(null)}
-                                  className="text-xs px-3 py-1.5 rounded-lg border border-white/[0.1] text-zinc-400 hover:text-zinc-200"
+                                  className="text-xs px-4 py-2 rounded-full border border-[#062327]/15 text-[#558187] hover:text-[#062327] font-bold cursor-pointer"
                                 >
                                   Cancel
                                 </button>
@@ -324,9 +324,9 @@ export default function DocumentChecklistSection({
                                   type="button"
                                   disabled={confirmingLoading}
                                   onClick={() => handleConfirmSubmit(doc.document_id)}
-                                  className="btn-primary text-xs px-4 py-1.5 rounded-lg flex items-center gap-1.5"
+                                  className="btn-pill-lime text-xs px-5 py-2 font-bold flex items-center gap-1.5 cursor-pointer"
                                 >
-                                  {confirmingLoading ? <Spinner size="xs" /> : <Check size={13} />}
+                                  {confirmingLoading ? <Spinner size="xs" /> : <Check size={14} />}
                                   <span>Confirm & Validate</span>
                                 </button>
                               </div>

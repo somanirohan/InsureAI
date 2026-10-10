@@ -21,8 +21,8 @@ const CHECK_TITLES = {
 export default function EligibilityCard({ eligibilityResult, onReevaluate, loading }) {
   if (!eligibilityResult || !eligibilityResult.checks) {
     return (
-      <div className="surface p-6 rounded-2xl border border-white/[0.08] text-center">
-        <p className="text-xs text-zinc-400">
+      <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm text-center">
+        <p className="text-xs text-[#558187] font-medium">
           Eligibility evaluation has not been run yet. Provide treatment details above to evaluate.
         </p>
       </div>
@@ -35,30 +35,30 @@ export default function EligibilityCard({ eligibilityResult, onReevaluate, loadi
     switch (result) {
       case 'pass':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <CheckCircle2 size={12} />
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-[#dcfce7] text-[#15803d] border border-[#22c55e]/30">
+            <CheckCircle2 size={13} />
             Passed
           </span>
         );
       case 'fail':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-            <XCircle size={12} />
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-[#fee2e2] text-[#b91c1c] border border-[#ef4444]/30">
+            <XCircle size={13} />
             Unmet / Excluded
           </span>
         );
       case 'flag':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <AlertTriangle size={12} />
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-[#fef3c7] text-[#b45309] border border-[#f59e0b]/30">
+            <AlertTriangle size={13} />
             Flagged
           </span>
         );
       case 'unable_to_determine':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
-            <HelpCircle size={12} />
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-[#f5f8f8] text-[#558187] border border-[#062327]/15">
+            <HelpCircle size={13} />
             Needs Confirmation
           </span>
         );
@@ -66,26 +66,26 @@ export default function EligibilityCard({ eligibilityResult, onReevaluate, loadi
   };
 
   return (
-    <div className="surface p-6 rounded-2xl border border-white/[0.08] flex flex-col gap-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
+    <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#062327]/08 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <ShieldCheck size={18} className="text-emerald-400" />
-            <h3 className="text-sm font-semibold text-zinc-100 tracking-tight">
+            <ShieldCheck size={18} className="text-[#062327]" />
+            <h3 className="font-headline text-base font-bold text-[#062327] tracking-tight">
               Deterministic Policy Eligibility Verdicts
             </h3>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            Evaluated directly against policy clauses and regulatory benchmarks. No AI hallucinations.
+          <p className="text-xs text-[#558187] mt-1 font-medium">
+            Evaluated directly against policy clauses and regulatory benchmarks. No AI guesswork.
           </p>
         </div>
         {onReevaluate && (
           <button
             onClick={onReevaluate}
             disabled={loading}
-            className="text-xs text-zinc-400 hover:text-zinc-200 border border-white/[0.08] hover:border-white/[0.15] px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="text-xs text-[#062327] font-bold border border-[#062327]/15 hover:border-[#062327]/30 bg-white hover:bg-[#f5f8f8] px-3.5 py-2 rounded-full flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer shadow-sm"
           >
-            {loading ? <Spinner size="xs" /> : <RefreshCw size={12} />}
+            {loading ? <Spinner size="xs" /> : <RefreshCw size={13} />}
             <span>Re-evaluate</span>
           </button>
         )}
@@ -95,16 +95,16 @@ export default function EligibilityCard({ eligibilityResult, onReevaluate, loadi
         {checks.map((chk, idx) => (
           <div
             key={chk.check || idx}
-            className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] flex flex-col sm:flex-row sm:items-start justify-between gap-3"
+            className="p-4 rounded-2xl bg-[#f5f8f8] border border-[#062327]/08 flex flex-col sm:flex-row sm:items-start justify-between gap-3 hover:border-[#062327]/20 transition-all"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                <span className="text-xs font-semibold text-zinc-200">
+                <span className="text-xs font-bold text-[#062327]">
                   {CHECK_TITLES[chk.check] || chk.check}
                 </span>
                 {chk.source && <CitationBadge citation={chk.source} />}
               </div>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <p className="text-xs text-[#558187] leading-relaxed font-medium">
                 {chk.detail}
               </p>
             </div>
@@ -116,7 +116,7 @@ export default function EligibilityCard({ eligibilityResult, onReevaluate, loadi
       </div>
 
       {evaluated_at && (
-        <div className="text-[11px] text-zinc-500 pt-1 text-right">
+        <div className="text-[11px] text-[#558187] pt-1 text-right font-medium">
           Last evaluated: {new Date(evaluated_at).toLocaleString('en-IN')}
         </div>
       )}

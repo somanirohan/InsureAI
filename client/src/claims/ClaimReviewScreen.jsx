@@ -38,21 +38,21 @@ export default function ClaimReviewScreen({
   return (
     <div className="flex flex-col gap-6">
       {/* Header Banner */}
-      <div className="surface p-6 rounded-2xl border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[11px] uppercase tracking-wider font-semibold text-amber-400">
+          <span className="text-[11px] uppercase tracking-wider font-extrabold text-[#062327] px-2.5 py-0.5 rounded-full bg-[#d2f57b]/30 border border-[#062327]/15 inline-block mb-1">
             Final Submission Review Screen
           </span>
-          <h2 className="text-lg font-bold text-zinc-100 mt-1">
+          <h2 className="font-headline text-xl sm:text-2xl font-bold text-[#062327] mt-1">
             Claim Dossier: {treatment?.name || 'Medical Claim'}
           </h2>
-          <div className="flex items-center gap-3 mt-2 text-xs text-zinc-400 flex-wrap">
+          <div className="flex items-center gap-3 mt-2 text-xs text-[#558187] flex-wrap font-medium">
             <span className="flex items-center gap-1">
-              <Building size={13} className="text-zinc-500" />
+              <Building size={14} className="text-[#062327]" />
               {policy?.insurer_name || 'Insurance Provider'}
             </span>
             <span>·</span>
-            <span className="font-mono text-zinc-300">
+            <span className="font-mono text-[#062327] font-semibold">
               {policy?.policy_number || 'Policy'}
             </span>
             <span>·</span>
@@ -61,19 +61,19 @@ export default function ClaimReviewScreen({
         </div>
 
         <div className="text-right flex-shrink-0">
-          <span className="text-[11px] text-zinc-500 uppercase tracking-wider block">
+          <span className="text-[11px] text-[#558187] uppercase tracking-wider block font-bold">
             Approved Estimate
           </span>
-          <span className="text-xl font-bold font-mono text-emerald-400">
+          <span className="text-2xl font-black font-mono text-[#15803d]">
             ₹{(settlement_estimate?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </span>
         </div>
       </div>
 
-      {/* Notice: In-app review screen only (NO downloadable export) */}
-      <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-xs text-zinc-400">
-        <span>In-App Submission Package Review</span>
-        <span className="text-[11px] text-zinc-500 italic">
+      {/* Notice: In-app review screen only */}
+      <div className="p-4 rounded-2xl bg-[#f5f8f8] border border-[#062327]/10 flex items-center justify-between text-xs text-[#558187] font-medium">
+        <span className="text-[#062327] font-bold">In-App Submission Package Review</span>
+        <span className="text-[11px] italic">
           Verified against policy terms and uploaded documentation.
         </span>
       </div>
@@ -83,28 +83,28 @@ export default function ClaimReviewScreen({
 
       {/* Treatment & Hospitalization Summary */}
       {treatment && (
-        <div className="surface p-5 rounded-2xl border border-white/[0.08] flex flex-col gap-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Treatment Summary
+        <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+          <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-[#062327]">
+            Hospitalization Overview
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-white/[0.02] p-4 rounded-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-[#f5f8f8] p-4 rounded-2xl border border-[#062327]/08">
             <div>
-              <span className="text-zinc-500 block">Procedure</span>
-              <span className="text-zinc-100 font-medium">{treatment.name}</span>
+              <span className="text-[#558187] block font-medium">Procedure</span>
+              <span className="text-[#062327] font-bold">{treatment.name}</span>
             </div>
             <div>
-              <span className="text-zinc-500 block">Hospital</span>
-              <span className="text-zinc-100 font-medium">{treatment.hospital}</span>
+              <span className="text-[#558187] block font-medium">Hospital</span>
+              <span className="text-[#062327] font-bold">{treatment.hospital}</span>
             </div>
             <div>
-              <span className="text-zinc-500 block">Dates</span>
-              <span className="text-zinc-100 font-medium">
+              <span className="text-[#558187] block font-medium">Dates</span>
+              <span className="text-[#062327] font-bold">
                 {treatment.admission_date} {treatment.discharge_date ? `to ${treatment.discharge_date}` : ''}
               </span>
             </div>
             <div>
-              <span className="text-zinc-500 block">Room Type</span>
-              <span className="text-zinc-100 font-medium">{treatment.room_type}</span>
+              <span className="text-[#558187] block font-medium">Room Type</span>
+              <span className="text-[#062327] font-bold">{treatment.room_type}</span>
             </div>
           </div>
         </div>
@@ -116,31 +116,31 @@ export default function ClaimReviewScreen({
       )}
 
       {/* Submission Gate Alert / Submission Action */}
-      <div className="surface p-6 rounded-2xl border border-white/[0.08] flex flex-col gap-4">
+      <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
         {!can_submit ? (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-rose-300 font-semibold text-xs">
-              <AlertOctagon size={16} />
+          <div className="p-5 rounded-2xl bg-[#fef2f2] border border-[#ef4444]/30 flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-[#991b1b] font-bold text-xs sm:text-sm">
+              <AlertOctagon size={18} />
               <span>Claim Submission Is Currently Blocked</span>
             </div>
-            <p className="text-xs text-rose-300/80 leading-relaxed">
+            <p className="text-xs text-[#991b1b]/90 leading-relaxed font-medium">
               To prevent claim rejection by your insurer, all cited requirements and blocking eligibility criteria must be satisfied before submission:
             </p>
-            <ul className="list-disc list-inside text-xs text-rose-300/90 space-y-1 mt-1">
+            <ul className="list-disc list-inside text-xs text-[#991b1b] space-y-1 mt-1 font-semibold">
               {submission_blockers.map((b, i) => (
                 <li key={i}>{b}</li>
               ))}
             </ul>
           </div>
         ) : (
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 size={18} className="text-emerald-400" />
+          <div className="p-5 rounded-2xl bg-[#f0fdf4] border border-[#22c55e]/25 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 size={22} className="text-[#15803d]" />
               <div>
-                <span className="text-xs font-semibold text-emerald-200 block">
+                <span className="text-sm font-bold text-[#15803d] block">
                   All Policy Requirements Satisfied
                 </span>
-                <span className="text-[11px] text-emerald-400/80">
+                <span className="text-xs text-[#166534] font-medium">
                   Zero blocking flags and all required documents are validated.
                 </span>
               </div>
@@ -148,8 +148,8 @@ export default function ClaimReviewScreen({
           </div>
         )}
 
-        <div className="flex justify-between items-center pt-2">
-          <span className="text-xs text-zinc-500">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
+          <span className="text-xs text-[#558187] font-medium">
             {can_submit
               ? 'Ready to proceed to official claim filing'
               : 'Complete remaining items above to enable submission'}
@@ -158,7 +158,7 @@ export default function ClaimReviewScreen({
           <button
             onClick={onSubmitClaim}
             disabled={!can_submit || submittingLoading}
-            className="btn-primary text-xs px-6 py-2.5 rounded-xl flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-pill-lime py-3 px-8 text-sm font-bold shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed self-end sm:self-auto"
           >
             {submittingLoading ? (
               <>
@@ -167,7 +167,7 @@ export default function ClaimReviewScreen({
               </>
             ) : (
               <>
-                <Send size={14} />
+                <Send size={15} />
                 <span>Submit Claim</span>
               </>
             )}

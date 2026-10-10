@@ -270,25 +270,29 @@ export default function ClaimsWorkflowView({ policies = [] }) {
   // ── Render List of Claims ──────────────────────────────────────────────────
   if (!activeClaimId) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="space-y-8">
         {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-              <ShieldAlert className="text-amber-400" size={22} />
-              Claim Processing & Readiness Workflow
-            </h1>
-            <p className="text-xs text-zinc-400 mt-1">
-              Deterministic, policy-cited preparation from First Notice of Loss to settlement tracking.
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
+                Claim Readiness & Settlement
+              </h1>
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/15">
+                Policy Grounded
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium max-w-2xl">
+              Deterministic, policy-cited preparation from First Notice of Loss to settlement tracking without hallucination.
             </p>
           </div>
 
           <button
             onClick={() => setIsCreatingModal(true)}
-            className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 self-start sm:self-auto"
+            className="btn-pill-lime py-3 px-6 text-xs sm:text-sm font-bold shadow-md cursor-pointer flex items-center gap-2 self-start sm:self-auto"
           >
-            <Plus size={15} />
+            <Plus size={16} />
             <span>New Claim</span>
           </button>
         </div>
@@ -300,14 +304,14 @@ export default function ClaimsWorkflowView({ policies = [] }) {
         ) : claims.length === 0 ? (
           <EmptyState
             icon={FileCheck}
-            title="No Claims Created Yet"
+            title="No Claims Initialized Yet"
             description="Create a claim against an uploaded policy to verify eligibility, prepare documents, and estimate settlement."
             action={
               <button
                 onClick={() => setIsCreatingModal(true)}
-                className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center gap-2"
+                className="btn-pill-lime py-3 px-6 text-xs font-bold shadow-md cursor-pointer flex items-center gap-2"
               >
-                <Plus size={14} />
+                <Plus size={15} />
                 <span>Initialize First Claim</span>
               </button>
             }
@@ -322,35 +326,35 @@ export default function ClaimsWorkflowView({ policies = [] }) {
                 <div
                   key={c.claim_id}
                   onClick={() => setActiveClaimId(c.claim_id)}
-                  className="surface p-5 rounded-2xl border border-white/[0.08] hover:border-amber-400/40 cursor-pointer transition-all group flex flex-col justify-between gap-4"
+                  className="bg-white border border-[#062327]/10 rounded-3xl p-6 hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.08)] cursor-pointer transition-all group flex flex-col justify-between gap-5 shadow-sm"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[11px] font-mono text-zinc-500">
+                      <span className="text-[11px] font-mono text-[#558187] font-semibold">
                         ID: {c.claim_id.slice(0, 8)}...
                       </span>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-zinc-300">
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#f5f8f8] border border-[#062327]/15 text-[#062327]">
                         {c.status.replace(/_/g, ' ').toUpperCase()}
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-semibold text-zinc-100 group-hover:text-amber-300 transition-colors">
+                    <h3 className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">
                       {treatment?.name || 'Unspecified Procedure'}
                     </h3>
 
-                    <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
-                      <Building size={13} className="text-zinc-500" />
+                    <div className="flex items-center gap-2 text-xs text-[#558187] mt-1 font-medium">
+                      <Building size={14} className="text-[#062327]" />
                       <span>{treatment?.hospital || matchedPolicy?.insurer_name || 'Policy Claim'}</span>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-white/[0.05] flex items-center justify-between text-xs text-zinc-500">
+                  <div className="pt-3 border-t border-[#062327]/08 flex items-center justify-between text-xs text-[#558187] font-medium">
                     <span>
                       {c.created_at ? new Date(c.created_at).toLocaleDateString('en-IN') : '—'}
                     </span>
-                    <span className="text-amber-400/90 font-medium flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    <span className="text-[#062327] font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                       <span>Open Claim</span>
-                      <ChevronRight size={13} />
+                      <ChevronRight size={14} />
                     </span>
                   </div>
                 </div>
@@ -361,31 +365,31 @@ export default function ClaimsWorkflowView({ policies = [] }) {
 
         {/* Modal: Select Policy to create claim */}
         {isCreatingModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="surface p-6 rounded-2xl border border-white/[0.1] max-w-md w-full flex flex-col gap-5">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <div className="bg-white border border-[#062327]/15 rounded-3xl p-6 max-w-md w-full flex flex-col gap-5 shadow-2xl animate-fade-in">
               <div>
-                <h3 className="text-sm font-bold text-zinc-100">
+                <h3 className="font-headline text-base font-bold text-[#062327]">
                   Select Policy for New Claim
                 </h3>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-[#558187] mt-1 font-medium">
                   Choose the insurance policy against which this claim will be evaluated.
                 </p>
               </div>
 
               {policies.length === 0 ? (
-                <p className="text-xs text-amber-300/80 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <p className="text-xs text-[#92400e] p-4 rounded-2xl bg-[#fffbeb] border border-[#f59e0b]/30 font-medium">
                   No uploaded policies found. Please upload a policy PDF on the Dashboard first.
                 </p>
               ) : (
                 <form onSubmit={handleCreateClaim} className="flex flex-col gap-4">
                   <div>
-                    <label className="text-xs text-zinc-400 block mb-1.5">
+                    <label className="text-xs font-bold text-[#062327] block mb-1.5">
                       Insurance Policy
                     </label>
                     <select
                       value={selectedPolicyId}
                       onChange={e => setSelectedPolicyId(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#0c0c16] border border-white/[0.1] text-xs text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                      className="w-full bg-[#f5f8f8] border border-[#062327]/15 rounded-2xl px-4 py-3 text-sm text-[#062327] font-medium focus:bg-white focus:border-[#062327] focus:outline-none cursor-pointer"
                     >
                       <option value="">Choose a policy...</option>
                       {policies.map(p => (
@@ -400,16 +404,16 @@ export default function ClaimsWorkflowView({ policies = [] }) {
                     <button
                       type="button"
                       onClick={() => setIsCreatingModal(false)}
-                      className="text-xs px-3.5 py-2 rounded-xl border border-white/[0.1] text-zinc-400 hover:text-zinc-200"
+                      className="text-xs px-4 py-2 rounded-full border border-[#062327]/15 text-[#558187] hover:text-[#062327] font-bold cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={!selectedPolicyId || actionLoading}
-                      className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center gap-2 disabled:opacity-50"
+                      className="btn-pill-lime text-xs px-5 py-2 font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                     >
-                      {actionLoading ? <Spinner size="xs" /> : <Plus size={14} />}
+                      {actionLoading ? <Spinner size="xs" /> : <Plus size={15} />}
                       <span>Initialize Claim</span>
                     </button>
                   </div>
@@ -424,11 +428,11 @@ export default function ClaimsWorkflowView({ policies = [] }) {
 
   // ── Render Active Claim Workflow ───────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6">
+    <div className="space-y-6">
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
       {/* Top Bar with Back button & Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+      <div className="bg-white border border-[#062327]/10 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -436,23 +440,23 @@ export default function ClaimsWorkflowView({ policies = [] }) {
               setActiveClaim(null);
               fetchClaims();
             }}
-            className="p-2 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="p-2.5 rounded-full bg-[#f5f8f8] border border-[#062327]/15 hover:border-[#062327]/30 text-[#062327] transition-all cursor-pointer shadow-2xs"
             title="Return to claims list"
           >
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h2 className="text-base font-bold text-zinc-100">
+            <h2 className="font-headline text-lg sm:text-xl font-bold text-[#062327]">
               {activeClaim?.treatment?.name || 'New Claim'}
             </h2>
-            <span className="text-[11px] font-mono text-zinc-500">
+            <span className="text-[11px] font-mono text-[#558187] font-medium">
               Claim ID: {activeClaim?.claim_id}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/20">
+          <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/15">
             {activeClaim?.status?.replace(/_/g, ' ').toUpperCase() || 'DRAFT'}
           </span>
         </div>
@@ -468,13 +472,13 @@ export default function ClaimsWorkflowView({ policies = [] }) {
             <button
               key={st.id}
               onClick={() => setActiveStep(st.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all border ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs ${
                 isActive
-                  ? 'bg-amber-400/10 text-amber-300 border-amber-400/30 shadow-sm'
-                  : 'bg-white/[0.02] text-zinc-400 border-white/[0.06] hover:text-zinc-200 hover:border-white/[0.1]'
+                  ? 'bg-[#062327] text-white border border-[#062327]'
+                  : 'bg-white text-[#558187] border border-[#062327]/10 hover:text-[#062327] hover:border-[#062327]/25'
               }`}
             >
-              <Icon size={14} className={isActive ? 'text-amber-400' : 'text-zinc-500'} />
+              <Icon size={14} className={isActive ? 'text-[#d2f57b]' : 'text-[#558187]'} />
               <span>{st.label}</span>
             </button>
           );
@@ -482,7 +486,7 @@ export default function ClaimsWorkflowView({ policies = [] }) {
       </div>
 
       {/* Main Step Content */}
-      <div className="flex flex-col gap-6">
+      <div className="space-y-6">
         {activeStep === 'treatment' && (
           <TreatmentForm
             initialData={activeClaim?.treatment}

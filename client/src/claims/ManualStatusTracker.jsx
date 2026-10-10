@@ -56,24 +56,24 @@ export default function ManualStatusTracker({ claim, onStatusTransition, loading
   };
 
   return (
-    <div className="surface p-6 rounded-2xl border border-white/[0.08] flex flex-col gap-6">
+    <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-6">
       <div>
         <div className="flex items-center gap-2">
-          <Clock size={18} className="text-amber-400" />
-          <h3 className="text-sm font-semibold text-zinc-100 tracking-tight">
+          <Clock size={18} className="text-[#062327]" />
+          <h3 className="font-headline text-base font-bold text-[#062327] tracking-tight">
             Claim Lifecycle & Settlement Tracking
           </h3>
         </div>
-        <p className="text-xs text-zinc-400 mt-1">
+        <p className="text-xs text-[#558187] mt-1 font-medium">
           Track official updates and record communication milestones with your insurer.
         </p>
       </div>
 
       {/* MANDATORY NOTICE: MANUAL TRACKING (No insurer integration) */}
-      <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-3">
-        <Info size={17} className="text-blue-400 flex-shrink-0 mt-0.5" />
-        <div className="text-xs text-blue-200 leading-relaxed">
-          <strong className="font-semibold text-blue-100 block mb-0.5">
+      <div className="p-5 rounded-2xl bg-[#eff6ff] border border-[#3b82f6]/25 flex items-start gap-3">
+        <Info size={18} className="text-[#1d4ed8] flex-shrink-0 mt-0.5" />
+        <div className="text-xs text-[#1e40af] leading-relaxed">
+          <strong className="font-bold text-[#1e40af] block mb-0.5">
             Manual Tracking Notice
           </strong>
           Status tracking is manual. InsureAI does not integrate directly with your insurer or TPA's backend. Update your claim status as you receive official SMS, email, or portal communications from your insurer.
@@ -81,12 +81,12 @@ export default function ManualStatusTracker({ claim, onStatusTransition, loading
       </div>
 
       {/* Current status display & Transition form */}
-      <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl bg-[#f5f8f8] border border-[#062327]/08 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[11px] text-zinc-500 uppercase tracking-wider block font-medium">
+          <span className="text-[11px] text-[#558187] uppercase tracking-wider block font-bold">
             Current Status
           </span>
-          <span className="text-sm font-semibold text-zinc-100 mt-0.5 block">
+          <span className="text-base font-bold text-[#062327] mt-0.5 block">
             {STATUS_LABELS[currentStatus] || currentStatus}
           </span>
         </div>
@@ -96,7 +96,7 @@ export default function ManualStatusTracker({ claim, onStatusTransition, loading
             <select
               value={selectedNext}
               onChange={e => setSelectedNext(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-[#0c0c16] border border-white/[0.1] text-xs text-zinc-200 focus:outline-none focus:border-amber-400/50"
+              className="px-3.5 py-2.5 rounded-2xl bg-white border border-[#062327]/15 text-xs text-[#062327] font-semibold focus:outline-none focus:border-[#062327] shadow-2xs"
             >
               <option value="">Move to next state...</option>
               {allowedNext.map(st => (
@@ -111,15 +111,15 @@ export default function ManualStatusTracker({ claim, onStatusTransition, loading
               placeholder="Note (e.g. Reference number / email date)"
               value={statusNote}
               onChange={e => setStatusNote(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-400/50"
+              className="px-3.5 py-2.5 rounded-2xl bg-white border border-[#062327]/15 text-xs text-[#062327] placeholder-[#558187]/60 font-medium focus:outline-none focus:border-[#062327] shadow-2xs"
             />
 
             <button
               type="submit"
               disabled={!selectedNext || loading}
-              className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+              className="btn-pill-lime text-xs px-5 py-2.5 font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 whitespace-nowrap shadow-md cursor-pointer"
             >
-              {loading ? <Spinner size="xs" /> : <ArrowRight size={13} />}
+              {loading ? <Spinner size="xs" /> : <ArrowRight size={14} />}
               <span>Update Status</span>
             </button>
           </form>
@@ -127,28 +127,28 @@ export default function ManualStatusTracker({ claim, onStatusTransition, loading
       </div>
 
       {/* Timeline display */}
-      <div className="flex flex-col gap-3">
-        <h4 className="text-xs font-semibold text-zinc-300">
+      <div className="flex flex-col gap-3 pt-1">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-[#558187]">
           Claim History & Audit Trail ({timeline.length} events)
         </h4>
 
-        <div className="relative pl-6 border-l border-white/[0.08] flex flex-col gap-4 ml-2">
+        <div className="relative pl-6 border-l-2 border-[#062327]/15 flex flex-col gap-5 ml-2.5 pt-2">
           {timeline.slice().reverse().map((entry, idx) => (
             <div key={idx} className="relative group">
               {/* Bullet */}
-              <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-zinc-900 border-2 border-amber-400 flex items-center justify-center" />
+              <div className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center shadow-xs" />
 
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-semibold text-zinc-200">
+                  <span className="text-xs font-bold text-[#062327]">
                     {entry.event}
                   </span>
-                  <span className="text-[10px] text-zinc-500 font-mono">
+                  <span className="text-[10px] text-[#558187] font-mono font-medium">
                     {entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-IN') : '—'}
                   </span>
                 </div>
                 {entry.note && (
-                  <p className="text-xs text-zinc-400 leading-relaxed mt-0.5">
+                  <p className="text-xs text-[#558187] leading-relaxed mt-0.5 font-medium">
                     {entry.note}
                   </p>
                 )}
