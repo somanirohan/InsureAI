@@ -56,13 +56,13 @@ function DoodleArrow({ className = '', style = {} }) {
    INLINE AUTH DRAWER (Styled in Chainly Petrol Teal & Lime)
    ───────────────────────────────────────────────────────────── */
 function AuthDrawer({ onClose, defaultTab = 'login' }) {
-  const [isLogin, setIsLogin]   = useState(defaultTab === 'login');
+  const [isLogin, setIsLogin] = useState(defaultTab === 'login');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail]       = useState('alex@insurai.com');
+  const [email, setEmail] = useState('alex@insurai.com');
   const [password, setPassword] = useState('Shield@2024');
-  const [phone, setPhone]       = useState('');
-  const [error, setError]       = useState(null);
-  const [loading, setLoading]   = useState(false);
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   const { login, register, loginWithGoogle } = useAuth();
 
   const switchTab = (toLogin) => {
@@ -133,7 +133,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
             </div>
             <div>
               <p className="font-headline text-xl font-extrabold text-white tracking-tight leading-tight">InsurAI</p>
-              <p className="text-xs text-[#a0c5c9] font-medium">Policy Intelligence</p>
+              <p className="text-sm text-[#a0c5c9] font-medium">Policy Intelligence</p>
             </div>
           </div>
           <button
@@ -150,7 +150,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
             <h2 className="font-headline text-2xl font-bold text-white mb-1.5">
               {isLogin ? 'Welcome back' : 'Create account'}
             </h2>
-            <p className="text-sm text-[#b2d5d9] leading-relaxed">
+            <p className="text-sm sm:text-base text-[#b2d5d9] leading-relaxed">
               {isLogin ? 'Sign in to access your grounded policy intelligence.' : 'Start analyzing your health insurance in minutes.'}
             </p>
           </div>
@@ -165,11 +165,10 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
                   id={`drawer-tab-${i === 0 ? 'login' : 'register'}`}
                   type="button"
                   onClick={() => switchTab(i === 0)}
-                  className={`flex-1 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                    active
-                      ? 'bg-[#d2f57b] text-[#062327] shadow-sm'
-                      : 'text-white/60 hover:text-white'
-                  }`}
+                  className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all cursor-pointer ${active
+                    ? 'bg-[#d2f57b] text-[#062327] shadow-sm'
+                    : 'text-white/60 hover:text-white'
+                    }`}
                 >
                   {label}
                 </button>
@@ -178,8 +177,8 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
           </div>
 
           {error && (
-            <div className="flex items-start gap-2.5 mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs leading-relaxed">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm leading-relaxed">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
@@ -202,9 +201,9 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
           <form id="drawer-auth-form" onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Full Name</label>
+                <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Full Name</label>
                 <div className="relative">
-                  <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                   <input
                     id="drawer-fullname"
                     type="text"
@@ -219,9 +218,9 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
             )}
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Email address</label>
+              <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Email address</label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 <input
                   id="drawer-email"
                   type="email"
@@ -235,9 +234,9 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Password</label>
+              <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Password</label>
               <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 <input
                   id="drawer-password"
                   type="password"
@@ -252,9 +251,9 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
 
             {!isLogin && (
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Phone (optional)</label>
+                <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Phone (optional)</label>
                 <div className="relative">
-                  <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                   <input
                     id="drawer-phone"
                     type="tel"
@@ -272,17 +271,17 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
                 id="drawer-submit"
                 type="submit"
                 disabled={loading}
-                className="w-full btn-pill-lime py-3.5 px-5 flex items-center justify-center gap-2 text-sm font-bold shadow-md cursor-pointer disabled:opacity-50"
+                className="w-full btn-pill-lime py-3.5 px-5 flex items-center justify-center gap-2 text-base font-bold shadow-md cursor-pointer disabled:opacity-50"
               >
-                {loading && <Spinner size={15} />}
+                {loading && <Spinner size={16} />}
                 <span>{loading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Sign In' : 'Create Account')}</span>
-                {!loading && <ArrowRight size={16} />}
+                {!loading && <ArrowRight size={17} />}
               </button>
             </div>
           </form>
 
           {isLogin && (
-            <p className="text-center mt-5 text-[11px] text-[#7da7ac] leading-relaxed">
+            <p className="text-center mt-5 text-sm text-[#7da7ac] leading-relaxed">
               Pre-filled with demo account. Backend runs on port 5001.
             </p>
           )}
@@ -382,8 +381,7 @@ function useInView(options = { threshold: 0.15 }) {
 
 /* ─────────────────────────────────────────────────────────────
    TUBELIGHT FLICKER SIGNATURE WORDMARK (INSURAI)
-   Complete, stretched, deep petrol teal color (#07262b);
-   flickers like an authentic tubelight on scroll and stays on!
+   Reduced to clamp(1.5rem, 3vw, 2.5rem), centered below button.
    ───────────────────────────────────────────────────────────── */
 function TubelightWordmark({ inView = false }) {
   const [hasIgnited, setHasIgnited] = useState(false);
@@ -395,34 +393,20 @@ function TubelightWordmark({ inView = false }) {
   }, [inView, hasIgnited]);
 
   return (
-    <div className="relative select-none pointer-events-none w-full flex justify-center -mb-2 sm:-mb-4 md:-mb-6 pt-4 pb-1">
-      <svg
-        viewBox="0 0 1000 125"
-        className={`w-full h-auto max-h-[130px] sm:max-h-[175px] lg:max-h-[210px] overflow-visible transition-all duration-300 ${
+    <div className="select-none flex justify-center mt-8 sm:mt-10">
+      <span
+        className={`font-headline font-black uppercase text-[#07262b] transition-all duration-300 ${
           hasIgnited ? 'tubelight-flicker-on' : 'tubelight-off'
         }`}
         style={{
-          filter: hasIgnited ? 'drop-shadow(0 4px 22px rgba(7,38,43,0.18))' : 'none',
+          fontSize: 'clamp(1.5rem, 3vw, 2.5rem)',
+          letterSpacing: '0.14em',
+          filter: hasIgnited ? 'drop-shadow(0 2px 10px rgba(7,38,43,0.20))' : 'none',
         }}
         aria-label="INSURAI"
       >
-        <text
-          x="500"
-          y="100"
-          textAnchor="middle"
-          textLength="980"
-          lengthAdjust="spacingAndGlyphs"
-          fill="#07262b"
-          className="font-headline font-black uppercase"
-          style={{
-            fontFamily: "'Syne', 'Plus Jakarta Sans', -apple-system, sans-serif",
-            fontWeight: 800,
-            fontSize: '114px',
-          }}
-        >
-          INSURAI
-        </text>
-      </svg>
+        INSURAI
+      </span>
     </div>
   );
 }
@@ -440,16 +424,16 @@ const CAROUSEL_CARDS = [
     desc: 'Parses 60+ policy pages in seconds. Every clause, exclusion, and waiting period is indexed with mathematical precision.',
     visual: (
       <div className="rounded-2xl overflow-hidden border border-black/[0.08] bg-white p-3.5 shadow-sm">
-        <div className="flex items-center justify-between text-[11px] font-mono text-gray-700 mb-2 font-bold">
+        <div className="flex items-center justify-between text-sm font-mono text-gray-700 mb-2 font-bold">
           <span className="flex items-center gap-1.5 text-[#062327]">
-            <FileText size={13} className="text-[#062327]" /> Star_Health_Optima.pdf
+            <FileText size={15} className="text-[#062327]" /> Star_Health_Optima.pdf
           </span>
-          <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">100% Parsed</span>
+          <span className="text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full font-bold">100% Parsed</span>
         </div>
         <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
           <div className="bg-[#062327] h-full w-full rounded-full" />
         </div>
-        <div className="mt-2.5 flex items-center justify-between text-[10px] text-gray-500 font-mono">
+        <div className="mt-2.5 flex items-center justify-between text-sm text-gray-600 font-mono">
           <span>42 Embeddings Indexed</span>
           <span className="text-emerald-700 font-semibold">0 Hallucinations</span>
         </div>
@@ -469,12 +453,12 @@ const CAROUSEL_CARDS = [
           alt="3D clause audit scanner"
           className="w-full h-full object-cover"
         />
-        <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-white/95 backdrop-blur-md rounded-xl p-2 shadow-md border border-black/10 text-xs">
-          <div className="flex items-center justify-between text-[10px] font-bold text-[#062327]">
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-white/95 backdrop-blur-md rounded-xl p-2.5 shadow-md border border-black/10 text-sm">
+          <div className="flex items-center justify-between text-sm font-bold text-[#062327]">
             <span>Robotic Surgery</span>
             <span className="text-emerald-600 font-bold">100% Covered</span>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-gray-600 mt-1">
+          <div className="flex items-center justify-between text-sm text-gray-700 mt-1 font-medium">
             <span>Room Rent Cap</span>
             <span className="text-amber-600 font-bold">1% Sub-Limit Flagged</span>
           </div>
@@ -489,8 +473,8 @@ const CAROUSEL_CARDS = [
     title: 'Out-of-Pocket Estimator',
     desc: 'Calculate exact hospital bill liabilities in advance with zero surprises on discharge day.',
     visual: (
-      <div className="bg-white rounded-2xl p-3 border border-black/[0.08] shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-bold text-[#062327]">
+      <div className="bg-white rounded-2xl p-3.5 border border-black/[0.08] shadow-sm space-y-2.5">
+        <div className="flex items-center justify-between text-sm font-bold text-[#062327]">
           <span>Cardiac Angioplasty</span>
           <span className="font-mono text-emerald-700 font-bold">₹3,80,000</span>
         </div>
@@ -498,7 +482,7 @@ const CAROUSEL_CARDS = [
           <div className="h-full bg-emerald-500" style={{ width: '85%' }} />
           <div className="h-full bg-amber-500" style={{ width: '15%' }} />
         </div>
-        <div className="flex items-center justify-between text-[10px] font-mono">
+        <div className="flex items-center justify-between text-sm font-mono font-medium">
           <span className="text-emerald-700 font-bold">Insurer: ₹3,24,000 (85%)</span>
           <span className="text-amber-700 font-bold">You: ₹56,000 (15%)</span>
         </div>
@@ -512,15 +496,15 @@ const CAROUSEL_CARDS = [
     title: 'Room Rent Penalty Guard',
     desc: 'Avoid the dreaded proportional deduction clause where taking an expensive room cuts 40% of surgeon fees.',
     visual: (
-      <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200/80 shadow-sm">
-        <div className="flex items-center gap-1.5 text-amber-800 font-bold text-xs mb-1">
-          <AlertTriangle size={13} className="text-amber-600" />
+      <div className="bg-amber-50 rounded-2xl p-3.5 border border-amber-200/80 shadow-sm">
+        <div className="flex items-center gap-1.5 text-amber-800 font-bold text-sm mb-1.5">
+          <AlertTriangle size={15} className="text-amber-600" />
           <span>Clause 4.1.B Flagged</span>
         </div>
-        <p className="text-[11px] text-amber-900 leading-snug">
+        <p className="text-sm text-amber-900 leading-snug">
           Suite rooms trigger a <strong>37.5% proportional penalty</strong> on all doctor consultations.
         </p>
-        <div className="mt-1.5 text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-md inline-block">
+        <div className="mt-2 text-sm text-emerald-800 font-bold bg-emerald-100 px-2.5 py-0.5 rounded-md inline-block">
           Deluxe Room Safe (0% Penalty)
         </div>
       </div>
@@ -533,16 +517,16 @@ const CAROUSEL_CARDS = [
     title: 'Cashless Network Radar',
     desc: 'Instantly verify cashless admission status across Apollo, Max, Fortis, Manipal, and regional hospitals.',
     visual: (
-      <div className="bg-white rounded-2xl p-3 border border-black/[0.08] shadow-sm space-y-1.5">
-        <div className="flex items-center justify-between text-xs font-bold text-[#062327]">
-          <span className="flex items-center gap-1.5"><Heart size={13} className="text-rose-500" /> Max Super Speciality</span>
-          <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded-full">Cashless Active</span>
+      <div className="bg-white rounded-2xl p-3.5 border border-black/[0.08] shadow-sm space-y-2">
+        <div className="flex items-center justify-between text-sm font-bold text-[#062327]">
+          <span className="flex items-center gap-1.5"><Heart size={15} className="text-rose-500" /> Max Super Speciality</span>
+          <span className="text-emerald-600 font-bold text-sm bg-emerald-50 px-2.5 py-0.5 rounded-full">Cashless Active</span>
         </div>
-        <div className="flex items-center justify-between text-[10px] text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-600 font-medium">
           <span>TPA Pre-Auth Average</span>
           <span className="font-bold text-[#062327]">24 Minutes</span>
         </div>
-        <div className="w-full bg-emerald-500/20 h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-emerald-500/20 h-2 rounded-full overflow-hidden">
           <div className="bg-emerald-500 h-full w-[95%] rounded-full" />
         </div>
       </div>
@@ -555,12 +539,12 @@ const CAROUSEL_CARDS = [
     title: 'Direct Contract Citations',
     desc: 'Every answer references the exact page, section, and sub-clause with verbatim excerpt citations.',
     visual: (
-      <div className="bg-teal-50/80 rounded-2xl p-3 border border-teal-200/60 shadow-sm">
-        <div className="flex items-center justify-between text-[11px] font-mono text-[#062327] font-bold mb-1">
+      <div className="bg-teal-50/80 rounded-2xl p-3.5 border border-teal-200/60 shadow-sm">
+        <div className="flex items-center justify-between text-sm font-mono text-[#062327] font-bold mb-1.5">
           <span>Page 38 · Section 3.2</span>
           <span className="text-teal-700 font-bold">Verbatim Match</span>
         </div>
-        <p className="text-[11px] text-teal-900 italic leading-snug">
+        <p className="text-sm text-teal-900 italic leading-snug">
           "Pre-existing hypertension covered after 24 continuous renewal months."
         </p>
       </div>
@@ -573,7 +557,7 @@ const CAROUSEL_CARDS = [
    ───────────────────────────────────────────────────────────── */
 export default function LandingPage({ onOpenSecurityModal }) {
   const [authOpen, setAuthOpen] = useState(false);
-  const [authTab, setAuthTab]   = useState('login');
+  const [authTab, setAuthTab] = useState('login');
 
   // Hero scroll-driven zoom tracking
   const [heroProgress, setHeroProgress] = useState(0);
@@ -674,7 +658,7 @@ export default function LandingPage({ onOpenSecurityModal }) {
                 <p className="font-headline text-xl font-extrabold tracking-tight text-[#062327] truncate leading-tight">
                   InsurAI
                 </p>
-                <p className="text-xs text-[#558187] truncate font-medium">
+                <p className="text-sm text-[#558187] truncate font-medium">
                   Policy Intelligence
                 </p>
               </div>
@@ -682,11 +666,11 @@ export default function LandingPage({ onOpenSecurityModal }) {
 
             {/* Center & Right Navigation Capsule */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <nav className="hidden md:flex items-center gap-1 bg-[#062327] px-4 py-2 rounded-full text-white text-xs font-bold tracking-wider uppercase">
-                <a href="#features" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
+              <nav className="hidden md:flex items-center gap-1 bg-[#062327] px-4 py-2 rounded-full text-white text-sm font-bold tracking-wider uppercase">
+                <a href="#features" className="px-3.5 py-1.5 rounded-full hover:bg-white/15 transition-colors">
                   Product
                 </a>
-                <a href="#features" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
+                <a href="#features" className="px-3.5 py-1.5 rounded-full hover:bg-white/15 transition-colors">
                   Solutions
                 </a>
                 <button
@@ -716,11 +700,11 @@ export default function LandingPage({ onOpenSecurityModal }) {
               <button
                 id="nav-getstarted"
                 onClick={() => openAuth('register')}
-                className="bg-[#062327] text-white hover:bg-[#0e3b43] text-xs sm:text-sm font-bold tracking-tight px-4 sm:px-5 py-2.5 sm:py-3 rounded-full flex items-center gap-2 transition-all shadow-sm group cursor-pointer"
+                className="bg-[#062327] text-white hover:bg-[#0e3b43] text-sm sm:text-base font-bold tracking-tight px-4 sm:px-5 py-2.5 sm:py-3 rounded-full flex items-center gap-2 transition-all shadow-sm group cursor-pointer"
               >
                 <span>Get Started</span>
                 <span className="w-5 h-5 rounded-full bg-[#d2f57b] text-[#062327] flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                  <ArrowRight size={11} className="stroke-[3]" />
+                  <ArrowRight size={12} className="stroke-[3]" />
                 </span>
               </button>
             </div>
@@ -729,12 +713,18 @@ export default function LandingPage({ onOpenSecurityModal }) {
           {/* ── Hero Center Content (Cleanly Centered, Protected From Card Collisions) ── */}
           <div className="relative z-20 my-auto py-6 sm:py-10 flex flex-col items-center text-center max-w-2xl lg:max-w-3xl mx-auto px-4">
             {/* Main Headline */}
-            <h1 className="font-headline text-4xl sm:text-6xl md:text-7xl lg:text-[76px] font-extrabold tracking-tight text-[#062327] leading-[1.02] mb-5">
+            <h1
+              className="font-headline font-extrabold tracking-tight text-[#062327] leading-[1.12] mb-5"
+              style={{ fontSize: 'var(--text-h1)' }}
+            >
               Health Insurance<br className="hidden sm:inline" /> Made Simple
             </h1>
 
             {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl text-[#062327]/70 font-medium max-w-xl mx-auto leading-relaxed mb-7 sm:mb-9">
+            <p
+              className="text-[#062327]/80 font-medium max-w-xl mx-auto mb-7 sm:mb-9"
+              style={{ fontSize: 'var(--text-body)', lineHeight: '1.6' }}
+            >
               Upload your policy PDF, avoid fine-print traps, and receive AI-grounded claim answers instantly in plain English.
             </p>
 
@@ -743,11 +733,11 @@ export default function LandingPage({ onOpenSecurityModal }) {
               <button
                 id="hero-cta-accept"
                 onClick={() => openAuth('register')}
-                className="btn-pill-lime px-8 py-3.5 sm:py-4 text-sm sm:text-base font-bold flex items-center gap-2.5 shadow-[0_6px_0_#062327] cursor-pointer"
+                className="btn-pill-lime px-8 py-3.5 sm:py-4 text-base font-bold flex items-center gap-2.5 cursor-pointer"
               >
                 <span>Analyze Policy</span>
                 <span className="w-5 h-5 rounded-full bg-[#062327] text-[#d2f57b] flex items-center justify-center">
-                  <ArrowRight size={11} className="stroke-[3]" />
+                  <ArrowRight size={12} className="stroke-[3]" />
                 </span>
               </button>
             </div>
@@ -822,20 +812,26 @@ export default function LandingPage({ onOpenSecurityModal }) {
           <CloverBloom color="rgba(195, 235, 120, 0.45)" size={480} className="bottom-0 right-10" />
 
           <div className="max-w-[1340px] mx-auto bg-[#07262b] rounded-[32px] sm:rounded-[44px] lg:rounded-[48px] p-8 sm:p-12 lg:p-16 relative shadow-[0_24px_60px_rgba(6,35,39,0.30)] border border-white/10 overflow-hidden">
-            
+
             {/* Subtle floral watermark inside dark teal card */}
             <CloverBloom color="rgba(255,255,255,0.03)" size={500} className="-bottom-20 -left-20" />
             <CloverBloom color="rgba(255,255,255,0.025)" size={420} className="-top-20 -right-20" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center relative z-10">
-              
+
               {/* Left Content with Typewriter Heading */}
-              <div className="lg:col-span-6 flex flex-col justify-center">
-                <h2 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#d2f57b] tracking-tight leading-[1.08] mb-6 min-h-[72px] sm:min-h-[120px]">
+              <div className="lg:col-span-7 flex flex-col justify-center">
+                <h2
+                  className="font-headline font-extrabold text-[#d2f57b] tracking-tight leading-[1.15] mb-6 min-h-[64px] sm:min-h-[88px]"
+                  style={{ fontSize: 'var(--text-h2)' }}
+                >
                   {section2Heading || (section2InView ? '' : 'Get covered without holding 60 pages of fine print')}
                   {!section2Done && <span className="typewriter-cursor text-[#d2f57b]">|</span>}
                 </h2>
-                <p className="text-base sm:text-lg text-[#b8dfe3] font-normal leading-relaxed mb-8 max-w-lg">
+                <p
+                  className="text-[#b8dfe3] font-normal mb-8 max-w-lg"
+                  style={{ fontSize: 'var(--text-body)', lineHeight: '1.6' }}
+                >
                   Your hospital shouldn’t surprise you with proportional deductions. InsurAI decodes every waiting period, room-rent cap, and medical exclusion into plain English.
                 </p>
 
@@ -843,10 +839,10 @@ export default function LandingPage({ onOpenSecurityModal }) {
                   <button
                     id="section1-accepting-btn"
                     onClick={() => openAuth('register')}
-                    className="btn-pill-lime px-7 py-3.5 text-sm font-bold flex items-center gap-2 cursor-pointer"
+                    className="btn-pill-lime px-7 py-3.5 text-base font-bold flex items-center gap-2 cursor-pointer"
                   >
                     <span>Start Accepting Clarity</span>
-                    <ArrowRight size={15} />
+                    <ArrowRight size={16} />
                   </button>
                 </div>
 
@@ -859,46 +855,20 @@ export default function LandingPage({ onOpenSecurityModal }) {
                 </div>
               </div>
 
-              {/* Right Visual with Overlapping Floating Card */}
-              <div className="lg:col-span-6 relative">
-                {/* Main Photo: Person Working on Laptop */}
-                <div className="rounded-[28px] sm:rounded-[36px] overflow-hidden border-2 border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative">
-                  <img
-                    src="/images/person-laptop.jpg"
-                    alt="Young professional reviewing policy clarity"
-                    className="w-full h-[360px] sm:h-[420px] object-cover"
-                  />
-                </div>
-
-                {/* Overlapping Floating Polaroid Sticker Card */}
-                <div className="absolute -bottom-6 -left-4 sm:-bottom-8 sm:-left-8 select-none z-20">
-                  <div className="bg-white p-2.5 sm:p-3 rounded-2xl sm:rounded-3xl shadow-[0_20px_45px_rgba(0,0,0,0.4)] border border-black/10 -rotate-6 transition-transform hover:rotate-0 duration-300 cursor-pointer">
-                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl sm:rounded-2xl overflow-hidden bg-[#062327]">
-                      <img
-                        src="/images/scanner-3d.jpg"
-                        alt="Instant Clause Detection Scanner"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="mt-2 text-center">
-                      <span className="inline-block px-3 py-1 rounded-full bg-[#062327] text-white text-[11px] font-bold">
-                        Instant Clause Scan
-                      </span>
-                    </div>
+              {/* Right: 99.8% Grounding Badge Vertically Centered */}
+              <div className="lg:col-span-5 flex items-center justify-center lg:justify-end">
+                <div className="bg-[#051c20] border border-[#d2f57b]/30 rounded-3xl p-6 sm:p-8 shadow-2xl text-white max-w-sm w-full">
+                  <div className="flex items-center gap-2.5 text-[#d2f57b] font-bold mb-3">
+                    <Sparkles size={20} className="text-[#d2f57b]" />
+                    <span className="font-headline font-bold text-lg text-white tracking-wide">99.8% Grounding</span>
                   </div>
-                </div>
-
-                {/* Overlapping Floating Grounding Badge */}
-                <div className="absolute top-6 -right-3 sm:-right-6 bg-[#062327]/90 backdrop-blur-md border border-[#d2f57b]/30 rounded-2xl p-3.5 shadow-xl text-xs text-white max-w-[210px]">
-                  <div className="flex items-center gap-1.5 text-[#d2f57b] font-bold mb-1">
-                    <Sparkles size={13} />
-                    <span>99.8% Grounding</span>
-                  </div>
-                  <p className="text-[11px] text-gray-300 leading-snug">
+                  <p
+                    className="text-[#b8dfe3]"
+                    style={{ fontSize: 'var(--text-body)', lineHeight: '1.6' }}
+                  >
                     Section 4.2 cited directly from uploaded PDF.
                   </p>
                 </div>
-
               </div>
 
             </div>
@@ -911,25 +881,31 @@ export default function LandingPage({ onOpenSecurityModal }) {
             Cards in an infinite marquee carousel going from right to left in a loop
             ════════════════════════════════════════════════════ */}
         <section id="features" className="relative px-3 sm:px-6 lg:px-10 py-16 sm:py-24 bg-[#07262b] overflow-hidden">
-          
+
           {/* Subtle background blooms */}
           <CloverBloom color="rgba(255,255,255,0.03)" size={480} className="top-10 left-10" />
           <CloverBloom color="rgba(255,255,255,0.025)" size={420} className="bottom-10 right-10" />
 
           <div className="max-w-[1340px] mx-auto bg-[#ffffff] rounded-[32px] sm:rounded-[44px] lg:rounded-[48px] pt-8 sm:pt-14 pb-10 sm:pb-16 px-4 sm:px-10 lg:px-14 relative shadow-[0_24px_70px_rgba(0,0,0,0.30)] border border-black/10 overflow-hidden">
-            
+
             {/* Section Header */}
             <div className="flex items-center gap-4 mb-4">
-              <span className="text-xs font-mono font-bold tracking-widest text-[#062327]/50 uppercase">01-04</span>
+              <span className="text-sm font-mono font-bold tracking-widest text-[#062327]/60 uppercase">01-04</span>
             </div>
 
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-14">
               <div>
-                <h2 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#062327] tracking-tight">
+                <h2
+                  className="font-headline font-extrabold text-[#062327] tracking-tight leading-[1.15]"
+                  style={{ fontSize: 'var(--text-h2)' }}
+                >
                   Everything in<br className="hidden sm:inline" /> one place
                 </h2>
               </div>
-              <p className="text-base text-[#062327]/70 max-w-md font-medium leading-relaxed">
+              <p
+                className="text-[#062327]/80 max-w-md font-medium"
+                style={{ fontSize: 'var(--text-body)', lineHeight: '1.6' }}
+              >
                 From multi-page policy indexing to hospital room-rent calculators and direct clause chat — all grounded with zero hallucinations.
               </p>
             </div>
@@ -938,7 +914,7 @@ export default function LandingPage({ onOpenSecurityModal }) {
             <div className="relative overflow-hidden w-full py-4 -mx-4 sm:-mx-10 lg:-mx-14 px-4 sm:px-10 lg:px-14">
               {/* Left Edge Fade Mask */}
               <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-r from-white via-white/80 to-transparent z-20" />
-              
+
               {/* Right Edge Fade Mask */}
               <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-l from-white via-white/80 to-transparent z-20" />
 
@@ -952,18 +928,21 @@ export default function LandingPage({ onOpenSecurityModal }) {
                     <div>
                       {/* Top Tag & Badge Pill */}
                       <div className="flex items-center justify-between gap-2 mb-4">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#062327]/70 bg-white px-2.5 py-1 rounded-full border border-black/[0.06]">
+                        <span className="text-sm font-bold uppercase tracking-wider text-[#062327]/80 bg-white px-3 py-1 rounded-full border border-black/[0.06]">
                           {card.tag}
                         </span>
-                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full">
+                        <span className="text-sm font-bold text-emerald-800 bg-emerald-100/90 px-3 py-0.5 rounded-full">
                           {card.badge}
                         </span>
                       </div>
 
-                      <h3 className="font-headline text-xl font-bold text-[#062327] mb-2 group-hover:text-[#0b4047] transition-colors">
+                      <h3
+                        className="font-headline font-bold text-[#062327] mb-2 group-hover:text-[#0b4047] transition-colors"
+                        style={{ fontSize: 'var(--text-h3)' }}
+                      >
                         {card.title}
                       </h3>
-                      <p className="text-xs text-[#062327]/70 leading-relaxed mb-5">
+                      <p className="text-sm sm:text-base text-[#062327]/80 leading-relaxed mb-5">
                         {card.desc}
                       </p>
                     </div>
@@ -981,10 +960,10 @@ export default function LandingPage({ onOpenSecurityModal }) {
             <div className="mt-8 pt-4 border-t border-black/[0.05] flex items-center justify-end">
               <button
                 onClick={() => openAuth('register')}
-                className="text-[#062327] font-bold hover:underline inline-flex items-center gap-1 cursor-pointer text-xs"
+                className="text-[#062327] font-bold hover:underline inline-flex items-center gap-1.5 cursor-pointer text-sm sm:text-base"
               >
                 <span>Explore all features</span>
-                <ArrowRight size={13} />
+                <ArrowRight size={15} />
               </button>
             </div>
 
@@ -995,16 +974,22 @@ export default function LandingPage({ onOpenSecurityModal }) {
             HOW IT WORKS SECTION: 3 CLEAN NUMBERED STEPS
             ════════════════════════════════════════════════════ */}
         <section id="how-it-works" className="relative px-3 sm:px-6 lg:px-10 py-16 sm:py-24 bg-[#07262b] text-white">
-          
+
           <CloverBloom color="rgba(255,255,255,0.03)" size={500} className="top-1/4 -right-16" />
 
           <div className="max-w-[1340px] mx-auto">
             <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-20">
-              <span className="text-xs font-mono font-bold tracking-widest text-[#d2f57b] uppercase">Step-by-step workflow</span>
-              <h2 className="font-headline text-3xl sm:text-5xl font-extrabold text-white tracking-tight mt-2 mb-4">
+              <span className="text-sm font-mono font-bold tracking-widest text-[#d2f57b] uppercase">Step-by-step workflow</span>
+              <h2
+                className="font-headline font-extrabold text-white tracking-tight mt-2 mb-4 leading-[1.15]"
+                style={{ fontSize: 'var(--text-h2)' }}
+              >
                 From PDF upload to verified claim answers
               </h2>
-              <p className="text-sm sm:text-base text-[#b8dfe3]">
+              <p
+                className="text-[#b8dfe3]"
+                style={{ fontSize: 'var(--text-body)', lineHeight: '1.6' }}
+              >
                 Simple, transparent, and completely grounded in your insurance company's official policy wording.
               </p>
             </div>
@@ -1039,14 +1024,17 @@ export default function LandingPage({ onOpenSecurityModal }) {
                       <span className="w-12 h-12 rounded-2xl bg-[#d2f57b] text-[#062327] font-headline font-black text-lg flex items-center justify-center">
                         {step.num}
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-[#d2f57b] font-bold">
+                      <span className="px-3.5 py-1 rounded-full bg-white/10 text-sm text-[#d2f57b] font-bold">
                         {step.badge}
                       </span>
                     </div>
-                    <h3 className="font-headline text-xl font-bold text-white mb-3">
+                    <h3
+                      className="font-headline font-bold text-white mb-3"
+                      style={{ fontSize: 'var(--text-h3)' }}
+                    >
                       {step.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-[#a2cbcf] leading-relaxed">
+                    <p className="text-sm sm:text-base text-[#a2cbcf] leading-relaxed">
                       {step.desc}
                     </p>
                   </div>
@@ -1068,16 +1056,19 @@ export default function LandingPage({ onOpenSecurityModal }) {
           <CloverBloom color="rgba(195, 235, 120, 0.55)" size={460} className="-top-10 left-10" />
           <CloverBloom color="rgba(195, 235, 120, 0.5)" size={480} className="bottom-0 right-10" />
 
-          {/* Master Card with Giant Clipped Footer Typography */}
-          <div className="max-w-[1340px] mx-auto bg-[#ffffff] rounded-[32px] sm:rounded-[44px] lg:rounded-[48px] pt-12 sm:pt-16 lg:pt-20 px-6 sm:px-12 lg:px-16 pb-0 relative shadow-[0_24px_60px_rgba(6,35,39,0.25)] border border-black/10 overflow-hidden flex flex-col justify-between">
-            
+          {/* Master Card with Footer Typography & Wordmark */}
+          <div className="max-w-[1340px] mx-auto bg-[#ffffff] rounded-[32px] sm:rounded-[44px] lg:rounded-[48px] py-12 sm:py-16 lg:py-20 px-6 sm:px-12 lg:px-16 relative shadow-[0_24px_60px_rgba(6,35,39,0.25)] border border-black/10 overflow-hidden flex flex-col items-center justify-center">
+
             {/* Top CTA Module with Typewriter Headline */}
-            <div className="text-center max-w-2xl mx-auto relative z-10 mb-8 sm:mb-12">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#062327]/[0.05] border border-[#062327]/15 text-[11px] font-extrabold tracking-wider uppercase text-[#062327] mb-6">
+            <div className="text-center max-w-2xl mx-auto relative z-10">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#062327]/[0.05] border border-[#062327]/15 text-sm font-extrabold tracking-wider uppercase text-[#062327] mb-6">
                 <span>READY FOR COMPLETE PEACE OF MIND</span>
               </div>
 
-              <h2 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#062327] tracking-tight leading-[1.05] mb-8 min-h-[48px] sm:min-h-[75px]">
+              <h2
+                className="font-headline font-extrabold text-[#062327] tracking-tight leading-[1.12] mb-8 min-h-[48px] sm:min-h-[64px]"
+                style={{ fontSize: 'var(--text-h2)' }}
+              >
                 {section4Heading || (section4InView ? '' : 'Make your insurance work for you')}
                 {!section4Done && <span className="typewriter-cursor text-[#062327]">|</span>}
               </h2>
@@ -1087,7 +1078,7 @@ export default function LandingPage({ onOpenSecurityModal }) {
                 <button
                   id="footer-getstarted-btn"
                   onClick={() => openAuth('register')}
-                  className="btn-pill-lime px-8 py-4 text-sm sm:text-base font-bold flex items-center gap-2 shadow-[0_6px_0_#062327] cursor-pointer"
+                  className="btn-pill-lime px-8 py-4 text-base font-bold flex items-center gap-2 cursor-pointer"
                 >
                   <span>Get Started Free</span>
                   <ArrowRight size={16} />
@@ -1101,11 +1092,10 @@ export default function LandingPage({ onOpenSecurityModal }) {
                   </span>
                 </div>
               </div>
+
+              {/* ── Wordmark: Reduced to clamp(1.5rem, 3vw, 2.5rem), centered below button ── */}
+              <TubelightWordmark inView={section4InView} />
             </div>
-
-            {/* ── Giant Signature Wordmark: Complete, Stretched & Tubelight Flicker ── */}
-            <TubelightWordmark inView={section4InView} />
-
 
           </div>
         </section>

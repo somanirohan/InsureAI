@@ -29,6 +29,13 @@
   --radius-md:  14px;
   --radius-lg:  20px;
   --radius-xl:  28px;
+
+  /* Typography scale tokens */
+  --text-body: 1.125rem;
+  --text-h1: clamp(2rem, 4vw, 3rem);
+  --text-h2: clamp(1.5rem, 3vw, 2.25rem);
+  --text-h3: 1.25rem;
+
   color-scheme: light;
 }
 
@@ -99,16 +106,16 @@ body {
 
   /* ── Typography helpers ──────────────────────────────── */
   .label-xs {
-    font-size: 11px;
+    font-size: 14px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-weight: 700;
     color: var(--text-tertiary);
   }
 
-  .label-sm  { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-  .body-sm   { font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
-  .body-base { font-size: 15px; line-height: 1.6; color: var(--text-primary); }
+  .label-sm  { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+  .body-sm   { font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+  .body-base { font-size: 16px; line-height: 1.6; color: var(--text-primary); }
 
   /* ── Status pills ───────────────────────────────────── */
   .status-ready   { background: rgba(52,199,89,0.12);  color: #15803d; border: 1px solid rgba(52,199,89,0.30); }
@@ -122,7 +129,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 7px;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     border-radius: 9999px;
     transition: all 0.18s ease;
@@ -130,7 +137,7 @@ body {
     white-space: nowrap;
     border: none;
     outline: none;
-    padding: 9px 20px;
+    padding: 10px 22px;
     letter-spacing: -0.01em;
     font-family: inherit;
   }
@@ -406,26 +413,26 @@ code, .font-mono {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 22px;
+  padding: 11px 24px;
   background: #d2f57b;
   color: #062327;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 15px;
   border-radius: 9999px;
-  border: 1.5px solid #062327;
-  box-shadow: 0 4px 0 #062327;
+  border: 1.5px solid rgba(6,35,39,0.18);
+  box-shadow: 0 2px 8px rgba(210,245,123,0.35);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   white-space: nowrap;
 }
 .btn-pill-lime:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 #062327;
   background: #dbfa86;
+  box-shadow: 0 4px 16px rgba(210,245,123,0.50);
+  transform: translateY(-1px);
 }
 .btn-pill-lime:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #062327;
+  transform: translateY(0px);
+  box-shadow: 0 1px 4px rgba(210,245,123,0.20);
 }
 .btn-pill-lime:disabled {
   opacity: 0.45;
@@ -439,11 +446,11 @@ code, .font-mono {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 22px;
+  padding: 11px 24px;
   background: #062327;
   color: #ffffff;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 15px;
   border-radius: 9999px;
   border: 1.5px solid #062327;
   transition: all 0.2s ease;
@@ -484,17 +491,10 @@ code, .font-mono {
   100% { transform: translateY(10px) translateX(9px) rotate(-14deg); }
 }
 
-@keyframes float-drift-5 {
-  0% { transform: translateY(0px) translateX(0px) rotate(9deg); }
-  50% { transform: translateY(-16px) translateX(10px) rotate(12deg); }
-  100% { transform: translateY(9px) translateX(-8px) rotate(6deg); }
-}
-
 .float-anim-1 { animation: float-drift-1 5.5s ease-in-out infinite alternate; will-change: transform; }
 .float-anim-2 { animation: float-drift-2 6.8s ease-in-out infinite alternate; will-change: transform; }
 .float-anim-3 { animation: float-drift-3 5.2s ease-in-out infinite alternate; will-change: transform; }
 .float-anim-4 { animation: float-drift-4 7.5s ease-in-out infinite alternate; will-change: transform; }
-.float-anim-5 { animation: float-drift-5 6.1s ease-in-out infinite alternate; will-change: transform; }
 
 /* ─── Infinite Carousel Marquee ─────────────────────────── */
 @keyframes marquee-scroll {

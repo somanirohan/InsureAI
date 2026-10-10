@@ -5,10 +5,21 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('insurai_user') || localStorage.getItem('medshield_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('insurai_user') || localStorage.getItem('medshield_user');
+      return (saved && saved !== 'undefined' && saved !== 'null') ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
-  const [token, setToken] = useState(() => localStorage.getItem('insurai_token') || localStorage.getItem('medshield_token'));
+  const [token, setToken] = useState(() => {
+    try {
+      const saved = localStorage.getItem('insurai_token') || localStorage.getItem('medshield_token');
+      return (saved && saved !== 'undefined' && saved !== 'null') ? saved : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [securityStatus, setSecurityStatus] = useState(null);
 
@@ -70,9 +81,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('medshield_token', newToken);
       setToken(newToken);
     }
-    localStorage.setItem('insurai_user', JSON.stringify(newUser));
-    localStorage.setItem('medshield_user', JSON.stringify(newUser));
-    setUser(newUser);
+    if (newUser) {
+      localStorage.setItem('insurai_user', JSON.stringify(newUser));
+      localStorage.setItem('medshield_user', JSON.stringify(newUser));
+      setUser(newUser);
+    }
     fetchSecurityStatus();
     return res.data;
   };
@@ -83,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       full_name: fullName,
       email,
       password,
-      phone,
+      phone: phone || null,
     });
     const { token: newToken, user: newUser } = res.data;
     if (newToken) {
@@ -91,9 +104,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('medshield_token', newToken);
       setToken(newToken);
     }
-    localStorage.setItem('insurai_user', JSON.stringify(newUser));
-    localStorage.setItem('medshield_user', JSON.stringify(newUser));
-    setUser(newUser);
+    if (newUser) {
+      localStorage.setItem('insurai_user', JSON.stringify(newUser));
+      localStorage.setItem('medshield_user', JSON.stringify(newUser));
+      setUser(newUser);
+    }
     fetchSecurityStatus();
     return res.data;
   };
@@ -107,9 +122,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('medshield_token', newToken);
       setToken(newToken);
     }
-    localStorage.setItem('insurai_user', JSON.stringify(newUser));
-    localStorage.setItem('medshield_user', JSON.stringify(newUser));
-    setUser(newUser);
+    if (newUser) {
+      localStorage.setItem('insurai_user', JSON.stringify(newUser));
+      localStorage.setItem('medshield_user', JSON.stringify(newUser));
+      setUser(newUser);
+    }
     fetchSecurityStatus();
     return res.data;
   };

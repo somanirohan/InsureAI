@@ -97,7 +97,7 @@ export default function GoogleLoginButton({
     if (disabled || loading) return;
 
     if (!clientId) {
-      onError?.('Google OAuth is not configured. Missing Google Client ID.');
+      onError?.('Google Sign-In is not configured yet. Please sign in with Email & Password below, or add GOOGLE_CLIENT_ID to your .env file.');
       return;
     }
 
@@ -166,6 +166,7 @@ export default function GoogleLoginButton({
           type="button"
           onClick={handleCustomClick}
           disabled={disabled || loading}
+          title={!clientId ? 'Google Sign-In requires GOOGLE_CLIENT_ID in .env' : 'Sign in with Google'}
           className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md active:scale-[0.99] disabled:opacity-50"
           style={{
             background: '#ffffff',

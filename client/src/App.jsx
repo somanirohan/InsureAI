@@ -124,7 +124,7 @@ export default function App() {
   // ── Auth loading ───────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f4f7f7' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f6faeb' }}>
         <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="relative w-20 h-20">
             <div className="animate-blob-float w-20 h-20" style={{
@@ -211,16 +211,16 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen relative text-[#062327]" style={{ background: '#f4f7f7' }}>
-      {/* Subtle ambient background — light watermark clover shapes */}
+    <div className="flex min-h-screen relative text-[#062327]" style={{ background: '#f6faeb' }}>
+      {/* Subtle ambient background — light lime gradients */}
       <div
         aria-hidden
         className="fixed inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse at 5% 0%, rgba(210,245,123,0.18) 0%, transparent 45%),
-            radial-gradient(ellipse at 95% 5%, rgba(210,245,123,0.12) 0%, transparent 40%),
-            radial-gradient(ellipse at 50% 100%, rgba(6,35,39,0.04) 0%, transparent 60%)
+            radial-gradient(ellipse at 5% 0%, rgba(210,245,123,0.28) 0%, transparent 45%),
+            radial-gradient(ellipse at 95% 5%, rgba(210,245,123,0.20) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 100%, rgba(210,245,123,0.12) 0%, transparent 60%)
           `,
         }}
       />
@@ -236,23 +236,21 @@ export default function App() {
         </svg>
       </div>
 
-      {/* Liquid blob accent (dashboard only) */}
-      {activeTab === 'dashboard' && (
-        <div
-          aria-hidden
-          className="fixed pointer-events-none"
-          style={{
-            right: '-6%',
-            bottom: '-12%',
-            width: 'clamp(380px, 50vw, 720px)',
-            height: 'clamp(380px, 50vw, 720px)',
-            zIndex: 0,
-            opacity: 0.22,
-          }}
-        >
-          <LiquidBlob className="w-full h-full" />
-        </div>
-      )}
+      {/* Liquid blob accent (present across all tabs) */}
+      <div
+        aria-hidden
+        className="fixed pointer-events-none"
+        style={{
+          right: '-6%',
+          bottom: '-12%',
+          width: 'clamp(380px, 50vw, 720px)',
+          height: 'clamp(380px, 50vw, 720px)',
+          zIndex: 0,
+          opacity: 0.22,
+        }}
+      >
+        <LiquidBlob className="w-full h-full" />
+      </div>
 
       <Sidebar
         activeTab={activeTab}
