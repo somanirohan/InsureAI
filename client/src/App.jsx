@@ -9,11 +9,12 @@ import ComparisonView from './components/comparison/ComparisonView';
 import RecommendationView from './components/recommendations/RecommendationView';
 import ClaimsWorkflowView from './claims/ClaimsWorkflowView';
 import { LiquidBlob } from './components/common/LiquidBlob';
+import HealthPage from './components/common/HealthPage';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
 export default function App() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, loginWithGoogle } = useAuth();
   const [activeTab, setActiveTab]           = useState('dashboard');
   const [policies, setPolicies]             = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
@@ -29,6 +30,18 @@ export default function App() {
       return null;
     }
   });
+
+  // Handle Google OAuth redirect code if redirected back from Google
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      loginWithGoogle({ code, redirect_uri: window.location.origin }).catch(err => {
+        console.error('Google OAuth callback error:', err);
+      });
+    }
+  }, [loginWithGoogle]);
 
   const handleNavigateToCompare = (data) => {
     if (data && data.length > 0) {
@@ -74,6 +87,11 @@ export default function App() {
     setChatTargetPolicy(policy);
     setActiveTab('chat');
   };
+
+  // ── Health Check Route ───────────────────────────────────
+  if (typeof window !== 'undefined' && (window.location.pathname === '/health' || window.location.pathname === '/api/health')) {
+    return <HealthPage />;
+  }
 
   // ── Auth loading ───────────────────────────────────────
   if (authLoading) {

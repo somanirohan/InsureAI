@@ -17,6 +17,8 @@ class UserResponse(BaseModel):
     full_name: str
     email: str
     phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+    auth_provider: Optional[str] = "local"
     is_active: bool = True
     created_at: Optional[datetime] = None
 
@@ -29,3 +31,8 @@ class UserResponse(BaseModel):
 class AuthTokenResponse(BaseModel):
     token: str
     user: UserResponse
+
+class GoogleAuthRequest(BaseModel):
+    credential: Optional[str] = None
+    code: Optional[str] = None
+    redirect_uri: Optional[str] = None

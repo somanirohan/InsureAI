@@ -28,11 +28,9 @@ import api from '../../services/api';
 import { Toggle, Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 import { useWebRTCVoice } from '../../hooks/useWebRTCVoice';
 import { VoiceInputButton, VoiceInputBanner } from './VoiceInput';
+import { WS_CHAT_URL } from '../../constants';
 
-
-
-
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5001/api/chat/ws';
+const WS_URL = WS_CHAT_URL;
 
 const SAMPLE_QUESTIONS = [
   "What's my room-rent limit per day?",

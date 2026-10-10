@@ -3,6 +3,7 @@ import { Shield, Mail, Lock, User, Phone, KeyRound, ArrowRight } from 'lucide-re
 import { useAuth } from '../../context/AuthContext';
 import { Spinner } from '../common/ui';
 import { LiquidBlob, Starfield } from '../common/LiquidBlob';
+import GoogleLoginButton from './GoogleLoginButton';
 
 export default function AuthModal() {
   const [isLogin, setIsLogin]   = useState(true);
@@ -13,7 +14,7 @@ export default function AuthModal() {
   const [error, setError]       = useState(null);
   const [loading, setLoading]   = useState(false);
 
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +34,8 @@ export default function AuthModal() {
       if (isNetworkError) {
         setError('Cannot reach the backend server. Make sure it is running on port 5001.');
       } else {
-        setError(err.response?.data?.error || 'Authentication failed. Please check your credentials.');
+        const serverMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message;
+        setError(serverMsg || (isLogin ? 'Authentication failed. Please check your credentials.' : 'Registration failed. Please try again.'));
       }
     } finally {
       setLoading(false);
@@ -215,6 +217,21 @@ export default function AuthModal() {
               <span>{error}</span>
             </div>
           )}
+
+          {/* Google Sign-in */}
+          <div className="mb-5">
+            <GoogleLoginButton
+              label={isLogin ? 'Sign in with Google' : 'Sign up with Google'}
+              onGoogleSuccess={loginWithGoogle}
+              onError={err => setError(err)}
+            />
+          </div>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-white/40">or with email</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
 
           {/* Form */}
           <form id="auth-form" onSubmit={handleSubmit} className="space-y-4">
