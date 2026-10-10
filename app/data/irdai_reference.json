@@ -1,0 +1,26 @@
+{
+  "ped_waiting_period_max_months": {
+    "value": 36,
+    "source": "IRDAI (Health Insurance) Regulations, 2016 and master circulars on standardization",
+    "clause": "UNVERIFIED - fill after checking original circular",
+    "effective_date": "2024-04-01",
+    "verified_on": "UNVERIFIED - fill after checking original circular",
+    "verified_by": "UNVERIFIED - fill after checking original circular"
+  },
+  "moratorium_period_months": {
+    "value": 60,
+    "source": "IRDAI Master Circular on Health Insurance Business - Moratorium Period Provisions",
+    "clause": "UNVERIFIED - fill after checking original circular",
+    "effective_date": "2024-04-01",
+    "verified_on": "UNVERIFIED - fill after checking original circular",
+    "verified_by": "UNVERIFIED - fill after checking original circular"
+  },
+  "free_look_period_min_days": {
+    "value": 30,
+    "source": "IRDAI Master Circular on Protection of Policyholders' Interests",
+    "clause": "UNVERIFIED - fill after checking original circular",
+    "effective_date": "2024-04-01",
+    "verified_on": "UNVERIFIED - fill after checking original circular",
+    "verified_by": "UNVERIFIED - fill after checking original circular"
+  }
+}

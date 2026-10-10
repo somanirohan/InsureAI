@@ -193,7 +193,7 @@ class RagService:
             clean_text = answer_result.answer.replace("**", "").replace("__", "").strip()
             plain_lang = f"In simple terms: {clean_text}"
 
-        # 10. Preserve API response format
+        # 10. Preserve API response format with Claim Readiness Checklist support
         return {
             "query_type": query_type,
             "answer": answer_result.answer,
@@ -202,6 +202,9 @@ class RagService:
             "verification_passed": verification_passed,
             "verification_notes": verification_notes,
             "citations": citations,
+            "checklist": getattr(answer_result, "checklist", None),
+            "general_advice": getattr(answer_result, "general_advice", None),
+            "heads_up": getattr(answer_result, "heads_up", None),
         }
 
 

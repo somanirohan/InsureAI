@@ -97,7 +97,106 @@ STRUCTURED_FIELD_REFERENCES: dict[str, list[str]] = {
         "claim intimation timeline and settlement days",
         "how to file a claim and required documents",
     ],
+    "claim_checklist": [
+        "what is the claim checklist and procedure",
+        "how do I file a claim and what documents are required",
+        "steps to file a cashless or reimbursement claim",
+        "what are the requirements before admission and after discharge",
+        "claim process timeline and required documents",
+        "what do I need before admission for hospitalisation",
+    ],
 }
+
+
+# ── Conservative Claim Checklist Keyword Intent Matcher ───────────────────────
+#
+# Specific keywords designed to identify questions inquiring about the claim filing
+# lifecycle, required paperwork, or pre-admission / discharge protocols, while strictly
+# avoiding false positives on general coverage queries.
+#
+# Keyword Justifications:
+# - "claim checklist": Explicit request for the process checklist.
+# - "claim process", "claims process", "claim procedure", "claims procedure": Procedural workflow inquiries.
+# - "how to claim", "how do i claim", "how to file a claim", "how do i file a claim", "steps to claim", "steps to file a claim": Action-oriented claim initiation questions.
+# - "documents required for claim", "documents needed for claim", "claim documents", "documents required for reimbursement", "required claim documents": Inquiries about paperwork and proof of loss.
+# - "cashless process", "cashless procedure", "cashless claim procedure", "pre-authorisation procedure", "pre-auth process": Cashless pre-admission requirements.
+# - "reimbursement process", "reimbursement procedure", "reimbursement claim steps": Post-discharge reimbursement filing steps.
+# - "what to do before admission", "what do i need before admission": Pre-hospitalisation preparation queries.
+# - "what to do after discharge", "steps after discharge": Post-hospitalisation paperwork queries.
+
+CLAIM_CHECKLIST_KEYWORDS: list[str] = [
+    "claim checklist",
+    "claim process",
+    "claims process",
+    "claim procedure",
+    "claims procedure",
+    "how to claim",
+    "how do i claim",
+    "how to file a claim",
+    "how do i file a claim",
+    "filing a claim",
+    "steps to claim",
+    "steps to file a claim",
+    "required documents for claim",
+    "documents required for claim",
+    "documents needed for claim",
+    "required claim documents",
+    "claim documents",
+    "documents for reimbursement",
+    "documents for cashless",
+    "cashless process",
+    "cashless procedure",
+    "cashless claim procedure",
+    "reimbursement process",
+    "reimbursement procedure",
+    "reimbursement claim procedure",
+    "pre-authorisation procedure",
+    "pre-auth procedure",
+    "what to do before admission",
+    "what do i need before admission",
+    "what to do after discharge",
+    "steps after discharge",
+]
+
+
+def is_claim_checklist_intent(question: str) -> bool:
+    """
+    Check if an incoming query represents a claim process / checklist intent.
+    Uses conservative keyword matching and structured phrase combinations.
+    """
+    if not question:
+        return False
+
+    q = question.lower().strip()
+
+    # 1. Direct keyword match
+    for kw in CLAIM_CHECKLIST_KEYWORDS:
+        if kw in q:
+            return True
+
+    # 2. Scenario-aware combo: admission mention + preparation inquiry
+    #    e.g. "I'm being admitted for knee surgery next week, what do I need?"
+    has_admission = any(adm in q for adm in ("admitted", "admission", "hospitalisation", "hospitalization"))
+    has_prep_intent = any(prep in q for prep in (
+        "what do i need",
+        "what should i do",
+        "what is needed",
+        "what are the steps",
+        "how do i prepare",
+        "what documents",
+        "checklist",
+        "procedure",
+    ))
+    if has_admission and has_prep_intent:
+        return True
+
+    # 3. Cashless / Reimbursement combo with procedural terms
+    has_flow = any(f in q for f in ("cashless", "reimbursement"))
+    has_action = any(a in q for a in ("how to", "process", "procedure", "steps", "documents", "intimation", "guidelines"))
+    if has_flow and has_action:
+        return True
+
+    return False
 
 
 # ── Embedding vector math helpers ─────────────────────────────────────────────
@@ -200,6 +299,11 @@ def route_question_with_score(
     """
     if not question or not question.strip():
         return None, 0.0, {}
+
+    # Check explicit claim checklist intent
+    if is_claim_checklist_intent(question):
+        logger.info("Question '%s' matched claim_checklist intent via keyword rules.", question)
+        return "claim_checklist", 1.0, {"claim_checklist": 1.0}
 
     effective_threshold = (
         threshold

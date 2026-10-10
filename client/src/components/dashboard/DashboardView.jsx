@@ -13,6 +13,7 @@ export default function DashboardView({
   onStartChat,
   onNavigateToCost,
   onNavigateToCompare,
+  onNavigateToClaims,
 }) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedPolicyForFacts, setSelectedPolicyForFacts] = useState(null);
@@ -43,7 +44,19 @@ export default function DashboardView({
 
       {/* ─── Quick actions (only shown when policies exist) ─ */}
       {policies.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button
+            onClick={onNavigateToClaims}
+            className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Claims Workflow</p>
+                <p className="text-xs text-[#558187] mt-1">Policy-cited readiness checklist & settlement tracking</p>
+              </div>
+              <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+            </div>
+          </button>
           <button
             onClick={onNavigateToCost}
             className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"

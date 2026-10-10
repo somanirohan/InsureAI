@@ -17,6 +17,12 @@ import {
   X,
   History,
   Sparkles,
+  ChevronUp,
+  Clock,
+  AlertTriangle,
+  Info,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import api from '../../services/api';
 import { Toggle, Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
@@ -336,6 +342,158 @@ function ChatSidebarContent({
   );
 }
 
+// ─── Claim Readiness Checklist Component ──────────────────────────────────
+function ChecklistCard({ checklist, generalAdvice, headsUp }) {
+  const [checkedItems, setCheckedItems] = useState({});
+  const [collapsedStages, setCollapsedStages] = useState({});
+
+  const toggleCheck = (id) => {
+    setCheckedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleStage = (stageKey) => {
+    setCollapsedStages(prev => ({ ...prev, [stageKey]: !prev[stageKey] }));
+  };
+
+  if (!checklist || checklist.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="w-full flex flex-col gap-2.5 my-2 text-xs">
+      {/* Heads-up coverage alert (scenario-aware) */}
+      {headsUp && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200">
+          <div className="flex items-center gap-1.5 font-semibold text-amber-400 mb-1">
+            <AlertTriangle size={13} />
+            <span>Coverage Check Notice</span>
+          </div>
+          <div className="whitespace-pre-line text-xs opacity-90">{headsUp}</div>
+        </div>
+      )}
+
+      {/* Stage groups */}
+      <div className="flex flex-col gap-2">
+        {checklist.map((group) => {
+          if (!group.items || group.items.length === 0) return null;
+          const isCollapsed = !!collapsedStages[group.stage];
+
+          return (
+            <div
+              key={group.stage}
+              className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden transition-all"
+            >
+              {/* Header */}
+              <button
+                type="button"
+                onClick={() => toggleStage(group.stage)}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-white/[0.04] transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-zinc-100 text-xs tracking-tight">
+                    {group.label}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.06] text-zinc-400 font-mono">
+                    {group.items.length}
+                  </span>
+                </div>
+                {isCollapsed ? (
+                  <ChevronDown size={14} className="text-zinc-500" />
+                ) : (
+                  <ChevronUp size={14} className="text-zinc-500" />
+                )}
+              </button>
+
+              {/* Items */}
+              {!isCollapsed && (
+                <div className="px-3.5 pb-3 pt-1 flex flex-col gap-2 border-t border-white/[0.04]">
+                  {group.items.map((item, idx) => {
+                    const itemId = `${group.stage}-${idx}`;
+                    const isChecked = !!checkedItems[itemId];
+
+                    return (
+                      <div
+                        key={itemId}
+                        className="flex items-start gap-2.5 py-1 px-1 rounded-lg hover:bg-white/[0.02] transition-colors"
+                      >
+                        {/* Interactive demo checkbox */}
+                        <button
+                          type="button"
+                          onClick={() => toggleCheck(itemId)}
+                          className="mt-0.5 text-zinc-400 hover:text-brand-400 transition-colors flex-shrink-0"
+                          title="Mark requirement complete (session demo)"
+                        >
+                          {isChecked ? (
+                            <CheckSquare size={14} className="text-brand-400" />
+                          ) : (
+                            <Square size={14} className="text-zinc-500" />
+                          )}
+                        </button>
+
+                        <div className="flex-1 flex flex-col gap-1 min-w-0">
+                          {/* Condition text */}
+                          <span
+                            className={`leading-relaxed text-xs transition-opacity ${
+                              isChecked ? 'line-through opacity-50 text-zinc-400' : 'text-zinc-200'
+                            }`}
+                          >
+                            {item.condition}
+                          </span>
+
+                          {/* Badges row: deadline badge, citation chip, verify status */}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            {/* Deadline badge inline */}
+                            {item.deadline && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                                <Clock size={9} />
+                                {item.deadline}
+                              </span>
+                            )}
+
+                            {/* Citation chip (same component styling as chat) */}
+                            <span className="inline-flex items-center text-[10px] text-zinc-400 bg-white/[0.04] border border-white/[0.08] px-2 py-0.5 rounded-full">
+                              <BookOpen size={9} className="inline mr-1 text-zinc-500" />
+                              p.{item.page_number || item.page || '?'}
+                            </span>
+
+                            {/* Insurer confirmation badge if not verified */}
+                            {!item.verified && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">
+                                Confirm with insurer
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Visually distinct General advice block (not from policy) */}
+      {generalAdvice && generalAdvice.length > 0 && (
+        <div className="p-3.5 rounded-xl bg-blue-950/20 border border-blue-500/20 text-blue-200/90 mt-1">
+          <div className="flex items-center gap-1.5 text-blue-400 font-medium text-xs mb-1.5">
+            <Info size={13} />
+            <span>General advice — not from your policy</span>
+          </div>
+          <ul className="space-y-1 pl-4 list-disc text-[11px] text-zinc-300">
+            {generalAdvice.map((tip, idx) => (
+              <li key={idx} className="leading-relaxed">
+                {tip}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Message bubble ────────────────────────────────────────────────────────
 function MessageBubble({ msg, plainLanguageMode }) {
   const isUser = msg.role === 'user';
@@ -401,7 +559,22 @@ function MessageBubble({ msg, plainLanguageMode }) {
               <span className="inline-block w-1.5 h-4 bg-[#062327] ml-1 animate-pulse-dot" />
             </span>
           ) : (
-            <span className="whitespace-pre-line">{content}</span>
+            <>
+              {msg.checklist && msg.checklist.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <span className="font-medium text-zinc-100 text-sm">
+                    {msg.answer?.split('\n\n')[0] || "Here are the steps your policy requires to file a claim successfully:"}
+                  </span>
+                  <ChecklistCard
+                    checklist={msg.checklist}
+                    generalAdvice={msg.general_advice}
+                    headsUp={msg.heads_up}
+                  />
+                </div>
+              ) : (
+                <span className="whitespace-pre-line">{content}</span>
+              )}
+            </>
           )}
         </div>
 

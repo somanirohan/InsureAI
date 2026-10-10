@@ -6,6 +6,7 @@ import DashboardView from './components/dashboard/DashboardView';
 import ChatBox from './components/chat/ChatBox';
 import CostEstimatorView from './components/cost/CostEstimatorView';
 import ComparisonView from './components/comparison/ComparisonView';
+import ClaimsWorkflowView from './claims/ClaimsWorkflowView';
 import { LiquidBlob } from './components/common/LiquidBlob';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
@@ -89,10 +90,13 @@ export default function App() {
             onStartChat={handleStartChatWithPolicy}
             onNavigateToCost={() => setActiveTab('cost')}
             onNavigateToCompare={() => setActiveTab('compare')}
+            onNavigateToClaims={() => setActiveTab('claims')}
           />
         );
       case 'chat':
         return <ChatBox initialPolicy={chatTargetPolicy} policies={policies} />;
+      case 'claims':
+        return <ClaimsWorkflowView policies={policies} />;
       case 'cost':
         return <CostEstimatorView policies={policies} />;
       case 'compare':

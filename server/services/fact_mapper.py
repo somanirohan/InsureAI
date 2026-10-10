@@ -199,13 +199,16 @@ def rag_facts_to_mongo_facts(rag_facts: Optional[dict[str, Any]]) -> list[dict[s
                     },
                 })
 
-    # 4. Claim conditions (list of dicts with condition, page)
+    # 4. Claim conditions (list of dicts with condition, stage, deadline, page, verified)
     claim_conditions = rag_facts.get("claim_conditions")
     if isinstance(claim_conditions, list):
         for idx, cc in enumerate(claim_conditions):
             if isinstance(cc, dict) and cc.get("condition"):
                 cond_text = str(cc.get("condition")).strip()
                 page = cc.get("page")
+                stage = cc.get("stage", "unspecified")
+                deadline = cc.get("deadline")
+                verified = bool(cc.get("verified", False))
                 mongo_facts.append({
                     "fact_id": str(uuid.uuid4()),
                     "category": "claim_condition",
@@ -215,9 +218,12 @@ def rag_facts_to_mongo_facts(rag_facts: Optional[dict[str, Any]]) -> list[dict[s
                     "unit": None,
                     "source_page": int(page) if page is not None else None,
                     "source_section": None,
-                    "extraction_confidence": "high",
+                    "extraction_confidence": "high" if verified else "medium",
                     "metadata": {
                         "condition": cond_text,
+                        "stage": stage,
+                        "deadline": deadline,
+                        "verified": verified,
                     },
                 })
 
@@ -321,7 +327,10 @@ def mongo_facts_to_rag_facts(mongo_facts: Optional[list[dict[str, Any]]]) -> dic
             if cond_text:
                 rag_facts["claim_conditions"].append({
                     "condition": str(cond_text),
+                    "stage": meta.get("stage", "unspecified"),
+                    "deadline": meta.get("deadline"),
                     "page": int(page) if page is not None else 1,
+                    "verified": bool(meta.get("verified", False)),
                 })
 
     return rag_facts
