@@ -506,7 +506,7 @@ function renderFormattedText(text) {
 
   const renderInlineFormatted = (str) => {
     // Matches **bold**, `code`, and [Page X] or [Page X, Y]
-    const parts = str.split(/(\*\*[^*]+\*\*|`[^`]+`|\[Page\s+[^\]]+\])/g);
+    const parts = str.split(/(\*\*[\s\S]*?\*\*|`[^`]+?`|\[Page\s+[^\]]+?\])/g);
     return parts.map((part, idx) => {
       if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
         return (
