@@ -167,6 +167,7 @@ export default function DashboardView({
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onUploadSuccess={onPolicyUploadSuccess}
+        existingPolicies={policies}
       />
       <PolicyFactsModal
         policy={selectedPolicyForFacts}

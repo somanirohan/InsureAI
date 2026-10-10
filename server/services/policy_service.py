@@ -20,9 +20,11 @@ from bson import ObjectId
 try:
     from db import get_async_db, to_object_id
     from services.fact_mapper import rag_facts_to_mongo_facts
+    from services.policy_validator import validate_policy_text
 except ImportError:
     from server.db import get_async_db, to_object_id
     from server.services.fact_mapper import rag_facts_to_mongo_facts
+    from server.services.policy_validator import validate_policy_text
 
 from app.ingestion.pdf_extract import extract_pages, PageText
 from app.ingestion.chunking import chunk_pages, Chunk
@@ -50,6 +52,11 @@ def _blocking_extraction_pipeline(file_path: str) -> tuple[list[PageText], list[
     pages = extract_pages(file_path)
     if not pages:
         raise ValueError("Failed to extract any text or pages from the uploaded PDF.")
+
+    full_text = " ".join(p.text for p in pages)
+    validation = validate_policy_text(full_text)
+    if not validation["is_valid"]:
+        raise ValueError(f"Invalid policy: {validation['reason']}")
 
     # 2. Page-bound hierarchical chunking
     chunks = chunk_pages(pages)

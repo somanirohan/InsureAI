@@ -19,11 +19,16 @@ try:
     from db import get_async_db, serialize_doc, to_object_id
     from services.auth_service import get_current_user
     from services.policy_service import policy_service
+    from services.policy_validator import check_duplicate_policy, validate_policy_text
 except ImportError:
     from server.config import settings
     from server.db import get_async_db, serialize_doc, to_object_id
     from server.services.auth_service import get_current_user
     from server.services.policy_service import policy_service
+    from server.services.policy_validator import check_duplicate_policy, validate_policy_text
+
+import hashlib
+from app.ingestion.pdf_extract import extract_pages
 
 logger = logging.getLogger("insureai.policies")
 
@@ -46,6 +51,8 @@ async def upload_policy(
       - Validates application/pdf MIME type
       - Generates safe unique server-side filename (prevents path traversal)
       - Enforces max upload size limit
+      - Enforces duplicate policy detection (by SHA-256 hash or filename+size)
+      - Enforces policy document verification (must contain genuine insurance terms: premium, cover, etc.)
       - Queues background extraction and vector indexing
     """
     if not file or not file.filename:
@@ -76,6 +83,7 @@ async def upload_policy(
 
     max_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
     total_written = 0
+    hasher = hashlib.sha256()
 
     try:
         with open(file_path, "wb") as buffer:
@@ -90,6 +98,7 @@ async def upload_policy(
                         detail=f"File exceeds maximum allowed size of {settings.MAX_FILE_SIZE_MB}MB.",
                     )
                 buffer.write(chunk)
+                hasher.update(chunk)
     except HTTPException:
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -103,14 +112,70 @@ async def upload_policy(
             detail="Failed to save uploaded file on server.",
         )
 
-    # 4. Create policy record in MongoDB
+    file_hash = hasher.hexdigest()
     u_oid = to_object_id(current_user["_id"])
+    db = get_async_db()
+
+    # 4. Duplicate policy verification
+    duplicate = await check_duplicate_policy(
+        db=db,
+        user_id=u_oid,
+        file_hash=file_hash,
+        orig_filename=orig_filename,
+        file_size_bytes=total_written,
+    )
+    if duplicate:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        logger.warning(
+            "Duplicate policy upload rejected for user %s: file '%s' (hash: %s)",
+            u_oid,
+            orig_filename,
+            file_hash[:10],
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Policy already uploaded. This policy document has already been added to your dashboard.",
+        )
+
+    # 5. Policy domain terminology verification (must contain premium, cover, etc.)
+    try:
+        pages = extract_pages(file_path)
+        if not pages:
+            raise ValueError("No readable pages could be extracted from PDF.")
+    except Exception as exc:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        logger.warning("Failed to extract pages from uploaded file '%s': %s", orig_filename, exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid policy. The uploaded file is corrupted or not a readable PDF document.",
+        )
+
+    full_text = " ".join(p.text for p in pages)
+    validation = validate_policy_text(full_text)
+    if not validation["is_valid"]:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        logger.warning(
+            "Invalid policy rejected for user %s: file '%s' — %s",
+            u_oid,
+            orig_filename,
+            validation["reason"],
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid policy. {validation['reason']}",
+        )
+
+    # 6. Create policy record in MongoDB
     now = datetime.utcnow()
 
     policy_doc = {
         "user_id": u_oid,
         "file_name": orig_filename,
         "file_path": file_path,
+        "file_hash": file_hash,
         "file_size_bytes": total_written,
         "insurer_name": insurer_name,
         "policy_type": policy_type,
@@ -118,7 +183,7 @@ async def upload_policy(
         "sum_insured": None,
         "premium_amount": None,
         "status": "uploading",
-        "ocr_used": False,
+        "ocr_used": any(p.source == "ocr" for p in pages),
         "red_flag_summary": None,
         "facts": [],
         "processing_error": None,
@@ -127,13 +192,12 @@ async def upload_policy(
         "updated_at": now,
     }
 
-    db = get_async_db()
     res = await db.policies.insert_one(policy_doc)
     p_oid = res.inserted_id
     policy_doc["_id"] = str(p_oid)
     policy_doc["user_id"] = str(u_oid)
 
-    # 5. Dispatch background extraction & indexing task
+    # 7. Dispatch background extraction & indexing task
     background_tasks.add_task(
         policy_service.process_policy_document,
         str(p_oid),

@@ -51,16 +51,64 @@ const parseWaitingPeriod = (str) => {
   return { condition: str.trim(), period: '' };
 };
 
-export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) {
+export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, existingPolicies = [] }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [pipelineStep, setPipelineStep] = useState(null);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [extractedPolicy, setExtractedPolicy] = useState(null);
+  const [alertPopup, setAlertPopup] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'error', // 'invalid' | 'duplicate' | 'error'
+  });
   const inputRef = useRef(null);
 
   if (!isOpen) return null;
+
+  const triggerAlert = (rawMessage, forceType = null) => {
+    const msg = typeof rawMessage === 'string'
+      ? rawMessage
+      : (rawMessage?.detail || rawMessage?.error || 'Upload error occurred.');
+    const msgLower = msg.toLowerCase();
+
+    let type = forceType || 'error';
+    let title = 'Upload Alert';
+
+    if (type === 'invalid' || msgLower.includes('invalid policy')) {
+      type = 'invalid';
+      title = 'Invalid policy';
+    } else if (
+      type === 'duplicate' ||
+      msgLower.includes('already uploaded') ||
+      msgLower.includes('duplicate')
+    ) {
+      type = 'duplicate';
+      title = 'Policy already uploaded';
+    }
+
+    setError(msg);
+    setUploading(false);
+    setPipelineStep(null);
+
+    setAlertPopup({
+      isOpen: true,
+      title,
+      message: msg,
+      type,
+    });
+
+    // Native browser window.alert popping
+    setTimeout(() => {
+      try {
+        window.alert(`${title}: ${msg}`);
+      } catch (e) {
+        console.warn('Native alert failed:', e);
+      }
+    }, 80);
+  };
 
   const handleReset = () => {
     setFile(null);
@@ -68,6 +116,7 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
     setPipelineStep(null);
     setError(null);
     setExtractedPolicy(null);
+    setAlertPopup({ isOpen: false, title: '', message: '', type: 'error' });
   };
 
   const handleClose = () => {
@@ -79,13 +128,25 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
   };
 
   const handleFile = (f) => {
-    if (f && (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))) {
-      setFile(f);
-      setError(null);
-      setExtractedPolicy(null);
-    } else {
-      setError('Please select a valid PDF file.');
+    if (!f) return;
+    if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
+      triggerAlert('Invalid policy: Please select a valid PDF file (.pdf).', 'invalid');
+      return;
     }
+
+    // Client-side duplicate check
+    const isDuplicate = existingPolicies?.some(
+      p => p.file_name?.toLowerCase() === f.name.toLowerCase() && p.file_size_bytes === f.size
+    );
+    if (isDuplicate) {
+      triggerAlert(`Policy already uploaded. The document "${f.name}" has already been added to your dashboard.`, 'duplicate');
+      setFile(null);
+      return;
+    }
+
+    setFile(f);
+    setError(null);
+    setExtractedPolicy(null);
   };
 
   const handleDrop = (e) => {
@@ -97,7 +158,19 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) { setError('Please select a policy PDF.'); return; }
+    if (!file) {
+      setError('Please select a policy PDF.');
+      return;
+    }
+
+    // Client-side duplicate check before upload
+    const isDuplicate = existingPolicies?.some(
+      p => p.file_name?.toLowerCase() === file.name.toLowerCase() && p.file_size_bytes === file.size
+    );
+    if (isDuplicate) {
+      triggerAlert(`Policy already uploaded. The document "${file.name}" has already been added to your dashboard.`, 'duplicate');
+      return;
+    }
 
     try {
       setUploading(true);
@@ -131,18 +204,16 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
             setExtractedPolicy(pol);
           } else if (currentStatus === 'failed') {
             clearInterval(pollInterval);
-            setError(pol.processing_error || 'Policy extraction failed on server.');
-            setUploading(false);
-            setPipelineStep(null);
+            const failReason = pol.processing_error || 'Policy extraction failed on server.';
+            triggerAlert(failReason);
           }
         } catch (pollErr) {
           console.error('Error polling policy status:', pollErr);
         }
       }, 1200);
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.detail || 'Upload failed. Please try again.');
-      setUploading(false);
-      setPipelineStep(null);
+      const rawMsg = err.response?.data?.detail || err.response?.data?.error || err.message || 'Upload failed. Please try again.';
+      triggerAlert(rawMsg);
     }
   };
 
@@ -449,6 +520,126 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess }) 
           )}
         </div>
       </div>
+
+      {/* ─── Popping Alert Dialog ────────────────────────────────────── */}
+      {alertPopup.isOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(6, 35, 39, 0.45)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+          onClick={() => setAlertPopup({ isOpen: false, title: '', message: '', type: 'error' })}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-[28px] p-6 sm:p-7 shadow-[0_24px_70px_rgba(6,35,39,0.30)] border border-[#062327]/12 animate-slide-up text-center relative overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Top decorative stripe */}
+            <div
+              className={`absolute top-0 left-0 right-0 h-1.5 ${
+                alertPopup.type === 'invalid'
+                  ? 'bg-rose-500'
+                  : alertPopup.type === 'duplicate'
+                  ? 'bg-amber-500'
+                  : 'bg-rose-500'
+              }`}
+            />
+
+            {/* Icon Header */}
+            <div
+              className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center border-2 ${
+                alertPopup.type === 'invalid'
+                  ? 'bg-rose-50 border-rose-200 text-rose-600'
+                  : alertPopup.type === 'duplicate'
+                  ? 'bg-amber-50 border-amber-200 text-amber-600'
+                  : 'bg-rose-50 border-rose-200 text-rose-600'
+              }`}
+            >
+              {alertPopup.type === 'invalid' ? (
+                <AlertCircle size={32} className="stroke-[2.5]" />
+              ) : (
+                <AlertTriangle size={32} className="stroke-[2.5]" />
+              )}
+            </div>
+
+            {/* Pill Tag */}
+            <div
+              className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mb-2"
+              style={{
+                background: alertPopup.type === 'invalid' ? '#ffe4e6' : '#fef3c7',
+                color: alertPopup.type === 'invalid' ? '#be123c' : '#b45309',
+              }}
+            >
+              {alertPopup.type === 'invalid' ? 'Invalid Policy' : 'Policy Already Uploaded'}
+            </div>
+
+            {/* Title */}
+            <h3 className="font-headline text-xl font-extrabold text-[#062327] tracking-tight mb-2">
+              {alertPopup.title}
+            </h3>
+
+            {/* Message */}
+            <p className="text-xs sm:text-sm text-[#558187] leading-relaxed mb-4 font-medium">
+              {alertPopup.message}
+            </p>
+
+            {/* Policy wordings criteria badge */}
+            {alertPopup.type === 'invalid' && (
+              <div className="bg-[#f5f8f8] rounded-2xl p-3.5 border border-[#062327]/08 text-left mb-5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#062327] mb-1.5">
+                  Checked Policy Wordings:
+                </p>
+                <p className="text-xs text-[#558187] mb-2">
+                  Documents must include essential insurance terminology:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['premium', 'cover / coverage', 'sum insured', 'exclusions', 'policyholder', 'claims'].map(term => (
+                    <span
+                      key={term}
+                      className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-[#062327]/10 text-[#062327]"
+                    >
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Duplicate Notice info */}
+            {alertPopup.type === 'duplicate' && (
+              <div className="bg-amber-50/70 rounded-2xl p-3.5 border border-amber-200/80 text-left mb-5">
+                <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                  This exact policy is already active in your account. To review or query clauses, access it from your dashboard.
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setAlertPopup({ isOpen: false, title: '', message: '', type: 'error' });
+                  setFile(null);
+                  if (inputRef.current) inputRef.current.value = '';
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-[#062327] bg-[#f5f8f8] hover:bg-[#062327]/08 border border-[#062327]/10 transition-colors cursor-pointer"
+              >
+                Choose Different File
+              </button>
+              <button
+                type="button"
+                onClick={() => setAlertPopup({ isOpen: false, title: '', message: '', type: 'error' })}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white transition-colors cursor-pointer shadow-sm ${
+                  alertPopup.type === 'invalid'
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : 'bg-[#062327] hover:bg-[#0b3d45]'
+                }`}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );
