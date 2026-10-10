@@ -165,11 +165,18 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                           key={fact.fact_id || fact._id}
                           className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
                         >
-                          {/* Title on the left */}
+                          {/* Title with confidence tag on the left */}
                           <div className="text-left flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#558187]">
-                              {label}
-                            </p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {fact.extraction_confidence && (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
+                                  {fact.extraction_confidence}
+                                </span>
+                              )}
+                              <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#558187]">
+                                {label}
+                              </p>
+                            </div>
                             {fact.source_page && (
                               <p className="text-[10px] text-[#558187] font-medium mt-0.5">
                                 Page {fact.source_page}
@@ -179,18 +186,13 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                           </div>
 
                           {/* Info / Value on the right */}
-                          <div className="text-right flex items-center gap-2.5 flex-shrink-0">
+                          <div className="text-right flex-shrink-0">
                             <p className="font-sans text-sm sm:text-base font-bold text-[#062327] tracking-tight tabular-nums text-right">
                               {fact.fact_value}
                               {fact.unit && fact.unit !== 'INR' && (
                                 <span className="text-xs text-[#558187] font-normal ml-1.5">{fact.unit}</span>
                               )}
                             </p>
-                            {fact.extraction_confidence && (
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
-                                {fact.extraction_confidence}
-                              </span>
-                            )}
                           </div>
                         </div>
                       );
