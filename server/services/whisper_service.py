@@ -8,23 +8,32 @@ from __future__ import annotations
 
 import os
 import logging
-from typing import Optional
-from openai import OpenAI
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from openai import OpenAI
 
 logger = logging.getLogger("insureai.whisper")
 
 
 class WhisperService:
     def __init__(self):
-        self._cached_client: Optional[OpenAI] = None
+        self._cached_client: Optional[object] = None
         self._cached_model: Optional[str] = None
 
-    def get_client_and_model(self) -> tuple[OpenAI, str]:
+    def get_client_and_model(self):
         """
         Returns a cached, connection-pooled OpenAI client and model name.
         Reusing the client avoids creating new TCP/SSL handshakes on every request,
         cutting latency by up to 80%.
         """
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise ImportError(
+                "The 'openai' package is required for Whisper speech-to-text. "
+                "Please run: pip install openai"
+            )
         if self._cached_client and self._cached_model:
             return self._cached_client, self._cached_model
 
