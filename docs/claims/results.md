@@ -1,6 +1,6 @@
 # Claim Checklist Split Evaluation Results
 
-**Evaluated At:** `2026-10-10T12:33:45.510742`  
+**Evaluated At:** `2026-10-10T18:09:18.062702`  
 **Total Fixtures Evaluated:** 8  
 **Overall Split Accuracy:** `100.0%`  
 

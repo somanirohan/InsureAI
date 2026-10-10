@@ -119,7 +119,7 @@ export default function ClaimReviewScreen({
       {(() => {
         const billDoc = claim?.documents?.find(
           (d) =>
-            ['final_hospital_bill', 'hospital_bill', 'itemised_bill', 'bill'].includes(d.item_id) &&
+            ['final_hospital_bill', 'hospital_bill', 'itemised_bill', 'bill', 'final_bill', 'itemised_bills'].includes(d.item_id) &&
             d.line_items &&
             d.line_items.length > 0
         );
@@ -164,6 +164,92 @@ export default function ClaimReviewScreen({
           </div>
         );
       })()}
+
+      {/* Semantic Policy Evidence Verification */}
+      {claim?.evidence_matches && claim.evidence_matches.length > 0 && (
+        <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-[#062327]">
+                Policy Evidence & Clause Verification
+              </h3>
+              <p className="text-xs text-[#558187] font-medium mt-0.5">
+                Exact verbatim policy clause citations verified against billed items & procedures
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#f5f8f8] border border-[#062327]/10 text-[#062327]">
+              {claim.evidence_matches.length} items verified
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {claim.evidence_matches.map((ev, idx) => {
+              const isSupport = ev.verdict === 'supports';
+              const isContradict = ev.verdict === 'contradicts';
+              const isNoMatch = ev.verdict === 'no_match';
+
+              return (
+                <div
+                  key={idx}
+                  className={`p-4 rounded-2xl border text-xs flex flex-col gap-2 ${
+                    isContradict
+                      ? 'bg-[#fef2f2]/60 border-[#ef4444]/30'
+                      : isSupport
+                      ? 'bg-[#f0fdf4]/60 border-[#22c55e]/30'
+                      : 'bg-[#f5f8f8] border-[#062327]/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="font-bold text-[#062327] text-sm">
+                      {ev.item_description}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] tracking-wider ${
+                          isSupport
+                            ? 'bg-[#15803d]/10 text-[#15803d] border border-[#15803d]/20'
+                            : isContradict
+                            ? 'bg-[#991b1b]/10 text-[#991b1b] border border-[#991b1b]/20'
+                            : 'bg-[#854d0e]/10 text-[#854d0e] border border-[#854d0e]/20'
+                        }`}
+                      >
+                        {ev.verdict}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-[#062327]/05 text-[#558187] font-semibold text-[10px]">
+                        Confidence: {ev.confidence}
+                      </span>
+                    </div>
+                  </div>
+
+                  {ev.fallback_notice && (
+                    <div className="text-[11px] text-[#854d0e] bg-[#fefce8] px-2.5 py-1 rounded-lg border border-[#fef08a]">
+                      {ev.fallback_notice}
+                    </div>
+                  )}
+
+                  {!isNoMatch && ev.supporting_excerpt && (
+                    <div className="mt-1 bg-white p-3 rounded-xl border border-[#062327]/08 flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-[11px] text-[#558187] font-medium">
+                        <span>{ev.clause_title || 'Policy Clause'}</span>
+                        <CitationBadge page={ev.page} />
+                      </div>
+                      <p className="font-mono text-[11px] text-[#062327] bg-[#f5f8f8] p-2 rounded-lg border border-[#062327]/05 italic">
+                        "{ev.supporting_excerpt}"
+                      </p>
+                    </div>
+                  )}
+
+                  {ev.review_reason && (
+                    <span className="text-[11px] text-[#558187] italic font-medium">
+                      Note: {ev.review_reason}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Submission Gate Alert / Submission Action */}
       <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">

@@ -178,6 +178,16 @@ class PolicyService:
             logger.info("Indexing %d chunks into Chroma for policy %s...", len(chunks), policy_id)
             await asyncio.to_thread(index_chunks, str(policy_id), chunks)
 
+            # Step 5b: Index discrete policy clauses into dedicated 'clauses_{policy_id}' collection
+            try:
+                from app.claims.semantic.clause_index import extract_clauses_from_policy, index_policy_clauses
+                clause_records = extract_clauses_from_policy(str(policy_id), mongo_facts, policy_chunks=chunks)
+                if clause_records:
+                    logger.info("Indexing %d policy clauses into clauses_%s...", len(clause_records), policy_id)
+                    await asyncio.to_thread(index_policy_clauses, str(policy_id), clause_records, str(user_id), True)
+            except Exception as clause_idx_err:
+                logger.warning("Policy clause indexing encountered non-fatal error: %s", clause_idx_err)
+
             # Step 6: Store chunk metadata in MongoDB (policy_chunks)
             if chunks:
                 chunks_to_insert = [

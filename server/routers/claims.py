@@ -868,3 +868,130 @@ async def delete_claim(
         "success": True,
         "message": f"Claim {claim_id} and all associated files deleted successfully.",
     }
+
+
+# ── Semantic Evidence Matching & Verification Endpoints ───────────────────────
+
+@router.post("/{claim_id}/evidence/match")
+async def match_policy_evidence_for_claim(
+    claim_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Run semantic matching and verification of claim line items and treatment against policy clauses.
+    Stores results in claim.evidence_matches with verbatim excerpts, verdicts, and declared confidence.
+    """
+    from app.claims.models import ConfirmEvidenceMatchRequest, EvidenceMatch
+    from app.claims.semantic.verifier import match_and_verify_item
+
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+    policy_id = claim.get("policy_id")
+    if not policy_id:
+        raise HTTPException(status_code=400, detail="Claim has no associated policy.")
+
+    # Gather items to match: line items from uploaded bills, or treatment name
+    items_to_match: List[str] = []
+    for doc in claim.get("documents", []):
+        for li in doc.get("line_items", []):
+            desc = li.get("description", "").strip()
+            if desc and desc not in items_to_match:
+                items_to_match.append(desc)
+
+    treatment = claim.get("treatment")
+    if treatment and treatment.get("name"):
+        t_name = treatment["name"].strip()
+        if t_name not in items_to_match:
+            items_to_match.append(t_name)
+
+    if not items_to_match:
+        return {"success": True, "matches": [], "message": "No line items or treatment details available to match."}
+
+    existing_matches = {m.get("item_description"): m for m in claim.get("evidence_matches", [])}
+    new_matches: List[Dict[str, Any]] = []
+
+    for item_desc in items_to_match:
+        # If user already confirmed a match for this item, preserve it
+        if item_desc in existing_matches and existing_matches[item_desc].get("user_confirmed"):
+            new_matches.append(existing_matches[item_desc])
+            continue
+
+        verified = match_and_verify_item(str(policy_id), item_desc)
+        match_record = EvidenceMatch(
+            match_id=f"ev_{uuid.uuid4().hex[:8]}",
+            item_description=item_desc,
+            clause_id=verified.clause_id,
+            clause_title=verified.clause_title,
+            clause_type=verified.clause_type,
+            page=verified.page,
+            supporting_excerpt=verified.supporting_excerpt,
+            verdict=verified.verdict,
+            confidence=verified.confidence,
+            review_reason=verified.review_reason,
+            similarity_score=verified.similarity_score,
+            is_fallback=verified.is_fallback,
+            fallback_notice=verified.fallback_notice,
+            user_confirmed=False,
+        ).model_dump()
+        new_matches.append(match_record)
+
+    db = get_async_db()
+    await db.claims.update_one(
+        {"claim_id": claim_id, "user_id": user_id},
+        {"$set": {
+            "evidence_matches": new_matches,
+            "updated_at": datetime.utcnow().isoformat(),
+        }}
+    )
+
+    return {"success": True, "matches": new_matches}
+
+
+@router.get("/{claim_id}/evidence")
+async def get_policy_evidence_for_claim(
+    claim_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Retrieve current policy evidence matches for a claim.
+    """
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+    return {"evidence_matches": claim.get("evidence_matches", [])}
+
+
+@router.put("/{claim_id}/evidence/{match_id}/confirm")
+async def confirm_policy_evidence_match(
+    claim_id: str,
+    match_id: str,
+    req: ConfirmEvidenceMatchRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Allow user or reviewer to confirm, accept, or override a policy evidence match.
+    """
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+    matches = claim.get("evidence_matches", [])
+
+    target_match = next((m for m in matches if m.get("match_id") == match_id), None)
+    if not target_match:
+        raise HTTPException(status_code=404, detail=f"Evidence match '{match_id}' not found.")
+
+    target_match["user_confirmed"] = req.user_confirmed
+    target_match["confirmed_by"] = user_id
+    if req.verdict:
+        target_match["verdict"] = req.verdict
+    if req.note:
+        target_match["review_reason"] = f"{target_match.get('review_reason') or ''} [User Note: {req.note}]".strip()
+
+    db = get_async_db()
+    await db.claims.update_one(
+        {"claim_id": claim_id, "user_id": user_id},
+        {"$set": {
+            "evidence_matches": matches,
+            "updated_at": datetime.utcnow().isoformat(),
+        }}
+    )
+
+    return {"success": True, "match": target_match}

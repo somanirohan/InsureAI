@@ -125,6 +125,24 @@ class TimelineEntry(BaseModel):
     note: Optional[str] = None
 
 
+class EvidenceMatch(BaseModel):
+    match_id: str
+    item_description: str
+    clause_id: str
+    clause_title: str
+    clause_type: str
+    page: int
+    supporting_excerpt: str
+    verdict: Literal["supports", "contradicts", "ambiguous", "conflicting_evidence", "no_match"]
+    confidence: Literal["high", "medium", "needs_review"]
+    review_reason: Optional[str] = None
+    similarity_score: Optional[float] = None
+    is_fallback: bool = False
+    fallback_notice: Optional[str] = None
+    user_confirmed: bool = False
+    confirmed_by: Optional[str] = None
+
+
 # ── Top-level Claim Model ────────────────────────────────────────────────────
 
 class Claim(BaseModel):
@@ -136,6 +154,7 @@ class Claim(BaseModel):
     eligibility_result: Optional[EligibilityResult] = None
     checklist: List[ChecklistItem] = Field(default_factory=list)
     documents: List[ClaimDocument] = Field(default_factory=list)
+    evidence_matches: List[EvidenceMatch] = Field(default_factory=list)
     settlement_estimate: Optional[SettlementEstimate] = None
     timeline: List[TimelineEntry] = Field(default_factory=list)
     created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
@@ -165,3 +184,9 @@ class UpdateStatusRequest(BaseModel):
 class ConfirmDocumentFieldsRequest(BaseModel):
     confirmed_fields: Dict[str, Any]
     line_items: Optional[List[LineItem]] = None
+
+
+class ConfirmEvidenceMatchRequest(BaseModel):
+    user_confirmed: bool = True
+    verdict: Optional[Literal["supports", "contradicts", "ambiguous", "conflicting_evidence", "no_match"]] = None
+    note: Optional[str] = None
