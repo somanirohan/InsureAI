@@ -10,7 +10,7 @@ every policy is indexed into its own isolated ChromaDB collection scoped by
 
 Key responsibilities:
   1. `index_chunks(policy_id, chunks)`:
-     - Generates embeddings via `get_embedder()` (swappable: Ollama or API).
+     - Generates embeddings via `get_embedder()` (configured API or Chroma default).
      - Stores chunk text, unique ID, and metadata (page_number, chunk_id, policy_id).
      - Persists to local directory specified by `settings.chroma_persist_dir`.
   2. `query_similar(policy_id, query, top_k)`:

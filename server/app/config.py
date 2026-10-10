@@ -29,12 +29,8 @@ class Settings(BaseSettings):
     )
 
     # ── LLM provider selection ────────────────────────────────────────────────
-    # Set LLM_PROVIDER=ollama | openrouter | nvidia | groq
-    llm_provider: Literal["ollama", "openrouter", "nvidia", "groq"] = "ollama"
-
-    # Ollama LLM
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "mistral:7b"
+    # Set LLM_PROVIDER=groq | openrouter | nvidia
+    llm_provider: Literal["groq", "openrouter", "nvidia"] = "groq"
 
     # Groq (Ultra-fast cloud inference, OpenAI-compatible)
     groq_base_url: str = "https://api.groq.com/openai/v1"
@@ -52,11 +48,8 @@ class Settings(BaseSettings):
     nvidia_model: str = "meta/llama3-8b-instruct"
 
     # ── Embedding provider selection ──────────────────────────────────────────
-    # Set EMBEDDING_PROVIDER=ollama | api
-    embedding_provider: Literal["ollama", "api"] = "ollama"
-
-    # Ollama embeddings
-    ollama_embedding_model: str = "nomic-embed-text"
+    # Set EMBEDDING_PROVIDER=api
+    embedding_provider: Literal["api"] = "api"
 
     # API-based embeddings (OpenAI-compatible; can be OpenRouter, NVIDIA, etc.)
     embedding_api_base_url: str = "https://api.openai.com/v1"

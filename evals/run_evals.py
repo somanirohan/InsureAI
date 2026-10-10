@@ -533,7 +533,6 @@ def build_report(results: list[dict], timestamp: str) -> dict:
     provider = settings.llm_provider
     model_map = {
         "groq": settings.groq_model,
-        "ollama": settings.ollama_model,
         "openrouter": settings.openrouter_model,
         "nvidia": settings.nvidia_model,
     }
@@ -617,7 +616,6 @@ def main() -> None:
     provider = settings.llm_provider
     model_map = {
         "groq": settings.groq_model,
-        "ollama": settings.ollama_model,
         "openrouter": settings.openrouter_model,
         "nvidia": settings.nvidia_model,
     }

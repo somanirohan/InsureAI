@@ -14,13 +14,6 @@ else
     echo "   Start it with: mongod --dbpath <data_dir> or brew services start mongodb-community"
 fi
 
-# Verify Ollama
-if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
-    echo "✅ Ollama is running on port 11434."
-else
-    echo "⚠️  Ollama is not running on http://localhost:11434."
-    echo "   Start it with: ollama serve"
-fi
 
 # Clean up any leftover processes on ports 5001, 5173, and 5174
 for port in 5001 5173 5174; do

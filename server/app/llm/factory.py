@@ -22,9 +22,13 @@ def get_llm() -> LLMProvider:
     """
     provider = settings.llm_provider
 
-    if provider == "ollama":
-        from app.llm.ollama_provider import OllamaProvider
-        return OllamaProvider()
+    if provider == "groq":
+        from app.llm.openai_compatible_provider import OpenAICompatibleProvider
+        return OpenAICompatibleProvider(
+            base_url=settings.groq_base_url,
+            api_key=settings.groq_api_key,
+            model=settings.groq_model,
+        )
 
     if provider == "openrouter":
         from app.llm.openai_compatible_provider import OpenAICompatibleProvider
@@ -42,15 +46,7 @@ def get_llm() -> LLMProvider:
             model=settings.nvidia_model,
         )
 
-    if provider == "groq":
-        from app.llm.openai_compatible_provider import OpenAICompatibleProvider
-        return OpenAICompatibleProvider(
-            base_url=settings.groq_base_url,
-            api_key=settings.groq_api_key,
-            model=settings.groq_model,
-        )
-
     raise ValueError(
         f"Unknown LLM_PROVIDER '{provider}'. "
-        "Valid choices: ollama | openrouter | nvidia | groq"
+        "Valid choices: groq | openrouter | nvidia"
     )

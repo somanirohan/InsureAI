@@ -29,8 +29,7 @@
   - [2. Environment Configuration](#2-environment-configuration)
   - [3. Backend Setup](#3-backend-setup)
   - [4. Frontend Setup](#4-frontend-setup)
-  - [5. Local LLM & Embedding Setup (Ollama)](#5-local-llm--embedding-setup-ollama)
-  - [6. Running the Application](#6-running-the-application)
+  - [5. Running the Application](#5-running-the-application)
   - [7. Running the Automated Test Suites](#7-running-the-automated-test-suites)
 - [Minimum System Requirements](#-minimum-system-requirements)
   - [Hardware Requirements](#hardware-requirements)
@@ -227,19 +226,21 @@ MONGO_URI=mongodb+srv://rohanjagdishsomani_db_user:N62wBcWLZNdmGwN7@insurai.v3uc
 MONGO_DB_NAME=insurai
 
 
-# ── LLM Provider (Options: ollama | openrouter | nvidia) ───────────
-LLM_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=mistral:7b
+# ── LLM Provider (Options: groq | openrouter | nvidia) ─────────────
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=qwen/qwen3.8-27b
 
 # (Optional: If using OpenRouter or NVIDIA NIM)
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=meta-llama/llama-3-8b-instruct
 NVIDIA_API_KEY=
 
-# ── Embedding Provider (Options: ollama | api) ────────────────────
-EMBEDDING_PROVIDER=ollama
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+# ── Embedding Provider (Options: api) ──────────────────────────────
+EMBEDDING_PROVIDER=api
+EMBEDDING_API_BASE_URL=https://api.openai.com/v1
+EMBEDDING_API_KEY=
+EMBEDDING_API_MODEL=text-embedding-3-small
 CHROMA_PERSIST_DIR=./chroma_store
 
 # ── Chunking & Retrieval Parameters ────────────────────────────────
@@ -311,24 +312,7 @@ cd ..
 
 ---
 
-### 5. Local LLM & Embedding Setup (Ollama)
-
-If you are using local inference via [Ollama](https://ollama.com/):
-
-```bash
-# 1. Start the Ollama daemon
-ollama serve
-
-# 2. Pull the required models (in a separate terminal)
-ollama pull mistral:7b
-ollama pull nomic-embed-text
-```
-
-> **Note**: InsurAI includes built-in heuristic fallbacks and ChromaDB native embeddings. If Ollama is not installed or running, the core application will still function using deterministic heuristic extraction.
-
----
-
-### 6. Running the Application
+### 5. Running the Application
 
 > **Central Repository & Pre-loaded Data:**
 > InsurAI connects directly to a central cloud MongoDB repository (`insurai.v3ucvhs.mongodb.net`). Sample processed policies, extracted facts, and vector embeddings are already provisioned, so no manual database seeding is required.
@@ -345,7 +329,7 @@ chmod +x run.sh
 ./run.sh
 ```
 
-This verifies MongoDB and Ollama connectivity and launches both the backend and frontend concurrently.
+This verifies MongoDB connectivity and launches both the backend and frontend concurrently.
 
 #### Option B: Running in Separate Terminals
 
@@ -384,7 +368,7 @@ python -m pytest server/tests/test_unit_rag_adapter.py \
                  server/tests/test_unit_chat_conversations.py \
                  server/tests/test_unit_processing_failure.py -v
 
-# Run the complete end-to-end integration lifecycle test (requires MongoDB and Ollama):
+# Run the complete end-to-end integration lifecycle test:
 python -m pytest server/tests/test_integration_flow.py -v
 ```
 
@@ -396,13 +380,13 @@ The minimum and recommended specifications to run InsurAI smoothly:
 
 ### Hardware Requirements
 
-| Component | Minimum Specification (API / Cloud Mode) | Recommended Specification (Local Ollama LLM) |
+| Component | Minimum Specification | Recommended Specification |
 |---|---|---|
 | **Processor (CPU)** | Dual-Core Intel Core i3 / AMD Ryzen 3 (2.0 GHz+) | 8-Core Intel Core i7 / AMD Ryzen 7 / Apple Silicon (M1/M2/M3) |
-| **System Memory (RAM)** | 8 GB RAM | 16 GB RAM or higher (32 GB for concurrent 7B/8B models) |
-| **Storage (Disk Space)**| 5 GB available SSD storage | 20 GB available NVMe SSD storage (to store model weights) |
-| **Graphics (GPU)** | Not required (Integrated GPU sufficient) | Dedicated NVIDIA GPU with 6 GB+ VRAM (CUDA support) or Apple Silicon Unified Memory |
-| **Network** | Broadband internet connection | Broadband internet (required for initial model download) |
+| **System Memory (RAM)** | 8 GB RAM | 16 GB RAM or higher |
+| **Storage (Disk Space)**| 5 GB available SSD storage | 10 GB available NVMe SSD storage |
+| **Graphics (GPU)** | Not required (Integrated GPU sufficient) | Dedicated GPU or Apple Silicon Unified Memory |
+| **Network** | Broadband internet connection | Broadband internet |
 
 ### Software & Runtime Requirements
 
@@ -413,7 +397,6 @@ The minimum and recommended specifications to run InsurAI smoothly:
 | **Node.js** | Node.js `18.16.0` LTS | Node.js `20.x` LTS |
 | **Package Manager** | `npm 9.x` or `yarn 1.22+` | `npm 10.x` |
 | **MongoDB** | MongoDB Community Server `6.0` or MongoDB Atlas | MongoDB `7.0+` or MongoDB Atlas Cluster |
-| **Ollama** *(Optional)* | Ollama `0.1.30` | Latest Ollama version |
 | **Tesseract OCR** *(Optional)* | Tesseract `5.0+` (optional fallback for scanned PDFs) | Tesseract `5.3+` |
 | **Web Browser** | Chrome 100+, Edge 100+, Firefox 100+, Safari 15+ | Latest Google Chrome or Brave |
 

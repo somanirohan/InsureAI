@@ -24,7 +24,7 @@ class APIEmbeddingProvider(EmbeddingProvider):
     Wraps any OpenAI-compatible /embeddings endpoint.
 
     Batches the full list of texts in a single API call (the SDK handles
-    the request body), which is more efficient than Ollama's one-by-one loop.
+    the request body) for fast and efficient vector generation.
     """
 
     def __init__(

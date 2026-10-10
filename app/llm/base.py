@@ -1,7 +1,7 @@
 """
 Abstract base class for LLM providers.
 
-Every provider (Ollama, OpenRouter, NVIDIA) must implement this interface.
+Every provider (Groq, OpenRouter, NVIDIA) must implement this interface.
 The rest of the codebase depends ONLY on LLMProvider — never on a concrete class.
 That way, swapping providers requires zero changes outside llm/factory.py.
 """

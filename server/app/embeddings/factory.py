@@ -20,15 +20,11 @@ def get_embedder() -> EmbeddingProvider:
     """
     provider = settings.embedding_provider
 
-    if provider == "ollama":
-        from app.embeddings.ollama_embeddings import OllamaEmbeddingProvider
-        return OllamaEmbeddingProvider()
-
     if provider == "api":
         from app.embeddings.api_embeddings import APIEmbeddingProvider
         return APIEmbeddingProvider()
 
     raise ValueError(
         f"Unknown EMBEDDING_PROVIDER '{provider}'. "
-        "Valid choices: ollama | api"
+        "Valid choices: api"
     )

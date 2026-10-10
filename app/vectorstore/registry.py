@@ -124,9 +124,7 @@ def get_active_embedding_model_name() -> str:
             return str(model_name)
     except Exception:
         pass
-    if settings.embedding_provider == "ollama":
-        return str(settings.ollama_embedding_model)
-    elif settings.embedding_provider == "api":
+    if settings.embedding_provider == "api":
         return str(settings.embedding_api_model)
     return "chroma_default"
 
