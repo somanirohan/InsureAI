@@ -62,7 +62,7 @@ app = FastAPI(
 # ── CORS & Security Middleware Stack ──────────────────────────────────────────
 allowed_origins = settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGINS, list) else [settings.CLIENT_URL]
 if not allowed_origins:
-    allowed_origins = [*]
+    allowed_origins = ["*"]
 
 # 1. Sliding-window rate limiter per client IP
 app.add_middleware(RateLimitMiddleware)
