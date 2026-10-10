@@ -123,32 +123,49 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                           waitingPeriod = fact.metadata.period;
                         } else if (raw.includes(':')) {
                           const parts = raw.split(':');
+                          // If both condition & period exist, like "Pre-existing Disease: 36 months"
+                          // Sometimes the condition text itself repeated the raw text or description
                           waitingCond = parts[0].trim();
                           waitingPeriod = parts.slice(1).join(':').trim();
                         } else {
                           waitingCond = raw;
                         }
 
+                        // If waitingCond is identical to or repeating the full raw value, clean it up
+                        const displayCondition = fact.metadata?.condition || waitingCond;
+                        const displayPeriod = fact.metadata?.period || waitingPeriod;
+
                         return (
                           <div
                             key={fact.fact_id || fact._id}
-                            className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                            className="py-3.5 first:pt-0 last:pb-0 flex items-start justify-between gap-4"
                           >
-                            <div className="text-left flex-1 min-w-0">
-                              <p className="text-xs sm:text-sm font-semibold text-[#062327]">
-                                {waitingCond}
-                              </p>
+                            {/* Left column: fixed width ~58% */}
+                            <div className="w-[58%] text-left flex-shrink-0">
+                              <div className="flex items-start gap-2">
+                                {fact.extraction_confidence && (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 mt-0.5 ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
+                                    {fact.extraction_confidence}
+                                  </span>
+                                )}
+                                <p className="text-xs sm:text-sm font-semibold text-[#062327] leading-snug break-words">
+                                  {displayCondition}
+                                </p>
+                              </div>
                               {fact.source_page && (
-                                <p className="text-[10px] text-[#558187] mt-0.5">
+                                <p className="text-[10px] text-[#558187] mt-1">
                                   Page {fact.source_page}
+                                  {fact.source_section ? ` · ${fact.source_section}` : ''}
                                 </p>
                               )}
                             </div>
-                            <div className="text-right flex-shrink-0">
-                              {waitingPeriod ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/20 font-sans tabular-nums">
-                                  {waitingPeriod}
-                                </span>
+
+                            {/* Right column: fixed width ~40%, right aligned */}
+                            <div className="w-[40%] text-right flex-shrink-0">
+                              {displayPeriod ? (
+                                <p className="font-sans text-sm sm:text-base font-bold text-[#062327] tracking-tight tabular-nums text-right break-words leading-snug">
+                                  {displayPeriod}
+                                </p>
                               ) : (
                                 <span className="text-xs text-[#558187]">—</span>
                               )}
@@ -163,17 +180,17 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                       return (
                         <div
                           key={fact.fact_id || fact._id}
-                          className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                          className="py-3.5 first:pt-0 last:pb-0 flex items-start justify-between gap-4"
                         >
-                          {/* Title with confidence tag on the left */}
-                          <div className="text-left flex-1 min-w-0">
+                          {/* Left column: fixed width ~45% */}
+                          <div className="w-[45%] text-left flex-shrink-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               {fact.extraction_confidence && (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${CONFIDENCE_STYLE[fact.extraction_confidence] || 'status-info'}`}>
                                   {fact.extraction_confidence}
                                 </span>
                               )}
-                              <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#558187]">
+                              <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#558187] break-words">
                                 {label}
                               </p>
                             </div>
@@ -185,9 +202,9 @@ export default function PolicyFactsModal({ policy, isOpen, onClose }) {
                             )}
                           </div>
 
-                          {/* Info / Value on the right */}
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-sans text-sm sm:text-base font-bold text-[#062327] tracking-tight tabular-nums text-right">
+                          {/* Right column: fixed width ~52%, right aligned */}
+                          <div className="w-[52%] text-right flex-shrink-0">
+                            <p className="font-sans text-sm sm:text-base font-bold text-[#062327] tracking-tight tabular-nums text-right break-words leading-snug">
                               {fact.fact_value}
                               {fact.unit && fact.unit !== 'INR' && (
                                 <span className="text-xs text-[#558187] font-normal ml-1.5">{fact.unit}</span>
