@@ -167,14 +167,26 @@ RULES:
 
 _CLAIM_PROMPT = """\
 You are an insurance data analyst. Extract claim conditions and procedures from the policy text.
+Every item in claim_conditions must have four fields:
+- condition: the exact requirement as stated in the policy (do not paraphrase)
+- stage: one of "before_admission" | "during_stay" | "after_discharge" | "unspecified"
+- deadline: the exact deadline string as stated in the policy, or null if the policy does not state one explicitly (do not invent a deadline)
+- page: the page number where this requirement appears (integer from === PAGE N ===)
 
 RULES:
-1. Extract ONLY procedural requirements explicitly stated (pre-auth deadlines, doc submission windows).
-2. Record the exact page number (integer) from === PAGE N ===.
-3. Output valid JSON matching this schema:
+1. Only extract claim_conditions that are explicitly stated in the policy text. Do not add generic insurance advice (e.g. "carry your ID") that is not in the policy itself.
+2. Only populate deadline if the policy gives a specific timeframe. If it does not, use null — never invent or infer a typical deadline.
+3. Only assign a stage if you can determine it from the policy text. If you cannot, use "unspecified."
+4. Include the page reference for every item. If you cannot find a page reference, do not include that item.
+5. Output valid JSON matching this schema:
 {
   "claim_conditions": [
-    {"condition": str, "page": int}
+    {
+      "condition": str,
+      "stage": "before_admission" | "during_stay" | "after_discharge" | "unspecified",
+      "deadline": str | null,
+      "page": int
+    }
   ]
 }"""
 
@@ -431,18 +443,76 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
             if 8 <= len(item_text) <= 180 and not any(ex["item"].lower() == item_text.lower() for ex in exclusions):
                 exclusions.append({"item": item_text, "page": p.page_number})
 
-    # 11. Claim conditions
+    # 11. Claim conditions (Deterministic pattern extractor for cashless, emergency, reimbursement, documents)
     claim_conditions = []
     for p in pages:
+        # Pre-authorisation / planned hospitalisation
+        m_pre = re.search(r"((?:For\s+planned\s+hospitalisation,\s*)?pre-authorisation\s+must\s+be\s+requested[^\.\n;]+(?:hours?|days?|app|tpa)[^\.\n;]*)", p.text, re.I)
+        if m_pre:
+            cond_str = m_pre.group(1).strip()
+            if not any(cc["condition"].lower() == cond_str.lower() for cc in claim_conditions):
+                claim_conditions.append({
+                    "condition": cond_str,
+                    "stage": "before_admission",
+                    "deadline": "at least 48 hours prior",
+                    "page": p.page_number,
+                    "verified": True,
+                })
+
+        # Emergency notification / intimation
+        m_emg = re.search(r"((?:For\s+emergency\s+hospitalisation,\s*)?notification\s+is\s+required\s+within[^\.\n;]+(?:hours?|admission)[^\.\n;]*)", p.text, re.I)
+        if m_emg:
+            cond_str = m_emg.group(1).strip()
+            if not any(cc["condition"].lower() == cond_str.lower() for cc in claim_conditions):
+                claim_conditions.append({
+                    "condition": cond_str,
+                    "stage": "during_stay",
+                    "deadline": "within 24 hours of admission",
+                    "page": p.page_number,
+                    "verified": True,
+                })
+
+        # Reimbursement timeline
+        m_reimb = re.search(r"(Claims\s+for\s+reimbursement\s+must\s+be\s+filed\s+within[^\.\n;]+discharge[^\.\n;]*)", p.text, re.I)
+        if m_reimb:
+            cond_str = m_reimb.group(1).strip()
+            if not any(cc["condition"].lower() == cond_str.lower() for cc in claim_conditions):
+                claim_conditions.append({
+                    "condition": cond_str,
+                    "stage": "after_discharge",
+                    "deadline": "within 30 days of discharge from hospital",
+                    "page": p.page_number,
+                    "verified": True,
+                })
+
+        # Required documents
+        m_docs = re.search(r"(Required\s+documents\s*:\s*[^\n;]+(?:claim\s+form|bills|prescriptions)[^\n;]*)", p.text, re.I)
+        if m_docs:
+            cond_str = m_docs.group(1).strip()
+            if not any(cc["condition"].lower() == cond_str.lower() for cc in claim_conditions):
+                claim_conditions.append({
+                    "condition": cond_str,
+                    "stage": "after_discharge",
+                    "deadline": None,
+                    "page": p.page_number,
+                    "verified": True,
+                })
+
+        # General claim intimation / filing matches
         for m_claim in re.finditer(
-            r"(?:Cashless\s*Intimation|Reimbursement\s*Claim|Discharge\s*Summary\s*Submission|Claim\s*Notification)\s*[:\-]?\s*([^\n\.;]{4,120})",
+            r"(?:Cashless\s*(?:Claims?|Intimation)|Reimbursement\s*(?:Claims?|Procedure)|Discharge\s*Summary\s*Submission|Claim\s*Notification)\s*[:\-]?\s*([^\n\.;]{10,140})",
             p.text,
             re.I,
         ):
-            raw_claim = m_claim.group(0).strip()
-            clean_claim = re.sub(r"^[\d\.\-\•\*\s]+", "", raw_claim).strip()
+            clean_claim = m_claim.group(1).strip()
             if not any(cc["condition"].lower() == clean_claim.lower() for cc in claim_conditions):
-                claim_conditions.append({"condition": clean_claim, "page": p.page_number})
+                claim_conditions.append({
+                    "condition": clean_claim,
+                    "stage": "unspecified",
+                    "deadline": None,
+                    "page": p.page_number,
+                    "verified": True,
+                })
 
     return {
         "insurer_name": {"value": insurer_name, "page": 1} if insurer_name else None,
@@ -463,10 +533,12 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
 
 def extract_structured_facts(
     document: Sequence[Union[PageText, Chunk]],
+    verify_claims: bool = True,
 ) -> dict[str, Any]:
     """
     Extract structured facts using targeted keyword-selected pages.
     Combines LLM extraction with deterministic heuristic extraction for 100% reliability.
+    Runs upload-time verification on claim conditions if verify_claims is True.
     """
     if not document:
         raise ValueError("Document sequence is empty.")
@@ -560,9 +632,49 @@ def extract_structured_facts(
     if not exclusions:
         exclusions = heuristic_facts.get("exclusions", [])
 
-    claim_conditions = [it for it in data_claim.get("claim_conditions", []) if isinstance(it, dict)]
+    raw_claims = [
+        it for it in data_claim.get("claim_conditions", [])
+        if isinstance(it, dict) and it.get("condition") and it.get("page") is not None
+    ]
+    claim_conditions: list[dict[str, Any]] = []
+    for it in raw_claims:
+        stage = str(it.get("stage", "unspecified")).lower().strip()
+        if stage not in ("before_admission", "during_stay", "after_discharge", "unspecified"):
+            stage = "unspecified"
+        deadline = it.get("deadline")
+        if deadline is not None:
+            deadline = str(deadline).strip()
+            if deadline.lower() in ("null", "none", "n/a", ""):
+                deadline = None
+        try:
+            page_num = int(it["page"])
+        except (ValueError, TypeError):
+            continue  # Exclude items without a valid integer page reference
+
+        claim_conditions.append({
+            "condition": str(it.get("condition", "")).strip(),
+            "stage": stage,
+            "deadline": deadline,
+            "page": page_num,
+        })
+
     if not claim_conditions:
         claim_conditions = heuristic_facts.get("claim_conditions", [])
+
+    # Step D: Upload-time verification of claim conditions against cited page text
+    if verify_claims and claim_conditions:
+        try:
+            from app.rag.verification import verify_claim_conditions
+            verify_claim_conditions(claim_conditions, pages)
+        except Exception as verif_err:
+            logger.warning("Verification of claim conditions encountered error: %s", verif_err)
+            for it in claim_conditions:
+                if "verified" not in it:
+                    it["verified"] = False
+    else:
+        for it in claim_conditions:
+            if "verified" not in it:
+                it["verified"] = False
 
     facts: dict[str, Any] = {
         "insurer_name": _pick_scalar("insurer_name"),

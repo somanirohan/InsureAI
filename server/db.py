@@ -273,9 +273,24 @@ async def init_db() -> None:
         # Policy comparisons
         await database.policy_comparisons.create_index("user_id")
 
+        # Claims
+        await database.claims.create_index("claim_id", unique=True)
+        await database.claims.create_index("user_id")
+        await database.claims.create_index("policy_id")
+        await database.claims.create_index([("user_id", 1), ("status", 1)])
+
         logger.info("MongoDB indexes verified successfully.")
     except Exception as exc:
         logger.warning("Note on index verification: %s", exc)
+
+
+async def ensure_claims_indexes(database: Optional[AsyncIOMotorDatabase] = None) -> None:
+    """Ensure indexes specifically for claims collection."""
+    db_inst = database or get_async_db()
+    await db_inst.claims.create_index("claim_id", unique=True)
+    await db_inst.claims.create_index("user_id")
+    await db_inst.claims.create_index("policy_id")
+    await db_inst.claims.create_index([("user_id", 1), ("status", 1)])
 
 
 async def close_db() -> None:

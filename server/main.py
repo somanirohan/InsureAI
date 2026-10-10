@@ -17,11 +17,11 @@ from fastapi.responses import JSONResponse
 try:
     from config import settings
     from db import check_db_health, init_db
-    from routers import auth, chat, comparisons, cost, dashboard, policies
+    from routers import auth, chat, claims, comparisons, cost, dashboard, policies
 except ImportError:
     from server.config import settings
     from server.db import check_db_health, init_db
-    from server.routers import auth, chat, comparisons, cost, dashboard, policies
+    from server.routers import auth, chat, claims, comparisons, cost, dashboard, policies
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +76,7 @@ app.add_middleware(
 # ── Include Routers ───────────────────────────────────────────────────────────
 app.include_router(auth.router)
 app.include_router(policies.router)
+app.include_router(claims.router)
 app.include_router(chat.router)
 app.include_router(cost.router)
 app.include_router(comparisons.router)

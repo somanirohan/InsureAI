@@ -146,3 +146,49 @@ def verify_answer(claim: str, passage: str) -> dict[str, Any]:
         "reasoning": str(result.get("reasoning", "")),
         "evidence_quote": str(result.get("evidence_quote", "")),
     }
+
+
+def verify_claim_conditions(
+    claim_conditions: list[dict[str, Any]],
+    pages: Sequence[Any],
+) -> list[dict[str, Any]]:
+    """
+    Verify each claim_condition item against the text of its cited page at upload time.
+    Adds a 'verified' boolean field to each item.
+    """
+    if not claim_conditions or not pages:
+        for item in claim_conditions:
+            if isinstance(item, dict) and "verified" not in item:
+                item["verified"] = False
+        return claim_conditions
+
+    page_text_map: dict[int, str] = {}
+    for p in pages:
+        pg_num = getattr(p, "page_number", None)
+        text = getattr(p, "text", "")
+        if pg_num is not None:
+            page_text_map[pg_num] = text
+
+    for item in claim_conditions:
+        if not isinstance(item, dict):
+            continue
+        cond_text = str(item.get("condition", "")).strip()
+        page_num = item.get("page")
+        if not cond_text or page_num is None:
+            item["verified"] = False
+            continue
+
+        page_content = page_text_map.get(int(page_num), "")
+        if not page_content:
+            item["verified"] = False
+            continue
+
+        try:
+            verif_res = verify_answer(cond_text, page_content)
+            item["verified"] = bool(verif_res.get("supported", False))
+        except Exception as exc:
+            logger.warning("Verification failed for claim condition '%s': %s", cond_text[:40], exc)
+            item["verified"] = False
+
+    return claim_conditions
+

@@ -26,11 +26,13 @@ Design rationale
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import asdict, dataclass
 from typing import Any, Literal, Optional
 
 from app.config import settings
 from app.llm.factory import get_llm
+from app.rag.checklist import build_claim_checklist
 from app.rag.confidence import assign_confidence
 from app.rag.router import route_question_with_score
 from app.rag.vectorstore import RetrievedChunk, query_similar
@@ -47,6 +49,7 @@ class Citation:
     page_number: int
     excerpt: str
     chunk_id: Optional[int] = None
+    section_heading: Optional[str] = None
 
 
 @dataclass
@@ -64,6 +67,9 @@ class AnswerResult:
         citations:           Structured list of Citation objects.
         structured_field:    Matched field name if routed to structured path, else None.
         verification_result: Raw verification output (semantic path only).
+        checklist:           Grouped claim readiness checklist (if claim_checklist intent).
+        general_advice:      Non-policy general tips.
+        heads_up:            Coverage alert for explicit treatment scenarios.
     """
     question: str
     answer: str
@@ -74,6 +80,9 @@ class AnswerResult:
     citations: list[Citation]
     structured_field: Optional[str] = None
     verification_result: Optional[dict[str, Any]] = None
+    checklist: Optional[list[dict[str, Any]]] = None
+    general_advice: Optional[list[str]] = None
+    heads_up: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to a plain dictionary for JSON serialization in APIs."""
@@ -208,6 +217,94 @@ def _generate_semantic_draft(question: str, chunks: list[RetrievedChunk]) -> str
     return llm.chat(messages, temperature=0.1)
 
 
+# ── Scenario-Aware Treatment Detection ────────────────────────────────────────
+
+TREATMENT_PATTERNS: list[tuple[str, list[str]]] = [
+    ("Knee Surgery / Joint Replacement", ["knee surgery", "knee replacement", "knee", "joint replacement", "hip replacement"]),
+    ("Cataract Surgery", ["cataract", "cataract surgery", "eye surgery", "lens replacement"]),
+    ("Hernia Repair", ["hernia", "hernia surgery", "hydrocele"]),
+    ("Maternity / Delivery", ["maternity", "delivery", "pregnancy", "c-section", "caesarean", "childbirth", "newborn"]),
+    ("Critical Illness (Cardiac / Cancer)", ["cancer", "heart attack", "stroke", "kidney failure", "bypass", "angioplasty"]),
+    ("Dental Treatment", ["dental", "tooth", "teeth", "orthodontic"]),
+    ("Cosmetic Surgery", ["cosmetic", "rhinoplasty", "liposuction", "plastic surgery"]),
+    ("Obesity / Bariatric Treatment", ["bariatric", "weight reduction", "weight loss surgery", "obesity"]),
+    ("Sinusitis", ["sinus", "sinusitis"]),
+    ("Ayush Treatment", ["ayush", "ayurveda", "homeopathy", "unani", "siddha"]),
+    ("Fertility / IVF", ["ivf", "fertility", "infertility", "surrogacy", "iui", "art"]),
+]
+
+
+def _check_scenario_treatment(
+    question: str,
+    structured_facts: Optional[dict[str, Any]],
+) -> tuple[Optional[str], list[Citation], list[int]]:
+    """
+    Check if the user's question explicitly mentions a specific treatment/procedure
+    alongside a claim-process inquiry (e.g. 'I'm being admitted for knee surgery next week, what do I need?').
+    Cross-references against waiting periods and exclusions.
+    Returns (heads_up_text, citations, pages).
+    """
+    if not question or not structured_facts:
+        return None, [], []
+
+    q_lower = question.lower()
+    matched_aliases: list[str] = []
+
+    for label, aliases in TREATMENT_PATTERNS:
+        for alias in aliases:
+            if re.search(rf"\b{re.escape(alias)}\b", q_lower):
+                matched_aliases.extend(aliases)
+                break
+        if matched_aliases:
+            break
+
+    if not matched_aliases:
+        return None, [], []
+
+    alerts: list[str] = []
+    citations: list[Citation] = []
+    pages: set[int] = set()
+
+    # Check waiting periods
+    for wp in structured_facts.get("waiting_periods", []):
+        cond_text = str(wp.get("condition", "")).lower()
+        period_text = str(wp.get("period", "")).lower()
+        wp_full = f"{cond_text} {period_text}"
+        pg = wp.get("page", 1)
+
+        is_match = any(re.search(rf"\b{re.escape(a)}\b", wp_full) for a in matched_aliases)
+        if not is_match and any(a in ("knee", "joint replacement", "hip", "cataract", "hernia", "sinus", "sinusitis") for a in matched_aliases):
+            if "specific disease" in cond_text or "24 month" in period_text or "24 month" in cond_text:
+                is_match = True
+
+        if is_match:
+            period_val = wp.get("period", "applicable period")
+            cond_val = wp.get("condition", "Waiting Period")
+            alerts.append(
+                f"- **{cond_val}**: Subject to a **{period_val}** waiting period before coverage applies (Page {pg})."
+            )
+            citations.append(Citation(page_number=pg, excerpt=f"{cond_val}: {period_val}", section_heading="Waiting Period"))
+            pages.add(pg)
+
+    # Check exclusions
+    for ex in structured_facts.get("exclusions", []):
+        item_text = str(ex.get("item", "")).lower()
+        pg = ex.get("page", 1)
+        if any(re.search(rf"\b{re.escape(a)}\b", item_text) for a in matched_aliases):
+            item_val = ex.get("item", "Excluded procedure")
+            alerts.append(
+                f"- **Policy Exclusion**: '{item_val}' is permanently excluded under this policy (Page {pg})."
+            )
+            citations.append(Citation(page_number=pg, excerpt=item_val, section_heading="Permanent Exclusion"))
+            pages.add(pg)
+
+    if not alerts:
+        return None, [], []
+
+    heads_up_str = "⚠️ **From your coverage check:**\n" + "\n".join(alerts)
+    return heads_up_str, citations, sorted(list(pages))
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def answer_question(
@@ -219,12 +316,13 @@ def answer_question(
     Main entry point for answering insurance policy questions.
 
     Orchestrates:
-      1. Embedding router (structured vs semantic).
-      2. Structured path direct resolution if field available in facts.
-      3. Semantic vector search across ChromaDB collection for policy_id.
-      4. Grounded draft answer generation with page citations.
-      5. Self-verification pass against cited passages.
-      6. Confidence scoring (High / Medium / Low).
+      1. Embedding router (structured vs semantic vs claim_checklist).
+      2. Claim checklist path direct resolution if routed to claim_checklist.
+      3. Structured path direct resolution if field available in facts.
+      4. Semantic vector search across ChromaDB collection for policy_id.
+      5. Grounded draft answer generation with page citations.
+      6. Self-verification pass against cited passages.
+      7. Confidence scoring (High / Medium / Low).
 
     Args:
         policy_id: Document ID identifying the indexed policy.
@@ -248,6 +346,38 @@ def answer_question(
     # ── Step 1: Routing Check ─────────────────────────────────────────────────
     matched_field, router_score, _ = route_question_with_score(question)
 
+    # 1A. Claim Readiness Checklist Route (handled BEFORE structured field lookup)
+    if matched_field == "claim_checklist":
+        logger.info("Routing query to Claim Readiness Checklist builder (score=%.4f)", router_score)
+        heads_up, heads_up_citations, heads_up_pages = _check_scenario_treatment(question, structured_facts)
+        checklist_res = build_claim_checklist(structured_facts, heads_up=heads_up)
+
+        combined_citations = list(heads_up_citations)
+        for c in checklist_res.get("citations", []):
+            combined_citations.append(
+                Citation(
+                    page_number=c["page_number"],
+                    excerpt=c["excerpt"],
+                    section_heading=c.get("section_heading"),
+                )
+            )
+        combined_pages = sorted(list(set(heads_up_pages + checklist_res.get("pages", []))))
+
+        return AnswerResult(
+            question=question,
+            answer=checklist_res["answer"],
+            source_path="structured",
+            confidence=checklist_res["confidence"],
+            confidence_reason=checklist_res["confidence_reason"],
+            pages=combined_pages,
+            citations=combined_citations,
+            structured_field="claim_checklist",
+            checklist=checklist_res.get("checklist"),
+            general_advice=checklist_res.get("general_advice"),
+            heads_up=heads_up,
+        )
+
+    # 1B. Standard Structured Field Direct Resolution
     if matched_field and structured_facts:
         field_data = structured_facts.get(matched_field)
         # If the structured fact exists and is populated

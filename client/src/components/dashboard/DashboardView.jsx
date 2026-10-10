@@ -13,6 +13,7 @@ export default function DashboardView({
   onStartChat,
   onNavigateToCost,
   onNavigateToCompare,
+  onNavigateToClaims,
 }) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedPolicyForFacts, setSelectedPolicyForFacts] = useState(null);
@@ -43,7 +44,19 @@ export default function DashboardView({
 
       {/* ─── Quick actions (only shown when policies exist) ─ */}
       {policies.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={onNavigateToClaims}
+            className="surface p-4 text-left hover:border-amber-400/40 transition-all duration-150 group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-200">Claims Workflow</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Eligibility, readiness & tracking</p>
+              </div>
+              <ChevronRight size={16} className="text-zinc-600 group-hover:text-amber-400 transition-colors" />
+            </div>
+          </button>
           <button
             onClick={onNavigateToCost}
             className="surface p-4 text-left hover:border-white/[0.12] transition-all duration-150 group"

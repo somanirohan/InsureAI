@@ -121,6 +121,9 @@ async def save_chat_turn(
         "verification_passed": rag_response.get("verification_passed"),
         "verification_notes": rag_response.get("verification_notes"),
         "citations": rag_response.get("citations") or [],
+        "checklist": rag_response.get("checklist"),
+        "general_advice": rag_response.get("general_advice"),
+        "heads_up": rag_response.get("heads_up"),
         "created_at": now,
     }
 
