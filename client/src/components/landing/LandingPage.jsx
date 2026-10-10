@@ -85,9 +85,10 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
       else await register(fullName, email, password, phone);
     } catch (err) {
       const isNet = err.code === 'ERR_NETWORK' || err.message?.includes('Network Error');
+      const serverMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message;
       setError(isNet
         ? 'Cannot reach the backend on port 5001. Run: npm run server'
-        : err.response?.data?.error || 'Authentication failed. Please check your credentials.');
+        : serverMsg || (isLogin ? 'Authentication failed. Please check your credentials.' : 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }
