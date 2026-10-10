@@ -246,7 +246,11 @@ def answer_question(
         )
 
     # ── Step 1: Routing Check ─────────────────────────────────────────────────
-    matched_field, router_score, _ = route_question_with_score(question)
+    matched_field, router_score = None, 0.0
+    try:
+        matched_field, router_score, _ = route_question_with_score(question)
+    except Exception as route_err:
+        logger.warning("Routing check failed (%s); proceeding to semantic path", route_err)
 
     if matched_field and structured_facts:
         field_data = structured_facts.get(matched_field)

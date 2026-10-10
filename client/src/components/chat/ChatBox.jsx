@@ -20,6 +20,10 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { Toggle, Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
+import { useWebRTCVoice } from '../../hooks/useWebRTCVoice';
+import { VoiceInputButton, VoiceInputBanner } from './VoiceInput';
+
+
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5001/api/chat/ws';
 
@@ -474,6 +478,67 @@ export default function ChatBox({ initialPolicy, policies }) {
   const wsRef          = useRef(null);
   const inputRef       = useRef(null);
 
+  // ── WebRTC Instant Voice Input Hook (ChatGPT style) ──────
+  const {
+    isSupported: isVoiceSupported,
+    isListening: isVoiceListening,
+    isSpeaking: isVoiceSpeaking,
+    isPauseDetected: isVoicePauseDetected,
+    isTranscribing: isVoiceTranscribing,
+    engine: voiceEngine,
+    setEngine: setVoiceEngine,
+    recordingDuration: voiceDuration,
+    audioLevel: voiceAudioLevel,
+    transcript: voiceTranscript,
+    interimTranscript: voiceInterimTranscript,
+    fullTranscript: voiceFullTranscript,
+    error: voiceError,
+    language: voiceLanguage,
+    setLanguage: setVoiceLanguage,
+    startListening: startVoiceListening,
+    stopListening: stopVoiceListening,
+    commitTranscript: commitVoiceTranscript,
+    sendImmediately: sendVoiceImmediately,
+    cancelListening: cancelVoiceListening,
+    toggleListening: toggleVoiceListening,
+    setError: setVoiceError,
+  } = useWebRTCVoice({
+    initialEngine: 'instant',
+    onTextCommitted: (transcribedText) => {
+      if (transcribedText) {
+        setInput((prev) => {
+          const next = prev ? `${prev} ${transcribedText}` : transcribedText;
+          return next;
+        });
+        setTimeout(() => {
+          inputRef.current?.focus();
+          if (inputRef.current) {
+            inputRef.current.style.height = 'auto';
+            inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 128) + 'px';
+          }
+        }, 50);
+      }
+    },
+    onSendImmediate: (transcribedText) => {
+      if (transcribedText) {
+        handleSend(transcribedText);
+      }
+    },
+  });
+
+  // Keyboard shortcut: Alt + V to toggle voice input
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.altKey && (e.key === 'v' || e.key === 'V')) {
+        e.preventDefault();
+        toggleVoiceListening();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [toggleVoiceListening]);
+
+
   // ── Fetch conversation list ──────────────────────────
   useEffect(() => {
     fetchConversations(true);
@@ -714,9 +779,11 @@ export default function ChatBox({ initialPolicy, policies }) {
     }
   };
 
-  const handleSend = async (e) => {
-    e?.preventDefault();
-    const question = input.trim();
+  const handleSend = async (textOrEvent) => {
+    if (textOrEvent && typeof textOrEvent.preventDefault === 'function') {
+      textOrEvent.preventDefault();
+    }
+    const question = (typeof textOrEvent === 'string' ? textOrEvent : input).trim();
     if (!question || loading) return;
 
     setInput('');
@@ -971,6 +1038,28 @@ export default function ChatBox({ initialPolicy, policies }) {
             />
           </div>
 
+          {/* WebRTC Real-Time Voice Input Banner */}
+          <VoiceInputBanner
+            isListening={isVoiceListening}
+            isSpeaking={isVoiceSpeaking}
+            isPauseDetected={isVoicePauseDetected}
+            isTranscribing={isVoiceTranscribing}
+            engine={voiceEngine}
+            onEngineChange={setVoiceEngine}
+            transcript={voiceTranscript}
+            interimTranscript={voiceInterimTranscript}
+            fullTranscript={voiceFullTranscript}
+            recordingDuration={voiceDuration}
+            audioLevel={voiceAudioLevel}
+            language={voiceLanguage}
+            onLanguageChange={setVoiceLanguage}
+            onCommitTranscript={commitVoiceTranscript}
+            onSendImmediately={sendVoiceImmediately}
+            onCancel={cancelVoiceListening}
+            error={voiceError}
+            onErrorDismiss={() => setVoiceError(null)}
+          />
+
           <div className="flex gap-2.5 items-end">
             <div className="flex-1 relative">
               <textarea
@@ -979,8 +1068,18 @@ export default function ChatBox({ initialPolicy, policies }) {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={loading}
-                placeholder="Ask about room rent limits, exclusions, ICU caps, or claim procedures…"
+                disabled={loading || isVoiceTranscribing}
+                placeholder={
+                  isVoiceListening
+                    ? isVoicePauseDetected
+                      ? "⏸️ Pause detected — click 'Use Transcript' to insert, or keep speaking..."
+                      : isVoiceSpeaking
+                      ? "🎙️ Listening... Streaming words onto screen..."
+                      : "Listening... speak now or press Alt+V to finish"
+                    : isVoiceTranscribing
+                    ? "Transcribing with Whisper Turbo..."
+                    : "Ask about room rent limits, exclusions, ICU caps, or claim procedures…"
+                }
                 className="
                   input-field resize-none py-3.5 pr-12 leading-relaxed
                   max-h-32 overflow-y-auto rounded-2xl bg-[#f5f8f8] text-[#062327] placeholder-[#558187] focus:bg-white focus:border-[#062327] border-[#062327]/12
@@ -991,9 +1090,21 @@ export default function ChatBox({ initialPolicy, policies }) {
                 }}
               />
             </div>
+
+            {/* WebRTC Real-Time Voice Input Microphone Button */}
+            <VoiceInputButton
+              isListening={isVoiceListening}
+              isSpeaking={isVoiceSpeaking}
+              isPauseDetected={isVoicePauseDetected}
+              isTranscribing={isVoiceTranscribing}
+              isSupported={isVoiceSupported}
+              disabled={loading}
+              onClick={toggleVoiceListening}
+            />
+
             <button
               type="submit"
-              disabled={loading || !input.trim()}
+              disabled={loading || !input.trim() || isVoiceTranscribing}
               className="btn-pill-lime h-12 w-12 p-0 rounded-2xl flex-shrink-0 flex items-center justify-center cursor-pointer disabled:opacity-40 shadow-sm"
               aria-label="Send message"
             >
@@ -1003,7 +1114,8 @@ export default function ChatBox({ initialPolicy, policies }) {
           <p className="text-[11px] text-[#558187] mt-2.5 text-center font-medium">
             {wsConnected ? 'Streaming via WebSocket' : 'REST API mode'}
             {selectedPolicyId ? '' : ' · Searching across all policies'}
-            {' · Fully grounded with contract page citations'}
+            {' · WebRTC Instant Voice (Alt+V)'}
+            {' · Fully grounded with contract citations'}
           </p>
         </form>
       </div>

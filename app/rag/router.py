@@ -158,7 +158,12 @@ def warm_router_cache(force_refresh: bool = False) -> dict[str, list[list[float]
 
     phrases_to_embed = [phrase for _, phrase in field_phrase_pairs]
     logger.info("Embedding %d reference phrases across %d fields", len(phrases_to_embed), len(STRUCTURED_FIELD_REFERENCES))
-    vectors = embedder.embed(phrases_to_embed)
+    try:
+        vectors = embedder.embed(phrases_to_embed)
+    except Exception as exc:
+        logger.warning("Failed to embed router reference phrases (%s); routing disabled", exc)
+        _CACHED_REFERENCE_VECTORS = {}
+        return _CACHED_REFERENCE_VECTORS
 
     # Reconstruct mapping: field_name -> list of vectors
     cached: dict[str, list[list[float]]] = {
@@ -202,12 +207,18 @@ def route_question_with_score(
         else settings.router_similarity_threshold
     )
 
-    # Ensure reference embeddings are warmed
-    cached_vectors = warm_router_cache()
+    try:
+        # Ensure reference embeddings are warmed
+        cached_vectors = warm_router_cache()
+        if not cached_vectors:
+            return None, 0.0, {}
 
-    # Embed the incoming question
-    embedder = get_embedder()
-    question_vec = embedder.embed_one(question.strip())
+        # Embed the incoming question
+        embedder = get_embedder()
+        question_vec = embedder.embed_one(question.strip())
+    except Exception as exc:
+        logger.warning("Failed to calculate routing similarity for question: %s", exc)
+        return None, 0.0, {}
 
     field_scores: dict[str, float] = {}
     best_field: Optional[str] = None
