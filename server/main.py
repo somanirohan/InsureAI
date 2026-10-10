@@ -98,7 +98,17 @@ app.add_api_websocket_route("/api/chat/ws", chat.websocket_chat_endpoint)
 app.add_api_websocket_route("/ws/chat", chat.websocket_chat_endpoint)
 
 
-# ── Global Exception Handler ──────────────────────────────────────────────────
+# ── Exception Handlers ────────────────────────────────────────────────────────
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": detail, "error": detail, "message": detail},
+        headers=exc.headers,
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled server exception on %s %s: %s", request.method, request.url.path, exc)
@@ -110,12 +120,14 @@ async def global_exception_handler(request: Request, exc: Exception):
 
     return JSONResponse(
         status_code=500,
-        content={"error": err_msg, "message": "Internal server error occurred."},
+        content={"error": err_msg, "detail": err_msg, "message": "Internal server error occurred."},
     )
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────
+@app.head("/health")
 @app.get("/health")
+@app.head("/api/health")
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint. Reports DB health, OCR availability, and LLM provider reachability."""

@@ -25,15 +25,23 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, Sequence
 
 import chromadb
-from chromadb.config import Settings as ChromaSettings
 
 from app.config import settings
 from app.embeddings.factory import get_embedder
 from app.ingestion.chunking import Chunk
+from app.vectorstore.registry import (
+    delete_all_policy_vectorstores,
+    format_chunk_id,
+    get_active_embedding_model_name,
+    get_chroma_client,
+    get_policy_chunks,
+    validate_retrieved_records,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,56 +67,18 @@ class RetrievedChunk:
     similarity: float
 
 
-# ── Chroma client singleton ───────────────────────────────────────────────────
-
-_CHROMA_CLIENT: Optional[chromadb.ClientAPI] = None
-
-
-def get_chroma_client() -> chromadb.ClientAPI:
-    """
-    Get or initialize persistent ChromaDB client.
-    """
-    global _CHROMA_CLIENT
-    if _CHROMA_CLIENT is None:
-        persist_path = Path(settings.chroma_persist_dir).resolve()
-        persist_path.mkdir(parents=True, exist_ok=True)
-        logger.info("Initializing ChromaDB persistent client at: %s", persist_path)
-        _CHROMA_CLIENT = chromadb.PersistentClient(
-            path=str(persist_path),
-            settings=ChromaSettings(anonymized_telemetry=False),
-        )
-    return _CHROMA_CLIENT
-
-
-def _sanitize_collection_name(policy_id: str) -> str:
-    """
-    Format policy_id to comply with Chroma collection naming rules:
-    - 3-63 characters
-    - Starts and ends with alphanumeric
-    - Contains only alphanumeric, underscores, hyphens
-    """
-    clean_id = re.sub(r"[^a-zA-Z0-9_-]", "_", policy_id.strip())
-    name = f"policy_{clean_id}"
-    if len(name) > 63:
-        name = name[:63]
-    return name
-
+# ── Backward-compatible collection access ─────────────────────────────────────
 
 def get_policy_collection(policy_id: str) -> chromadb.Collection:
     """
-    Get or create isolated Chroma collection for a specific policy.
+    Get isolated Chroma collection for a specific policy's chunks via registry.
     """
-    client = get_chroma_client()
-    coll_name = _sanitize_collection_name(policy_id)
-    return client.get_or_create_collection(
-        name=coll_name,
-        metadata={"policy_id": policy_id, "hnsw:space": "cosine"},
-    )
+    return get_policy_chunks(policy_id)
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def index_chunks(policy_id: str, chunks: Sequence[Chunk]) -> int:
+def index_chunks(policy_id: str, chunks: Sequence[Chunk], user_id: Optional[str] = None) -> int:
     """
     Embed and index a list of chunks into the policy's isolated Chroma collection.
 
@@ -125,14 +95,20 @@ def index_chunks(policy_id: str, chunks: Sequence[Chunk]) -> int:
 
     collection = get_policy_collection(policy_id)
     embedder = get_embedder()
+    active_model = get_active_embedding_model_name()
+    now_iso = datetime.utcnow().isoformat()
 
     texts = [c.text for c in chunks]
-    ids = [f"{policy_id}_{c.chunk_id}" for c in chunks]
+    ids = [format_chunk_id(policy_id, c.chunk_id) for c in chunks]
     metadatas = [
         {
+            "source_type": "policy_chunk",
             "policy_id": policy_id,
+            "user_id": user_id or "default",
             "chunk_id": c.chunk_id,
             "page_number": c.page_number,
+            "embedding_model": active_model,
+            "created_at": now_iso,
         }
         for c in chunks
     ]
@@ -217,11 +193,16 @@ def query_similar(
             include=["documents", "metadatas", "distances"],
         )
 
-    retrieved: list[RetrievedChunk] = []
+    validated = validate_retrieved_records(
+        results=results,
+        expected_source_type="policy_chunk",
+        expected_policy_id=policy_id,
+    )
 
-    docs = results.get("documents", [[]])[0]
-    metas = results.get("metadatas", [[]])[0]
-    distances = results.get("distances", [[]])[0]
+    retrieved: list[RetrievedChunk] = []
+    docs = validated.get("documents", [])
+    metas = validated.get("metadatas", [])
+    distances = validated.get("distances", [])
 
     for doc, meta, dist in zip(docs, metas, distances):
         # Cosine distance to similarity: similarity = 1 - distance
@@ -241,12 +222,6 @@ def query_similar(
 
 def delete_policy_index(policy_id: str) -> None:
     """
-    Delete a policy's vector collection (useful when a policy is deleted or re-uploaded).
+    Delete all vector collections associated with a policy via registry.
     """
-    client = get_chroma_client()
-    coll_name = _sanitize_collection_name(policy_id)
-    try:
-        client.delete_collection(name=coll_name)
-        logger.info("Deleted Chroma collection '%s' for policy '%s'", coll_name, policy_id)
-    except Exception as exc:
-        logger.warning("Failed to delete collection '%s': %s", coll_name, exc)
+    delete_all_policy_vectorstores(policy_id)

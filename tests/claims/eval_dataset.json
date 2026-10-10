@@ -1,0 +1,887 @@
+{
+  "policies": {
+    "pol_hdfc_optima": [
+      {
+        "clause_id": "ex_1",
+        "clause_type": "exclusion",
+        "title": "Cosmetic & Aesthetic Surgery",
+        "text": "Clause 4.1: Cosmetic surgery, aesthetic treatments, and plastic surgery are permanently excluded except reconstructive surgery following an accidental injury.",
+        "page": 6
+      },
+      {
+        "clause_id": "ex_2",
+        "clause_type": "exclusion",
+        "title": "Robotic and Cyberknife Surgery",
+        "text": "Clause 4.2: Robotic assisted surgeries and cyberknife treatments are excluded unless specifically pre-authorized for malignant neoplasm.",
+        "page": 6
+      },
+      {
+        "clause_id": "ex_3",
+        "clause_type": "exclusion",
+        "title": "Infertility and Assisted Reproduction",
+        "text": "Clause 4.3: Infertility, IVF, ART, and sub-fertility treatments are strictly excluded under this policy.",
+        "page": 7
+      },
+      {
+        "clause_id": "wp_1",
+        "clause_type": "waiting_period",
+        "title": "Specific Disease 24 Month Waiting Period",
+        "text": "Clause 3.2: A waiting period of 24 months applies for Cataract, Hernia, Hydrocele, and Joint Replacement surgeries.",
+        "page": 4
+      },
+      {
+        "clause_id": "wp_2",
+        "clause_type": "waiting_period",
+        "title": "Pre-Existing Disease 36 Month Waiting Period",
+        "text": "Clause 3.1: Pre-existing diseases (PED) are covered only after 36 months of continuous coverage.",
+        "page": 4
+      },
+      {
+        "clause_id": "rr_1",
+        "clause_type": "room_rent",
+        "title": "Room Rent and Nursing Limit",
+        "text": "Clause 2.1: Room Rent and nursing charges are covered up to 1% of Sum Insured per day. ICU charges are covered up to 2% of Sum Insured per day.",
+        "page": 3
+      },
+      {
+        "clause_id": "sub_1",
+        "clause_type": "sub_limit",
+        "title": "Cataract Procedure Sub-limit",
+        "text": "Clause 2.4: Cataract surgery charges are subject to a sub-limit of Rs. 40,000 per eye.",
+        "page": 5
+      }
+    ],
+    "pol_star_cardiac": [
+      {
+        "clause_id": "ex_1",
+        "clause_type": "exclusion",
+        "title": "Dental & Orthodontics Exclusion",
+        "text": "Clause 5.1: Dental treatment and dental surgery of any kind are excluded unless requiring hospitalisation arising from an accidental bodily injury.",
+        "page": 8
+      },
+      {
+        "clause_id": "ex_2",
+        "clause_type": "exclusion",
+        "title": "Experimental & Unproven Treatments",
+        "text": "Clause 5.4: Treatments that are experimental, unproven, or not recognized by medical science councils are excluded.",
+        "page": 9
+      },
+      {
+        "clause_id": "sub_1",
+        "clause_type": "sub_limit",
+        "title": "Cardiac Angioplasty Stent Sub-limit",
+        "text": "Clause 3.3: Cost of coronary stent in angioplasty (PTCA) is capped at statutory NPPA ceiling rates plus hospital fee.",
+        "page": 4
+      },
+      {
+        "clause_id": "wp_1",
+        "clause_type": "waiting_period",
+        "title": "Initial 30 Days Waiting Period",
+        "text": "Clause 2.1: 30 days initial waiting period applies from inception, except accidental emergencies.",
+        "page": 2
+      },
+      {
+        "clause_id": "rr_1",
+        "clause_type": "room_rent",
+        "title": "Single Private AC Room Rent",
+        "text": "Clause 1.2: Normal Room Rent is eligible up to Single Standard AC room. No proportionate deduction applies for single room.",
+        "page": 2
+      }
+    ],
+    "pol_care_supreme": [
+      {
+        "clause_id": "ex_1",
+        "clause_type": "exclusion",
+        "title": "Obesity & Bariatric Surgery Exclusion",
+        "text": "Clause 4.8: Bariatric surgery for weight control and morbid obesity is excluded unless BMI is above 40 with life-threatening comorbidities.",
+        "page": 7
+      },
+      {
+        "clause_id": "ex_2",
+        "clause_type": "exclusion",
+        "title": "Self-Inflicted Injuries & Substance Abuse",
+        "text": "Clause 4.12: Intentional self-inflicted injuries and treatment resulting from intoxication or substance abuse are strictly excluded.",
+        "page": 8
+      },
+      {
+        "clause_id": "wp_1",
+        "clause_type": "waiting_period",
+        "title": "Bariatric Surgery Waiting Period",
+        "text": "Clause 3.4: Bariatric surgery carries a mandatory 36-month waiting period when eligible under carve-out criteria.",
+        "page": 5
+      },
+      {
+        "clause_id": "sub_1",
+        "clause_type": "sub_limit",
+        "title": "Modern Treatment Sub-limits",
+        "text": "Clause 2.5: Modern treatments including Balloon Sinuplasty, Deep Brain Stimulation, and Oral Chemotherapy are capped at 50% of Sum Insured.",
+        "page": 4
+      },
+      {
+        "clause_id": "copay_1",
+        "clause_type": "copay",
+        "title": "Co-payment for Senior Citizens",
+        "text": "Clause 1.4: 20% co-payment applies on all admissible claims for insured persons aged 65 years and above.",
+        "page": 3
+      }
+    ]
+  },
+  "examples": [
+    {
+      "id": "eval_001",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Cataract surgery charges",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "exact_match",
+      "split": "dev"
+    },
+    {
+      "id": "eval_002",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Room Rent and nursing charges",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "supports",
+      "category": "exact_match",
+      "split": "test"
+    },
+    {
+      "id": "eval_003",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Infertility and IVF treatment",
+      "expected_clause_id": "ex_3",
+      "expected_verdict": "contradicts",
+      "category": "exact_match",
+      "split": "dev"
+    },
+    {
+      "id": "eval_004",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Joint Replacement surgery",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "contradicts",
+      "category": "exact_match",
+      "split": "test"
+    },
+    {
+      "id": "eval_005",
+      "policy_id": "pol_star_cardiac",
+      "query": "Dental treatment and dental surgery",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "exact_match",
+      "split": "dev"
+    },
+    {
+      "id": "eval_006",
+      "policy_id": "pol_star_cardiac",
+      "query": "Coronary stent in angioplasty",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "exact_match",
+      "split": "test"
+    },
+    {
+      "id": "eval_007",
+      "policy_id": "pol_star_cardiac",
+      "query": "Single Standard AC room",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "supports",
+      "category": "exact_match",
+      "split": "dev"
+    },
+    {
+      "id": "eval_008",
+      "policy_id": "pol_star_cardiac",
+      "query": "Experimental, unproven treatment",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "exact_match",
+      "split": "test"
+    },
+    {
+      "id": "eval_009",
+      "policy_id": "pol_care_supreme",
+      "query": "Bariatric surgery for weight control",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "exact_match",
+      "split": "dev"
+    },
+    {
+      "id": "eval_010",
+      "policy_id": "pol_care_supreme",
+      "query": "Deep Brain Stimulation treatment",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "exact_match",
+      "split": "test"
+    },
+    {
+      "id": "eval_011",
+      "policy_id": "pol_care_supreme",
+      "query": "Self-inflicted injury treatment",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "exact_match",
+      "split": "dev"
+    },
+    {
+      "id": "eval_012",
+      "policy_id": "pol_care_supreme",
+      "query": "20% co-payment for senior citizens",
+      "expected_clause_id": "copay_1",
+      "expected_verdict": "supports",
+      "category": "exact_match",
+      "split": "test"
+    },
+    {
+      "id": "eval_013",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Lens extraction for blurred cloudy vision",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "paraphrase",
+      "split": "dev"
+    },
+    {
+      "id": "eval_014",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Hospital per day bed charge in general ward",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "supports",
+      "category": "paraphrase",
+      "split": "test"
+    },
+    {
+      "id": "eval_015",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Total knee arthroplasty operation",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "dev"
+    },
+    {
+      "id": "eval_016",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Inguinal rupture wall surgical repair",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "test"
+    },
+    {
+      "id": "eval_017",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Test tube baby artificial conception therapy",
+      "expected_clause_id": "ex_3",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "dev"
+    },
+    {
+      "id": "eval_018",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Aesthetic nose reshaping rhinoplasty",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "test"
+    },
+    {
+      "id": "eval_019",
+      "policy_id": "pol_star_cardiac",
+      "query": "Root canal and tooth extraction procedures",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "dev"
+    },
+    {
+      "id": "eval_020",
+      "policy_id": "pol_star_cardiac",
+      "query": "Heart artery stent deployment fee",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "paraphrase",
+      "split": "test"
+    },
+    {
+      "id": "eval_021",
+      "policy_id": "pol_star_cardiac",
+      "query": "Private individual AC inpatient room stay",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "supports",
+      "category": "paraphrase",
+      "split": "dev"
+    },
+    {
+      "id": "eval_022",
+      "policy_id": "pol_star_cardiac",
+      "query": "Unorthodox alternative non-approved therapy",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "test"
+    },
+    {
+      "id": "eval_023",
+      "policy_id": "pol_care_supreme",
+      "query": "Sleeve gastrectomy for extreme obesity",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "dev"
+    },
+    {
+      "id": "eval_024",
+      "policy_id": "pol_care_supreme",
+      "query": "Targeted oral chemo capsule therapy",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "paraphrase",
+      "split": "test"
+    },
+    {
+      "id": "eval_025",
+      "policy_id": "pol_care_supreme",
+      "query": "Harm inflicted by alcohol poisoning intoxication",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "paraphrase",
+      "split": "dev"
+    },
+    {
+      "id": "eval_026",
+      "policy_id": "pol_care_supreme",
+      "query": "Elderly patient cost sharing deduction",
+      "expected_clause_id": "copay_1",
+      "expected_verdict": "supports",
+      "category": "paraphrase",
+      "split": "test"
+    },
+    {
+      "id": "eval_027",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Bilateral phaco with iol implant",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "abbreviation",
+      "split": "dev"
+    },
+    {
+      "id": "eval_028",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Daily rm chg and nrs chg",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "supports",
+      "category": "abbreviation",
+      "split": "test"
+    },
+    {
+      "id": "eval_029",
+      "policy_id": "pol_hdfc_optima",
+      "query": "ICU stay charges for 2 days",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "supports",
+      "category": "abbreviation",
+      "split": "dev"
+    },
+    {
+      "id": "eval_030",
+      "policy_id": "pol_hdfc_optima",
+      "query": "TKR surgical knee procedure",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "contradicts",
+      "category": "abbreviation",
+      "split": "test"
+    },
+    {
+      "id": "eval_031",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Unmet PED 3-year clause",
+      "expected_clause_id": "wp_2",
+      "expected_verdict": "contradicts",
+      "category": "abbreviation",
+      "split": "dev"
+    },
+    {
+      "id": "eval_032",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Advanced ART and IVF cycles",
+      "expected_clause_id": "ex_3",
+      "expected_verdict": "contradicts",
+      "category": "abbreviation",
+      "split": "test"
+    },
+    {
+      "id": "eval_033",
+      "policy_id": "pol_star_cardiac",
+      "query": "PTCA with drug eluting stent",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "abbreviation",
+      "split": "dev"
+    },
+    {
+      "id": "eval_034",
+      "policy_id": "pol_star_cardiac",
+      "query": "Routine dental extraction PAC charges",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "abbreviation",
+      "split": "test"
+    },
+    {
+      "id": "eval_035",
+      "policy_id": "pol_star_cardiac",
+      "query": "Single AC rm rent bill",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "supports",
+      "category": "abbreviation",
+      "split": "dev"
+    },
+    {
+      "id": "eval_036",
+      "policy_id": "pol_star_cardiac",
+      "query": "30 days WP initial restriction",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "contradicts",
+      "category": "abbreviation",
+      "split": "test"
+    },
+    {
+      "id": "eval_037",
+      "policy_id": "pol_care_supreme",
+      "query": "Bariatric surgery for BMI > 40",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "ambiguous",
+      "category": "abbreviation",
+      "split": "dev"
+    },
+    {
+      "id": "eval_038",
+      "policy_id": "pol_care_supreme",
+      "query": "DBS advanced neurostimulator therapy",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "supports",
+      "category": "abbreviation",
+      "split": "test"
+    },
+    {
+      "id": "eval_039",
+      "policy_id": "pol_care_supreme",
+      "query": "36m WP for obesity surgery",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "contradicts",
+      "category": "abbreviation",
+      "split": "dev"
+    },
+    {
+      "id": "eval_040",
+      "policy_id": "pol_care_supreme",
+      "query": "20% copay on billing for 70yo patient",
+      "expected_clause_id": "copay_1",
+      "expected_verdict": "supports",
+      "category": "abbreviation",
+      "split": "test"
+    },
+    {
+      "id": "eval_041",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Facial cosmetic rejuvenation injections",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "dev"
+    },
+    {
+      "id": "eval_042",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Liposuction and tummy tuck surgery",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "test"
+    },
+    {
+      "id": "eval_043",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Robotic Da Vinci prostatectomy",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "dev"
+    },
+    {
+      "id": "eval_044",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Cyberknife stereotactic radiation therapy",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "test"
+    },
+    {
+      "id": "eval_045",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Intrauterine insemination fertility fee",
+      "expected_clause_id": "ex_3",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "dev"
+    },
+    {
+      "id": "eval_046",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Surrogacy clinical preparation",
+      "expected_clause_id": "ex_3",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "test"
+    },
+    {
+      "id": "eval_047",
+      "policy_id": "pol_star_cardiac",
+      "query": "Orthodontic braces and crown cementation",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "dev"
+    },
+    {
+      "id": "eval_048",
+      "policy_id": "pol_star_cardiac",
+      "query": "Impacted wisdom tooth dental surgery",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "test"
+    },
+    {
+      "id": "eval_049",
+      "policy_id": "pol_star_cardiac",
+      "query": "Ozone therapy unproven alternative medicine",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "dev"
+    },
+    {
+      "id": "eval_050",
+      "policy_id": "pol_star_cardiac",
+      "query": "Stem cell experimental anti-aging therapy",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "test"
+    },
+    {
+      "id": "eval_051",
+      "policy_id": "pol_care_supreme",
+      "query": "Cosmetic gastric balloon insertion for weight loss",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "dev"
+    },
+    {
+      "id": "eval_052",
+      "policy_id": "pol_care_supreme",
+      "query": "Rehabilitation hospitalization for chronic narcotics overdose",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "exclusion",
+      "split": "test"
+    },
+    {
+      "id": "eval_053",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Plastic reconstructive surgery after severe road accident injury",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "supports",
+      "category": "negation_carveout",
+      "split": "dev"
+    },
+    {
+      "id": "eval_054",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Pre-authorized robotic surgery for prostate malignant neoplasm",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "supports",
+      "category": "negation_carveout",
+      "split": "test"
+    },
+    {
+      "id": "eval_055",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Cosmetic scar revision not caused by accident",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "negation_carveout",
+      "split": "dev"
+    },
+    {
+      "id": "eval_056",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Cyberknife treatment without malignancy pre-authorization",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "negation_carveout",
+      "split": "test"
+    },
+    {
+      "id": "eval_057",
+      "policy_id": "pol_star_cardiac",
+      "query": "Maxillofacial jaw dental repair due to road traffic trauma",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "supports",
+      "category": "negation_carveout",
+      "split": "dev"
+    },
+    {
+      "id": "eval_058",
+      "policy_id": "pol_star_cardiac",
+      "query": "Emergency trauma hospitalisation within initial 30 days",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "supports",
+      "category": "negation_carveout",
+      "split": "test"
+    },
+    {
+      "id": "eval_059",
+      "policy_id": "pol_star_cardiac",
+      "query": "Elective planned hospitalisation on day 15 after inception",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "contradicts",
+      "category": "negation_carveout",
+      "split": "dev"
+    },
+    {
+      "id": "eval_060",
+      "policy_id": "pol_star_cardiac",
+      "query": "Elective dental scaling not arising from accident",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "negation_carveout",
+      "split": "test"
+    },
+    {
+      "id": "eval_061",
+      "policy_id": "pol_care_supreme",
+      "query": "Bariatric surgery for morbid obesity with BMI 44 and severe diabetes",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "supports",
+      "category": "negation_carveout",
+      "split": "dev"
+    },
+    {
+      "id": "eval_062",
+      "policy_id": "pol_care_supreme",
+      "query": "Bariatric surgery with BMI 32 for cosmetic body shaping",
+      "expected_clause_id": "ex_1",
+      "expected_verdict": "contradicts",
+      "category": "negation_carveout",
+      "split": "test"
+    },
+    {
+      "id": "eval_063",
+      "policy_id": "pol_care_supreme",
+      "query": "Accidental poisoning ingestion by child",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "supports",
+      "category": "negation_carveout",
+      "split": "dev"
+    },
+    {
+      "id": "eval_064",
+      "policy_id": "pol_care_supreme",
+      "query": "Intentional self harm wrist laceration treatment",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "negation_carveout",
+      "split": "test"
+    },
+    {
+      "id": "eval_065",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Cataract surgery with robotic femtosecond laser guidance",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "conflicting_evidence",
+      "category": "conflicting_evidence",
+      "split": "dev"
+    },
+    {
+      "id": "eval_066",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Deluxe suite room rent with ICU backup",
+      "expected_clause_id": "rr_1",
+      "expected_verdict": "conflicting_evidence",
+      "category": "conflicting_evidence",
+      "split": "test"
+    },
+    {
+      "id": "eval_067",
+      "policy_id": "pol_star_cardiac",
+      "query": "Angioplasty performed in experimental clinical trial study",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "conflicting_evidence",
+      "category": "conflicting_evidence",
+      "split": "dev"
+    },
+    {
+      "id": "eval_068",
+      "policy_id": "pol_star_cardiac",
+      "query": "Emergency admission requiring experimental heart pump",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "conflicting_evidence",
+      "category": "conflicting_evidence",
+      "split": "test"
+    },
+    {
+      "id": "eval_069",
+      "policy_id": "pol_care_supreme",
+      "query": "Bariatric surgery for BMI 42 in 2nd policy month",
+      "expected_clause_id": "wp_1",
+      "expected_verdict": "conflicting_evidence",
+      "category": "conflicting_evidence",
+      "split": "dev"
+    },
+    {
+      "id": "eval_070",
+      "policy_id": "pol_care_supreme",
+      "query": "Deep brain stimulation with experimental electrode model",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "conflicting_evidence",
+      "category": "conflicting_evidence",
+      "split": "test"
+    },
+    {
+      "id": "eval_071",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Robotic cyberknife resection for non-malignant benign polyp",
+      "expected_clause_id": "ex_2",
+      "expected_verdict": "contradicts",
+      "category": "conflicting_evidence",
+      "split": "dev"
+    },
+    {
+      "id": "eval_072",
+      "policy_id": "pol_care_supreme",
+      "query": "Senior citizen modern sinus balloon procedure with 20% co-pay",
+      "expected_clause_id": "sub_1",
+      "expected_verdict": "conflicting_evidence",
+      "category": "conflicting_evidence",
+      "split": "test"
+    },
+    {
+      "id": "eval_073",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Enterprise database cloud server annual subscription",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "dev"
+    },
+    {
+      "id": "eval_074",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Luxury resort hotel weekend stay package",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "test"
+    },
+    {
+      "id": "eval_075",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Corporate accounting legal audit retainer invoice",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "dev"
+    },
+    {
+      "id": "eval_076",
+      "policy_id": "pol_hdfc_optima",
+      "query": "Smartphone screen replacement and service charge",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "test"
+    },
+    {
+      "id": "eval_077",
+      "policy_id": "pol_star_cardiac",
+      "query": "Airline business class international flight ticket",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "dev"
+    },
+    {
+      "id": "eval_078",
+      "policy_id": "pol_star_cardiac",
+      "query": "Industrial diesel generator maintenance AMC contract",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "test"
+    },
+    {
+      "id": "eval_079",
+      "policy_id": "pol_star_cardiac",
+      "query": "Office cafeteria catering lunch buffet bill",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "dev"
+    },
+    {
+      "id": "eval_080",
+      "policy_id": "pol_star_cardiac",
+      "query": "Commercial real estate office leasing security deposit",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "test"
+    },
+    {
+      "id": "eval_081",
+      "policy_id": "pol_care_supreme",
+      "query": "Supermarket grocery and organic vegetables purchase receipt",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "dev"
+    },
+    {
+      "id": "eval_082",
+      "policy_id": "pol_care_supreme",
+      "query": "Used automobile pre-purchase mechanical fitness inspection",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "test"
+    },
+    {
+      "id": "eval_083",
+      "policy_id": "pol_care_supreme",
+      "query": "Cryptocurrency GPU mining hardware motherboard",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "dev"
+    },
+    {
+      "id": "eval_084",
+      "policy_id": "pol_care_supreme",
+      "query": "Executive limousine chauffeur airport transfer charge",
+      "expected_clause_id": "none",
+      "expected_verdict": "no_match",
+      "category": "hard_negative",
+      "split": "test"
+    }
+  ]
+}

@@ -102,7 +102,20 @@ Health insurance policies are notoriously dense, laden with legal jargon, and di
   - *Semantic Route*: Cosine similarity retrieval over ChromaDB chunks for nuanced, circumstantial inquiries.
 - **Self-Verification Pipeline**: Before returning an answer, the RAG engine performs quote checking against retrieved chunks. If an answer cannot be substantiated, it is flagged as unsupported.
 
-### 6. Modern Responsive Dark-Themed UI
+### 6. Semantic Policy Evidence Matching & Verification (Addition 2)
+- **Vector Store Isolation Registry (`app/vectorstore/registry.py`)**:
+  - Enforces physical isolation between policy chunk collections (`policy_{policy_id}` for Q&A), discrete clause indices (`clauses_{policy_id}` for claim verification), and claim documents (never persisted to ChromaDB).
+  - Validates embedding model consistency with `EmbeddingModelMismatchError` on mismatched vector spaces.
+- **Medical & Billing Abbreviations Dictionary (`app/claims/semantic/abbreviations.py`)**:
+  - Normalizes clinical and hospital billing shorthand (`phaco`, `iol`, `rm chg`, `ot charges`, `tka`, `turp`, `ped`, `pac`) to formal contract terminology.
+- **Retrieve -> Rerank -> Verify Pipeline (`app/claims/semantic/`)**:
+  - Semantic retriever links bill items to relevant policy clauses.
+  - Verifier validates interpretation against strict verdicts (`supports`, `contradicts`, `ambiguous`, `conflicting_evidence`, `no_match`).
+  - **Verbatim Excerpt Invariant**: Guarantees that every supporting excerpt is an exact whitespace-normalized substring of the policy clause text; non-verbatim excerpts automatically downgrade confidence to `needs_review`.
+  - **Deterministic Precedence Table (`app/claims/precedence.py`)**: Hierarchical rule table resolving document and amount conflicts (`irda_guideline` > `user_confirmed` > `final_bill` > `itemised_bills` > `preauth_approval_letter` > `pre_treatment_estimate`), keeping arithmetic strictly outside the model.
+  - **Fallback Resilience**: Automatic fallback to BM25 keyword baseline with visible notice (`Semantic matching unavailable, using keyword fallback`) on provider timeouts.
+
+### 7. Modern Responsive Dark-Themed UI
 - **Rich Aesthetics**: Custom dark palette (`#07070d`) with ambient nebula lighting, starfield canvas effects, and glassmorphic cards.
 - **Bento-Grid Dashboard**: Overview of uploaded policies, extracted fact summaries, quick actions, and recent activity.
 - **Collapsible Navigation**: 3-line minimization button collapses the sidebar into an icon-only strip with centered navigation items.

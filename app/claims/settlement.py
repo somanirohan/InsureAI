@@ -74,17 +74,24 @@ def calculate_settlement_estimate(
     gross_amount = 0.0
     source_citation = "Treatment pre-admission estimate"
 
-    # Search for an uploaded final bill
+    # Search for an uploaded final bill (must be validated or user-confirmed)
     bill_doc: Optional[ClaimDocument] = None
+    unconfirmed_bill: Optional[ClaimDocument] = None
+
     for doc in claim.documents:
         if (
-            doc.item_id == "final_bill"
-            or doc.extracted_fields.get("document_type") == "final_bill"
+            doc.item_id in ("final_bill", "itemised_bills")
+            or doc.extracted_fields.get("document_type") in ("final_bill", "itemised_bills")
         ):
             amt = doc.extracted_fields.get("total_amount")
             if amt and float(amt) > 0:
-                bill_doc = doc
-                break
+                # Strictly require that needs_confirmation is False and validation_issues are resolved
+                if not getattr(doc, "needs_confirmation", False) and len(doc.validation_issues or []) == 0:
+                    bill_doc = doc
+                    break
+                else:
+                    if not unconfirmed_bill:
+                        unconfirmed_bill = doc
 
     if bill_doc:
         basis = "uploaded_bill"
@@ -95,6 +102,7 @@ def calculate_settlement_estimate(
         gross_amount = float(claim.treatment.estimated_cost)
         source_citation = "Claim pre-treatment cost estimate"
     else:
+        basis = "pre_treatment_estimate"
         gross_amount = 0.0
         source_citation = "Unspecified amount"
 
@@ -104,6 +112,15 @@ def calculate_settlement_estimate(
         rule="Initial hospital billed charges / estimated admission cost",
         citation=source_citation,
     ))
+
+    # Note when an uploaded bill is awaiting confirmation
+    if not bill_doc and unconfirmed_bill:
+        receipt_steps.append(ReceiptStep(
+            label="Bill Uploaded But Awaiting Confirmation",
+            amount=0.0,
+            rule=f"Uploaded bill '{unconfirmed_bill.filename}' requires verification before being used as settlement basis",
+            citation=f"Pending: {unconfirmed_bill.filename}",
+        ))
 
     if gross_amount <= 0:
         return SettlementEstimate(
@@ -130,8 +147,12 @@ def calculate_settlement_estimate(
     si_page = si_raw.get("page", 1) if isinstance(si_raw, dict) else 1
 
     room_raw = policy_facts.get("room_rent_limit")
-    room_str = room_raw.get("value", "") if isinstance(room_raw, dict) else str(room_raw or "")
-    room_page = room_raw.get("page", 1) if isinstance(room_raw, dict) else 1
+    if isinstance(room_raw, dict):
+        room_str = str(room_raw.get("value", ""))
+        room_page = room_raw.get("page", 1)
+    else:
+        room_str = str(room_raw or "")
+        room_page = 1
 
     # Check proportionate deduction if room type is deluxe/suite and cap is 1%
     room_penalty = 0.0

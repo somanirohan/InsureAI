@@ -34,7 +34,8 @@ export default function AuthModal() {
       if (isNetworkError) {
         setError('Cannot reach the backend server. Make sure it is running on port 5001.');
       } else {
-        setError(err.response?.data?.error || 'Authentication failed. Please check your credentials.');
+        const serverMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message;
+        setError(serverMsg || (isLogin ? 'Authentication failed. Please check your credentials.' : 'Registration failed. Please try again.'));
       }
     } finally {
       setLoading(false);

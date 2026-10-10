@@ -27,10 +27,108 @@ try:
 except ImportError:
     import fitz  # type: ignore[no-redef]
 
-from app.claims.models import ClaimDocument, TreatmentDetails
+from app.claims.models import ClaimDocument, LineItem, TreatmentDetails
+from app.config import settings
 from app.llm.factory import get_llm
 
 logger = logging.getLogger("insureai.claims.documents")
+
+
+# ── Line Item Extraction Helpers ──────────────────────────────────────────────
+
+def _parse_amount(raw_amt: Any) -> Optional[float]:
+    """Deterministically parse amount string or number to float."""
+    if raw_amt is None:
+        return None
+    if isinstance(raw_amt, (int, float)):
+        return float(raw_amt)
+    if isinstance(raw_amt, str):
+        # Remove currency prefixes like rs., inr, etc., then commas
+        cleaned = re.sub(r'^(?:rs|inr|₹|ps|fs)[\.\s]*', '', raw_amt.strip(), flags=re.IGNORECASE)
+        cleaned = cleaned.replace(",", "").strip()
+        # Extract the valid number sequence (e.g. 15000 or 15000.50)
+        match = re.search(r'\d+(?:\.\d+)?', cleaned)
+        if match:
+            try:
+                return float(match.group(0))
+            except ValueError:
+                return None
+    return None
+
+
+def _parse_quantity(raw_qty: Any) -> Optional[float]:
+    """Deterministically parse quantity."""
+    if raw_qty is None:
+        return None
+    if isinstance(raw_qty, (int, float)):
+        return float(raw_qty)
+    if isinstance(raw_qty, str):
+        cleaned = re.sub(r'[^\d.]', '', raw_qty)
+        if cleaned:
+            try:
+                return float(cleaned)
+            except ValueError:
+                return None
+    return None
+
+
+def _parse_line_items(raw_items: List[Any]) -> Tuple[List[LineItem], List[Dict[str, Any]]]:
+    """
+    Deterministically schema-validate line items.
+    Returns (valid_line_items, malformed_items). Malformed items are never dropped silently.
+    """
+    valid: List[LineItem] = []
+    malformed: List[Dict[str, Any]] = []
+
+    if not isinstance(raw_items, list):
+        return valid, [{"error": "line_items is not a list", "raw": raw_items}]
+
+    for item in raw_items:
+        if not isinstance(item, dict):
+            malformed.append({"error": "Item is not an object", "raw": item})
+            continue
+
+        desc = item.get("description")
+        raw_amt = item.get("amount")
+        amt = _parse_amount(raw_amt)
+
+        if not desc or not isinstance(desc, str) or not desc.strip() or amt is None:
+            malformed.append({"error": "Missing valid description or numeric amount", "raw": item})
+            continue
+
+        qty = _parse_quantity(item.get("quantity"))
+        try:
+            conf = float(item.get("confidence", 1.0))
+        except (ValueError, TypeError):
+            conf = 1.0
+
+        valid.append(
+            LineItem(
+                description=desc.strip(),
+                amount=amt,
+                quantity=qty,
+                confidence=conf,
+            )
+        )
+
+    return valid, malformed
+
+
+def _merge_line_items(item_lists: List[List[LineItem]]) -> List[LineItem]:
+    """
+    Merge line items across overlapping text chunks and de-duplicate identical entries.
+    """
+    merged: List[LineItem] = []
+    seen: set[Tuple[str, float]] = set()
+
+    for item_list in item_lists:
+        for it in item_list:
+            norm_key = (re.sub(r'\s+', ' ', it.description.strip().lower()), round(it.amount, 2))
+            if norm_key not in seen:
+                seen.add(norm_key)
+                merged.append(it)
+
+    return merged
 
 
 # ── Slot to Document Type Mapping ─────────────────────────────────────────────
@@ -209,6 +307,8 @@ def _regex_fallback_extract(text: str, item_id: str) -> Tuple[Dict[str, Any], Di
         "diagnosis": None,
         "total_amount": None,
         "document_type": None,
+        "line_items": [],
+        "malformed_line_items": [],
     }
     confidence: Dict[str, float] = {
         "patient_name": 0.4,
@@ -264,6 +364,33 @@ def _regex_fallback_extract(text: str, item_id: str) -> Tuple[Dict[str, Any], Di
         fields["total_amount"] = max(amounts)
         confidence["total_amount"] = 0.75
 
+    # Extract line items deterministically (e.g. numbered or dash itemized lines)
+    # Match lines like: "1. Room Rent & Nursing Charges (4 Days): INR 24,000.00" or "... [Qty: 4]: INR 28,000.00"
+    raw_extracted_items = []
+    for line in norm_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        line_m = re.match(
+            r'^(?:\d+[\.\)]|\-|\*)\s*([A-Za-z][A-Za-z0-9\s&/\(\)\-,\.]{2,80}?)(?:\s*\[(?:qty|quantity)[:\s]*(\d+(?:\.\d+)?)\])?\s*[:\-]\s*(?:(?:rs|inr|₹|ps|fs)[\.\s]*)?([\d,]+(?:\.\d{2})?)$',
+            line,
+            re.IGNORECASE,
+        )
+        if line_m:
+            desc = line_m.group(1).strip()
+            qty_str = line_m.group(2)
+            amt_str = line_m.group(3)
+            if any(k in desc.lower() for k in ("total", "amount payable", "net payable", "subtotal", "bill no", "patient", "date", "dr.")):
+                continue
+            parsed_a = _parse_amount(amt_str)
+            parsed_q = _parse_quantity(qty_str) if qty_str else 1.0
+            if parsed_a and parsed_a > 0:
+                raw_extracted_items.append({"description": desc, "amount": parsed_a, "quantity": parsed_q, "confidence": 0.85})
+
+    parsed_items, malformed = _parse_line_items(raw_extracted_items)
+    fields["line_items"] = [li.model_dump() for li in parsed_items]
+    fields["malformed_line_items"] = malformed
+
     # Extract diagnosis if indicated
     diag_match = re.search(r'(?:diagn[oa]sis|indication|condition)\s*[:\-]?\s*([A-Za-z][A-Za-z\s]{3,50})', norm_text, re.IGNORECASE)
     if diag_match:
@@ -313,8 +440,9 @@ def extract_document_fields(
     doc_id: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, float]]:
     """
-    Extract structured fields and per-field confidence from document text.
-    Uses LLM structured extraction, falling back to deterministic regex on failure.
+    Extract structured fields, line items, and per-field confidence from document text.
+    Handles the 3,000-character cap: for itemised bills, splits text into overlapping
+    segments, extracts per segment, and merges, de-duplicating items.
     """
     if not text.strip():
         empty_fields: Dict[str, Any] = {
@@ -324,18 +452,54 @@ def extract_document_fields(
             "diagnosis": None,
             "total_amount": None,
             "document_type": "unknown",
+            "line_items": [],
+            "malformed_line_items": [],
         }
-        empty_conf: Dict[str, float] = {k: 0.0 for k in empty_fields}
+        empty_conf: Dict[str, float] = {
+            "patient_name": 0.0,
+            "admission_date": 0.0,
+            "discharge_date": 0.0,
+            "diagnosis": 0.0,
+            "total_amount": 0.0,
+            "document_type": 0.0,
+        }
         return empty_fields, empty_conf
 
-    prompt = f"""You are a specialized medical insurance document parser.
+    # Chunking / Segmentation logic for bills > 3000 chars
+    segments: List[str] = []
+    chunk_size = 2800
+    chunk_overlap = 300
+    if len(text) > chunk_size and item_id in ("final_bill", "itemised_bills", "prescriptions"):
+        start = 0
+        while start < len(text):
+            seg = text[start : start + chunk_size]
+            segments.append(seg)
+            if start + chunk_size >= len(text):
+                break
+            start += chunk_size - chunk_overlap
+    else:
+        segments = [text[:3000]]
+
+    all_segment_line_items: List[List[LineItem]] = []
+    all_malformed: List[Dict[str, Any]] = []
+    primary_fields: Optional[Dict[str, Any]] = None
+    primary_conf: Optional[Dict[str, float]] = None
+
+    llm = None
+    try:
+        llm = get_llm()
+    except Exception:
+        pass
+
+    for seg_idx, seg_text in enumerate(segments):
+        prompt = f"""You are a specialized medical insurance document parser.
 Analyze the following document text and extract the structured claim fields into JSON.
 
-Document context: Uploaded for checklist slot '{item_id}'.
+Document context: Uploaded for checklist slot '{item_id}' (Segment {seg_idx + 1} of {len(segments)}).
 
 DOCUMENT TEXT:
 \"\"\"
-{text[:3000]}
+{seg_text}
 \"\"\"
 
 Respond with ONLY a valid JSON object matching this schema:
@@ -346,6 +510,14 @@ Respond with ONLY a valid JSON object matching this schema:
   "diagnosis": "string or null",
   "total_amount": 0.0,
   "document_type": "discharge_summary | itemised_bills | final_bill | diagnostic_reports | investigation_reports | identity_proof | id_proof | prescriptions | claim_form | preauth_form | preauth_approval_letter | unknown",
+  "line_items": [
+    {{
+      "description": "Item or service name",
+      "amount": 0.0,
+      "quantity": 1.0,
+      "confidence": 0.0 to 1.0
+    }}
+  ],
   "confidence": {{
     "patient_name": 0.0 to 1.0,
     "admission_date": 0.0 to 1.0,
@@ -359,60 +531,84 @@ Do not invent data. If a field is not found in the text, set it to null and conf
 Output only the JSON object, no explanation.
 """
 
-    try:
-        llm = get_llm()
-        reply = llm.chat(
-            messages=[
-                {"role": "system", "content": "You are a precise insurance data extractor that returns only strict JSON."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.0,
-            max_tokens=600,
-            format="json",
-        )
+        try:
+            if not llm:
+                raise ValueError("LLM provider not available")
+            reply = llm.chat(
+                messages=[
+                    {"role": "system", "content": "You are a precise insurance data extractor that returns only strict JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.0,
+                max_tokens=800,
+                format="json",
+            )
 
-        # Strip markdown fences if present
-        cleaned_reply = reply.strip()
-        if cleaned_reply.startswith("```"):
-            cleaned_reply = re.sub(r'^```(?:json)?\n?', '', cleaned_reply)
-            cleaned_reply = re.sub(r'\n?```$', '', cleaned_reply)
+            # Strip markdown fences if present
+            cleaned_reply = reply.strip()
+            if cleaned_reply.startswith("```"):
+                cleaned_reply = re.sub(r'^```(?:json)?\n?', '', cleaned_reply)
+                cleaned_reply = re.sub(r'\n?```$', '', cleaned_reply)
 
-        json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
-        if json_match:
-            data = json.loads(json_match.group(0))
-            conf = data.get("confidence") or {}
-            
-            raw_amt = data.get("total_amount")
-            parsed_amt = None
-            if raw_amt is not None:
-                if isinstance(raw_amt, (int, float)):
-                    parsed_amt = float(raw_amt)
-                elif isinstance(raw_amt, str):
-                    clean_str = re.sub(r'[^\d.]', '', raw_amt)
-                    if clean_str:
-                        try:
-                            parsed_amt = float(clean_str)
-                        except ValueError:
-                            pass
+            json_match = re.search(r'\{.*\}', cleaned_reply, re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group(0))
+                conf = data.get("confidence") or {}
+                parsed_amt = _parse_amount(data.get("total_amount"))
 
-            fields = {
-                "patient_name": data.get("patient_name") or None,
-                "admission_date": _normalize_date_str(data.get("admission_date")),
-                "discharge_date": _normalize_date_str(data.get("discharge_date")),
-                "diagnosis": data.get("diagnosis") or None,
-                "total_amount": parsed_amt,
-                "document_type": str(data.get("document_type") or "unknown").lower(),
-            }
-            parsed_conf = {
-                k: float(conf.get(k, 0.85 if fields[k] is not None else 0.0)) for k in fields
-            }
-            logger.info("[%s/%s] LLM field extraction succeeded: %s", claim_id or "-", doc_id or "-", fields)
-            return fields, parsed_conf
+                # Parse and validate line items from segment
+                seg_raw_items = data.get("line_items", [])
+                seg_valid_items, seg_malformed = _parse_line_items(seg_raw_items)
+                all_segment_line_items.append(seg_valid_items)
+                all_malformed.extend(seg_malformed)
 
-    except Exception as exc:
-        logger.warning("[%s/%s] LLM extraction failed or timed out: %s. Using regex fallback.", claim_id or "-", doc_id or "-", exc)
+                if primary_fields is None:
+                    primary_fields = {
+                        "patient_name": data.get("patient_name") or None,
+                        "admission_date": _normalize_date_str(data.get("admission_date")),
+                        "discharge_date": _normalize_date_str(data.get("discharge_date")),
+                        "diagnosis": data.get("diagnosis") or None,
+                        "total_amount": parsed_amt,
+                        "document_type": str(data.get("document_type") or "unknown").lower(),
+                    }
+                    primary_conf = {
+                        k: float(conf.get(k, 0.85 if primary_fields[k] is not None else 0.0)) for k in primary_fields
+                    }
+                else:
+                    # Supplement missing scalar fields from subsequent segments
+                    for k in ("patient_name", "admission_date", "discharge_date", "diagnosis", "total_amount"):
+                        if primary_fields.get(k) is None:
+                            val = data.get(k)
+                            if val:
+                                primary_fields[k] = _parse_amount(val) if k == "total_amount" else val
+                                primary_conf[k] = float(conf.get(k, 0.8))
 
-    return _regex_fallback_extract(text, item_id)
+        except Exception as exc:
+            logger.warning("[%s/%s] LLM segment extraction failed or timed out: %s. Using regex fallback.", claim_id or "-", doc_id or "-", exc)
+            fallback_res, fallback_conf = _regex_fallback_extract(seg_text, item_id)
+            if primary_fields is None:
+                primary_fields = fallback_res
+                primary_conf = fallback_conf
+            seg_items = [LineItem(**it) for it in fallback_res.get("line_items", [])]
+            all_segment_line_items.append(seg_items)
+            all_malformed.extend(fallback_res.get("malformed_line_items", []))
+
+    if primary_fields is None:
+        primary_fields, primary_conf = _regex_fallback_extract(text, item_id)
+
+    # Merge line items across all chunks and de-duplicate
+    merged_items = _merge_line_items(all_segment_line_items)
+    primary_fields["line_items"] = [li.model_dump() for li in merged_items]
+    primary_fields["malformed_line_items"] = all_malformed
+
+    logger.info(
+        "[%s/%s] Field extraction completed: %d line items, %d malformed items",
+        claim_id or "-",
+        doc_id or "-",
+        len(merged_items),
+        len(all_malformed),
+    )
+    return primary_fields, primary_conf or {k: 0.5 for k in primary_fields if k not in ("line_items", "malformed_line_items")}
 
 
 # ── Deterministic 5 Validators ────────────────────────────────────────────────
@@ -557,6 +753,25 @@ def validate_document(
             )
             needs_confirmation = True
 
+    # 6. Line Items Validation & Discrepancy Checking
+    malformed_items = extracted_fields.get("malformed_line_items") or []
+    if malformed_items:
+        issues.append(f"{len(malformed_items)} malformed line item(s) detected during extraction.")
+        needs_confirmation = True
+
+    line_items_data = extracted_fields.get("line_items") or []
+    if line_items_data and bill_total is not None and bill_total > 0:
+        sum_line_items = sum(
+            float(it.get("amount", 0.0)) for it in line_items_data if isinstance(it, dict)
+        )
+        tolerance = getattr(settings, "line_item_sum_tolerance", 100.0)
+        diff = abs(sum_line_items - bill_total)
+        if diff > tolerance:
+            issues.append(
+                f"Sum of line items (₹{sum_line_items:,.2f}) differs from bill total (₹{bill_total:,.2f}) by ₹{diff:,.2f} (exceeds ₹{tolerance:,.2f} tolerance)."
+            )
+            needs_confirmation = True
+
     # Slot-aware Confidence Check: Only check fields that are expected for this slot type
     # patient_name is expected on all slots
     if field_confidence.get("patient_name", 1.0) < 0.7:
@@ -615,6 +830,15 @@ def process_uploaded_claim_document(
         needs_confirmation,
     )
 
+    # Parse line items to LineItem instances
+    line_items_objs: List[LineItem] = []
+    for li_dict in extracted_fields.get("line_items", []):
+        if isinstance(li_dict, dict):
+            try:
+                line_items_objs.append(LineItem(**li_dict))
+            except Exception:
+                pass
+
     return ClaimDocument(
         document_id=doc_id,
         item_id=item_id,
@@ -622,6 +846,7 @@ def process_uploaded_claim_document(
         file_path=file_path,
         extracted_fields=extracted_fields,
         field_confidence=field_confidence,
+        line_items=line_items_objs,
         validation_issues=validation_issues,
         needs_confirmation=needs_confirmation,
     )

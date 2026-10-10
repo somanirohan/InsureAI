@@ -438,6 +438,17 @@ async def upload_claim_document(
                 detail=f"Unknown checklist item slot '{item_id}'.",
             )
 
+    # Delete previous document file from disk if re-uploading to the same slot
+    existing_doc_for_slot = next((d for d in claim.get("documents", []) if d.get("item_id") == item_id), None)
+    if existing_doc_for_slot and existing_doc_for_slot.get("file_path"):
+        old_fpath = existing_doc_for_slot["file_path"]
+        if os.path.exists(old_fpath):
+            try:
+                os.remove(old_fpath)
+                logger.info("[%s] Deleted previous document file from disk: %s", claim_id, old_fpath)
+            except OSError as err:
+                logger.warning("[%s] Failed to delete previous document file %s: %s", claim_id, old_fpath, err)
+
     # Save file safely
     doc_dir = os.path.join(settings.UPLOAD_DIR, "claims", claim_id)
     os.makedirs(doc_dir, exist_ok=True)
@@ -451,17 +462,18 @@ async def upload_claim_document(
     treatment = TreatmentDetails(**claim["treatment"]) if claim.get("treatment") else None
     patient_name = current_user.get("full_name") or current_user.get("name") or current_user.get("email", "").split("@")[0]
 
-    # Process and validate document
+    # Process and validate document (clears old validation results completely)
     claim_doc_obj = process_uploaded_claim_document(
         file_path=file_path,
         filename=orig_filename,
         item_id=item_id,
         treatment=treatment,
         expected_patient_name=patient_name,
+        claim_id=claim_id,
     )
     doc_dict = claim_doc_obj.model_dump()
 
-    # Update or append document in claim
+    # Update or append document in claim (replaces old validation state completely)
     docs = claim.get("documents", [])
     docs = [d for d in docs if d.get("item_id") != item_id]
     docs.append(doc_dict)
@@ -663,6 +675,8 @@ async def confirm_document_fields(
 
     # Apply confirmed fields
     target_doc["extracted_fields"].update(payload.confirmed_fields)
+    if payload.line_items is not None:
+        target_doc["line_items"] = [li.model_dump() for li in payload.line_items]
     target_doc["needs_confirmation"] = False
     target_doc["validation_issues"] = []  # User has explicitly verified fields
 
@@ -830,3 +844,164 @@ async def get_claim_timeline(
     user_id = str(current_user["_id"])
     claim = await _get_claim_or_404(claim_id, user_id)
     return {"timeline": claim.get("timeline", [])}
+
+
+@router.delete("/{claim_id}", status_code=status.HTTP_200_OK)
+async def delete_claim(
+    claim_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Delete a claim, its MongoDB record, and all associated document files on disk.
+    Enforces ownership check.
+    """
+    import shutil
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+
+    db = get_async_db()
+    # 1. Delete MongoDB claim record
+    del_res = await db.claims.delete_one({"claim_id": claim_id, "user_id": user_id})
+    if del_res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Claim not found or access denied.")
+
+    # 2. Delete uploads folder on disk for this claim
+    claim_dir = os.path.join(settings.UPLOAD_DIR, "claims", claim_id)
+    if os.path.exists(claim_dir):
+        try:
+            shutil.rmtree(claim_dir, ignore_errors=True)
+            logger.info("Deleted claim uploads directory: %s", claim_dir)
+        except Exception as exc:
+            logger.warning("Failed to remove claim directory %s: %s", claim_dir, exc)
+
+    return {
+        "success": True,
+        "message": f"Claim {claim_id} and all associated files deleted successfully.",
+    }
+
+
+# ── Semantic Evidence Matching & Verification Endpoints ───────────────────────
+
+@router.post("/{claim_id}/evidence/match")
+async def match_policy_evidence_for_claim(
+    claim_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Run semantic matching and verification of claim line items and treatment against policy clauses.
+    Stores results in claim.evidence_matches with verbatim excerpts, verdicts, and declared confidence.
+    """
+    from app.claims.models import ConfirmEvidenceMatchRequest, EvidenceMatch
+    from app.claims.semantic.verifier import match_and_verify_item
+
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+    policy_id = claim.get("policy_id")
+    if not policy_id:
+        raise HTTPException(status_code=400, detail="Claim has no associated policy.")
+
+    # Gather items to match: line items from uploaded bills, or treatment name
+    items_to_match: List[str] = []
+    for doc in claim.get("documents", []):
+        for li in doc.get("line_items", []):
+            desc = li.get("description", "").strip()
+            if desc and desc not in items_to_match:
+                items_to_match.append(desc)
+
+    treatment = claim.get("treatment")
+    if treatment and treatment.get("name"):
+        t_name = treatment["name"].strip()
+        if t_name not in items_to_match:
+            items_to_match.append(t_name)
+
+    if not items_to_match:
+        return {"success": True, "matches": [], "message": "No line items or treatment details available to match."}
+
+    existing_matches = {m.get("item_description"): m for m in claim.get("evidence_matches", [])}
+    new_matches: List[Dict[str, Any]] = []
+
+    for item_desc in items_to_match:
+        # If user already confirmed a match for this item, preserve it
+        if item_desc in existing_matches and existing_matches[item_desc].get("user_confirmed"):
+            new_matches.append(existing_matches[item_desc])
+            continue
+
+        verified = match_and_verify_item(str(policy_id), item_desc)
+        match_record = EvidenceMatch(
+            match_id=f"ev_{uuid.uuid4().hex[:8]}",
+            item_description=item_desc,
+            clause_id=verified.clause_id,
+            clause_title=verified.clause_title,
+            clause_type=verified.clause_type,
+            page=verified.page,
+            supporting_excerpt=verified.supporting_excerpt,
+            verdict=verified.verdict,
+            confidence=verified.confidence,
+            review_reason=verified.review_reason,
+            similarity_score=verified.similarity_score,
+            is_fallback=verified.is_fallback,
+            fallback_notice=verified.fallback_notice,
+            user_confirmed=False,
+        ).model_dump()
+        new_matches.append(match_record)
+
+    db = get_async_db()
+    await db.claims.update_one(
+        {"claim_id": claim_id, "user_id": user_id},
+        {"$set": {
+            "evidence_matches": new_matches,
+            "updated_at": datetime.utcnow().isoformat(),
+        }}
+    )
+
+    return {"success": True, "matches": new_matches}
+
+
+@router.get("/{claim_id}/evidence")
+async def get_policy_evidence_for_claim(
+    claim_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Retrieve current policy evidence matches for a claim.
+    """
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+    return {"evidence_matches": claim.get("evidence_matches", [])}
+
+
+@router.put("/{claim_id}/evidence/{match_id}/confirm")
+async def confirm_policy_evidence_match(
+    claim_id: str,
+    match_id: str,
+    req: ConfirmEvidenceMatchRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Allow user or reviewer to confirm, accept, or override a policy evidence match.
+    """
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+    matches = claim.get("evidence_matches", [])
+
+    target_match = next((m for m in matches if m.get("match_id") == match_id), None)
+    if not target_match:
+        raise HTTPException(status_code=404, detail=f"Evidence match '{match_id}' not found.")
+
+    target_match["user_confirmed"] = req.user_confirmed
+    target_match["confirmed_by"] = user_id
+    if req.verdict:
+        target_match["verdict"] = req.verdict
+    if req.note:
+        target_match["review_reason"] = f"{target_match.get('review_reason') or ''} [User Note: {req.note}]".strip()
+
+    db = get_async_db()
+    await db.claims.update_one(
+        {"claim_id": claim_id, "user_id": user_id},
+        {"$set": {
+            "evidence_matches": matches,
+            "updated_at": datetime.utcnow().isoformat(),
+        }}
+    )
+
+    return {"success": True, "match": target_match}

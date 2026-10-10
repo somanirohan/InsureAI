@@ -177,6 +177,8 @@ function DocumentCard({
   const [editFields, setEditFields] = useState({});
   const [confirmingLoading, setConfirmingLoading] = useState(false);
 
+  const [editLineItems, setEditLineItems] = useState([]);
+
   const isUploading = uploadingSlot === item.item_id;
   const isReprocessing = doc && reprocessingDocId === doc.document_id;
 
@@ -194,17 +196,52 @@ function DocumentCard({
       diagnosis: doc.extracted_fields?.diagnosis || '',
       total_amount: doc.extracted_fields?.total_amount ? String(doc.extracted_fields.total_amount) : '',
     });
+    setEditLineItems(
+      (doc.line_items || []).map((li) => ({
+        description: li.description || '',
+        amount: li.amount != null ? String(li.amount) : '',
+        quantity: li.quantity != null ? String(li.quantity) : '',
+      }))
+    );
+  };
+
+  const handleLineItemChange = (index, field, value) => {
+    setEditLineItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleAddLineItem = () => {
+    setEditLineItems((prev) => [...prev, { description: '', amount: '', quantity: '' }]);
+  };
+
+  const handleRemoveLineItem = (index) => {
+    setEditLineItems((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleConfirmSubmit = async () => {
     try {
       setConfirmingLoading(true);
+      const parsedLineItems = editLineItems
+        .filter((li) => li.description.trim() || li.amount)
+        .map((li) => ({
+          description: li.description.trim() || 'Item',
+          amount: parseFloat(li.amount) || 0,
+          quantity: li.quantity ? parseFloat(li.quantity) : null,
+          confidence: 1.0,
+        }));
+
       const payload = {
-        patient_name: editFields.patient_name || null,
-        admission_date: editFields.admission_date || null,
-        discharge_date: editFields.discharge_date || null,
-        diagnosis: editFields.diagnosis || null,
-        total_amount: editFields.total_amount ? parseFloat(editFields.total_amount) : null,
+        confirmed_fields: {
+          patient_name: editFields.patient_name || null,
+          admission_date: editFields.admission_date || null,
+          discharge_date: editFields.discharge_date || null,
+          diagnosis: editFields.diagnosis || null,
+          total_amount: editFields.total_amount ? parseFloat(editFields.total_amount) : null,
+        },
+        line_items: parsedLineItems.length > 0 ? parsedLineItems : null,
       };
       await onConfirmDocument(doc.document_id, payload);
       setEditingDocId(null);
@@ -384,6 +421,40 @@ function DocumentCard({
             </div>
           </div>
 
+          {/* Extracted line items table (if present) */}
+          {doc.line_items && doc.line_items.length > 0 && (
+            <div className="bg-white p-3 rounded-xl border border-[#062327]/08 flex flex-col gap-2 shadow-2xs">
+              <div className="flex items-center justify-between text-xs font-bold text-[#062327]">
+                <span>Itemised Line Items ({doc.line_items.length})</span>
+                <span className="font-mono text-[#15803d]">
+                  Sum: ₹{doc.line_items.reduce((acc, li) => acc + (Number(li.amount) || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="max-h-48 overflow-y-auto border border-[#062327]/10 rounded-lg">
+                <table className="w-full text-[11px] text-left">
+                  <thead className="bg-[#f5f8f8] text-[#558187] font-semibold sticky top-0 border-b border-[#062327]/10">
+                    <tr>
+                      <th className="py-1.5 px-2">Description</th>
+                      <th className="py-1.5 px-2 text-center w-16">Qty</th>
+                      <th className="py-1.5 px-2 text-right w-24">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#062327]/05">
+                    {doc.line_items.map((li, idx) => (
+                      <tr key={idx} className="hover:bg-black/[0.02]">
+                        <td className="py-1 px-2 font-medium text-[#062327]">{li.description}</td>
+                        <td className="py-1 px-2 text-center text-[#558187]">{li.quantity != null ? li.quantity : '—'}</td>
+                        <td className="py-1 px-2 text-right font-mono font-semibold text-[#062327]">
+                          {Number(li.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Validation issues */}
           {doc.validation_issues?.length > 0 && (
             <div className="p-3.5 rounded-xl bg-[#fffbeb] border border-[#f59e0b]/30 flex flex-col gap-1 text-xs text-[#92400e]">
@@ -444,6 +515,60 @@ function DocumentCard({
                   />
                 </div>
               </div>
+
+              {/* Editable Line Items */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#062327]/10">
+                <div className="flex items-center justify-between">
+                  <label className="text-[#062327] font-bold text-xs">Editable Line Items</label>
+                  <button
+                    type="button"
+                    onClick={handleAddLineItem}
+                    className="text-[11px] font-bold text-[#15803d] hover:underline"
+                  >
+                    + Add Line Item
+                  </button>
+                </div>
+                {editLineItems.length === 0 ? (
+                  <p className="text-[11px] text-[#558187] italic">No line items extracted. Click above to add items if needed.</p>
+                ) : (
+                  <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+                    {editLineItems.map((li, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          value={li.description}
+                          onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                          className="flex-1 bg-[#f5f8f8] border border-[#062327]/15 rounded-lg px-2.5 py-1 text-xs text-[#062327]"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          value={li.quantity}
+                          onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
+                          className="w-16 bg-[#f5f8f8] border border-[#062327]/15 rounded-lg px-2 py-1 text-xs text-[#062327]"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Amount"
+                          value={li.amount}
+                          onChange={(e) => handleLineItemChange(index, 'amount', e.target.value)}
+                          className="w-24 bg-[#f5f8f8] border border-[#062327]/15 rounded-lg px-2.5 py-1 text-xs text-[#062327] font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLineItem(index)}
+                          className="text-xs text-[#ef4444] hover:font-bold px-1"
+                          title="Remove item"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"

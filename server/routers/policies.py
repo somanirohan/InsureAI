@@ -250,18 +250,30 @@ async def get_policy_by_id(policy_id: str, current_user: dict = Depends(get_curr
 
 
 @router.delete("/{policy_id}")
-async def delete_policy(policy_id: str, current_user: dict = Depends(get_current_user)):
-    """Cascade delete a policy and its isolated Chroma collection."""
+async def delete_policy(
+    policy_id: str,
+    cascade: bool = False,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Cascade delete a policy and its isolated Chroma collection.
+    If claims reference this policy, blocks with HTTP 409 unless cascade=true.
+    """
     u_oid = to_object_id(current_user["_id"])
     p_oid = to_object_id(policy_id)
     if not p_oid:
         raise HTTPException(status_code=400, detail="Invalid policy ID format.")
 
     try:
-        result = await policy_service.delete_policy_cascade(str(u_oid), str(p_oid))
+        result = await policy_service.delete_policy_cascade(str(u_oid), str(p_oid), cascade=cascade)
         return result
     except PermissionError:
         raise HTTPException(status_code=403, detail="Access denied or policy not found.")
+    except ValueError as val_err:
+        err_msg = str(val_err)
+        if "reference this policy" in err_msg:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=err_msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
     except Exception as exc:
         logger.exception("Error deleting policy: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc))
