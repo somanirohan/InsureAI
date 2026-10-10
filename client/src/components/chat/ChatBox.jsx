@@ -31,6 +31,7 @@ import { VoiceInputButton, VoiceInputBanner } from './VoiceInput';
 
 
 
+
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5001/api/chat/ws';
 
 const SAMPLE_QUESTIONS = [
@@ -494,6 +495,115 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
   );
 }
 
+// ─── Lightweight Markdown Message Renderer ────────────────────────────────
+function renderFormattedText(text) {
+  if (!text) return null;
+
+  // Split lines to properly format paragraphs, numbered lists, bullet lists
+  const lines = text.split('\n');
+  const elements = [];
+  let currentList = null;
+
+  const renderInlineFormatted = (str) => {
+    // Matches **bold**, `code`, and [Page X] or [Page X, Y]
+    const parts = str.split(/(\*\*[\s\S]*?\*\*|`[^`]+?`|\[Page\s+[^\]]+?\])/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong key={idx} className="font-bold text-[#062327]">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+        return (
+          <code key={idx} className="bg-[#062327]/08 px-1.5 py-0.5 rounded text-xs font-mono text-[#062327]">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      if (/^\[Page\s+[^\]]+\]$/.test(part)) {
+        return (
+          <span key={idx} className="inline-block bg-[#062327]/08 text-[#2d6a71] text-xs font-semibold px-1.5 py-0.2 rounded-md mx-0.5 border border-[#062327]/10">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  const flushList = () => {
+    if (currentList) {
+      if (currentList.type === 'ol') {
+        elements.push(
+          <ol key={`list-${elements.length}`} className="my-2 space-y-1.5 pl-5 list-decimal text-sm">
+            {currentList.items.map((it, i) => (
+              <li key={i} className="leading-relaxed">
+                {renderInlineFormatted(it)}
+              </li>
+            ))}
+          </ol>
+        );
+      } else {
+        elements.push(
+          <ul key={`list-${elements.length}`} className="my-2 space-y-1.5 pl-5 list-disc text-sm">
+            {currentList.items.map((it, i) => (
+              <li key={i} className="leading-relaxed">
+                {renderInlineFormatted(it)}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      currentList = null;
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      flushList();
+      continue;
+    }
+
+    // Numbered list: e.g. "1. **Hospitalization:** ..." or "1. Text"
+    const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (numMatch) {
+      if (!currentList || currentList.type !== 'ol') {
+        flushList();
+        currentList = { type: 'ol', items: [] };
+      }
+      currentList.items.push(numMatch[2]);
+      continue;
+    }
+
+    // Bullet list: e.g. "- Item" or "* Item"
+    const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/);
+    if (bulletMatch) {
+      if (!currentList || currentList.type !== 'ul') {
+        flushList();
+        currentList = { type: 'ul', items: [] };
+      }
+      currentList.items.push(bulletMatch[1]);
+      continue;
+    }
+
+    // Normal paragraph
+    flushList();
+    elements.push(
+      <p key={`p-${elements.length}`} className="mb-2.5 last:mb-0 leading-relaxed">
+        {renderInlineFormatted(rawLine)}
+      </p>
+    );
+  }
+
+  flushList();
+  return <div className="space-y-1">{elements}</div>;
+}
+
 // ─── Message bubble ────────────────────────────────────────────────────────
 function MessageBubble({ msg, plainLanguageMode }) {
   const isUser = msg.role === 'user';
@@ -554,10 +664,10 @@ function MessageBubble({ msg, plainLanguageMode }) {
           }`}
         >
           {msg.streaming ? (
-            <span>
-              {content}
-              <span className="inline-block w-1.5 h-4 bg-[#062327] ml-1 animate-pulse-dot" />
-            </span>
+            <div>
+              {renderFormattedText(content)}
+              <span className="inline-block w-1.5 h-4 bg-[#062327] ml-1 align-middle animate-pulse-dot" />
+            </div>
           ) : (
             <>
               {msg.checklist && msg.checklist.length > 0 ? (
@@ -572,7 +682,11 @@ function MessageBubble({ msg, plainLanguageMode }) {
                   />
                 </div>
               ) : (
-                <span className="whitespace-pre-line">{content}</span>
+                isUser ? (
+                  <span className="whitespace-pre-line">{content}</span>
+                ) : (
+                  renderFormattedText(content)
+                )
               )}
             </>
           )}
@@ -1278,10 +1392,14 @@ export default function ChatBox({ initialPolicy, policies }) {
             <button
               type="submit"
               disabled={loading || !input.trim() || isVoiceTranscribing}
-              className="btn-pill-lime h-12 w-12 p-0 rounded-2xl flex-shrink-0 flex items-center justify-center cursor-pointer disabled:opacity-40 shadow-sm"
+              className="btn-pill-lime h-12 w-12 p-0 rounded-2xl flex-shrink-0 flex items-center justify-center cursor-pointer disabled:opacity-40 shadow-sm text-[#062327]"
               aria-label="Send message"
             >
-              {loading ? <Spinner size={16} className="text-[#062327]" /> : <Send size={16} className="stroke-[2.5]" />}
+              {loading ? (
+                <Spinner size={18} className="text-[#062327] shrink-0" />
+              ) : (
+                <Send size={18} className="text-[#062327] shrink-0 stroke-[#062327] stroke-[2.2] translate-x-px" />
+              )}
             </button>
           </div>
           <p className="text-[11px] text-[#558187] mt-2.5 text-center font-medium">
