@@ -623,8 +623,13 @@ function MessageBubble({ msg, plainLanguageMode }) {
       {/* Bubble */}
       <div className={`max-w-2xl min-w-0 ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
         {/* Meta row (assistant only) */}
-        {!isUser && (msg.query_type || msg.confidence_level) && (
+        {!isUser && (msg.query_type || msg.confidence_level || msg.verification_passed || msg.scope_label) && (
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
+            {msg.scope_label && (
+              <span className="text-[10px] font-bold text-[#062327] bg-[#d2f57b]/30 border border-[#062327]/15 px-2.5 py-0.5 rounded-full">
+                {msg.scope_label}
+              </span>
+            )}
             {msg.query_type && (
               <span className="text-[10px] font-bold text-[#2d6a71] bg-[#f0fbfb] border border-[#062327]/10 px-2.5 py-0.5 rounded-full">
                 {msg.query_type === 'structured' ? t('chat.structured_lookup', 'Structured Lookup') : t('chat.semantic_search', 'Semantic Search')}
@@ -881,6 +886,8 @@ export default function ChatBox({ initialPolicy, policies }) {
         if (conv.policy_id) {
           const pId = typeof conv.policy_id === 'object' ? conv.policy_id._id : conv.policy_id;
           setSelectedPolicyId(pId || '');
+        } else {
+          setSelectedPolicyId('');
         }
       }
       setMobileDrawerOpen(false);
@@ -1098,7 +1105,12 @@ export default function ChatBox({ initialPolicy, policies }) {
   };
 
   const policyOptions = useMemo(() => [
-    { value: '', label: t('chat.all_policies', 'All Policies') },
+    {
+      value: '',
+      label: policies.length > 5
+        ? `${t('chat.all_policies', 'All Policies')} (${policies.length} - ${t('chat.facts_only', 'facts only, max 5 for semantic')})`
+        : `${t('chat.all_policies', 'All Policies')} (${policies.length})`,
+    },
     ...policies.map(p => ({
       value: p._id,
       label: `${p.insurer_name || p.file_name}`,

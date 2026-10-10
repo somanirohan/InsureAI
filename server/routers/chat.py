@@ -114,6 +114,10 @@ async def save_chat_turn(
         "created_at": now,
     }
 
+    scope_label = rag_response.get("scope_label")
+    scope_policy_ids = rag_response.get("scope_policy_ids") or []
+    partial_failure_notice = rag_response.get("partial_failure_notice")
+
     assistant_msg = {
         "message_id": str(uuid.uuid4()),
         "role": "assistant",
@@ -124,6 +128,9 @@ async def save_chat_turn(
         "verification_passed": rag_response.get("verification_passed"),
         "verification_notes": rag_response.get("verification_notes"),
         "citations": rag_response.get("citations") or [],
+        "scope_label": scope_label,
+        "scope_policy_ids": scope_policy_ids,
+        "partial_failure_notice": partial_failure_notice,
         "checklist": rag_response.get("checklist"),
         "general_advice": rag_response.get("general_advice"),
         "heads_up": rag_response.get("heads_up"),
@@ -133,6 +140,8 @@ async def save_chat_turn(
     update_fields = {"updated_at": now}
     if p_oid:
         update_fields["policy_id"] = p_oid
+    if scope_policy_ids:
+        update_fields["scope_policy_ids"] = scope_policy_ids
 
     await db.conversations.update_one(
         {"_id": c_oid},
@@ -217,6 +226,8 @@ async def send_message(
         rag_response = await rag_service.answer_question(
             user_id=user_id_str,
             policy_id=payload.policy_id,
+            policy_ids=payload.policy_ids,
+            scope=payload.scope,
             question=question,
             plain_language_requested=payload.plain_language_mode,
         )
@@ -439,6 +450,8 @@ async def websocket_chat_endpoint(
                 continue
 
             policy_id = data.get("policy_id")
+            policy_ids = data.get("policy_ids")
+            scope = data.get("scope")
             plain_lang_mode = bool(data.get("plain_language_mode", False))
             user_id = user_info["user_id"]
 
@@ -448,6 +461,8 @@ async def websocket_chat_endpoint(
                 rag_res = await rag_service.answer_question(
                     user_id=user_id,
                     policy_id=policy_id,
+                    policy_ids=policy_ids,
+                    scope=scope,
                     question=question,
                     plain_language_requested=plain_lang_mode,
                 )
@@ -495,6 +510,9 @@ async def websocket_chat_endpoint(
                 "verification_notes": rag_res["verification_notes"],
                 "citations": rag_res["citations"],
                 "plain_language": rag_res["plain_language"],
+                "scope_label": rag_res.get("scope_label"),
+                "scope_policy_ids": rag_res.get("scope_policy_ids"),
+                "partial_failure_notice": rag_res.get("partial_failure_notice"),
             })
 
     except WebSocketDisconnect:

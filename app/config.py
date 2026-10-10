@@ -86,6 +86,10 @@ class Settings(BaseSettings):
     # Absolute tolerance in Rupees for discrepancy between bill total and sum of line items
     line_item_sum_tolerance: float = 100.0
 
+    # ── Chat Scope ───────────────────────────────────────────────────────────
+    # Maximum number of policies to query simultaneously per question in multi-policy scope
+    max_policies_per_question: int = 5
+
 
 # Module-level singleton — import this everywhere.
 settings = Settings()

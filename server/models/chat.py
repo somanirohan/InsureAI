@@ -18,11 +18,16 @@ class MessageModel(BaseModel):
     verification_passed: Optional[bool] = None
     verification_notes: Optional[str] = None
     citations: List[CitationModel] = []
+    scope_label: Optional[str] = None
+    scope_policy_ids: Optional[List[str]] = None
+    partial_failure_notice: Optional[str] = None
     created_at: Optional[datetime] = None
 
 class QuestionRequest(BaseModel):
     conversation_id: Optional[str] = None
     policy_id: Optional[str] = None
+    policy_ids: Optional[List[str]] = None
+    scope: Optional[Any] = None  # "all", single policy_id string, or list of strings
     question: str
     plain_language_mode: bool = False
 

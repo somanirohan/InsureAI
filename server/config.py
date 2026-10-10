@@ -46,6 +46,7 @@ class ServerSettings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:5173"
+    MAX_POLICIES_PER_QUESTION: int = 5
 
     # ── Cookie & Session Security ─────────────────────────────────────────────
     COOKIE_NAME: str = "access_token"
