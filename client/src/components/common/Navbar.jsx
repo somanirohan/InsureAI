@@ -13,22 +13,24 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard',    icon: LayoutGrid },
-  { id: 'recommend', label: 'Recommend',    icon: Sparkles },
-  { id: 'claims',    label: 'Claims',       icon: ShieldAlert },
-  { id: 'chat',      label: 'AI Assistant', icon: MessageSquare },
-  { id: 'cost',      label: 'Cost',         icon: DollarSign },
-  { id: 'compare',   label: 'Compare',      icon: GitCompare },
-];
+import { useLanguage, LanguageSelector } from '../../context/LanguageContext';
 
 // ─── Desktop Sidebar ────────────────────────────────────────
-export function Sidebar({ activeTab, setActiveTab }) {
+export function Sidebar({ activeTab, setActiveTab, onOpenSecurityModal }) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('insurai_sidebar_collapsed') === 'true';
   });
+
+  const navItems = [
+    { id: 'dashboard', label: t('nav.dashboard', 'Dashboard'),    icon: LayoutGrid },
+    { id: 'recommend', label: t('nav.recommend', 'Recommend'),    icon: Sparkles },
+    { id: 'claims',    label: t('nav.claims', 'Claims'),          icon: ShieldAlert },
+    { id: 'chat',      label: t('nav.chat', 'AI Assistant'),      icon: MessageSquare },
+    { id: 'cost',      label: t('nav.cost', 'Cost'),              icon: DollarSign },
+    { id: 'compare',   label: t('nav.compare', 'Compare'),        icon: GitCompare },
+  ];
 
   const toggleSidebar = () => {
     setCollapsed(prev => {
@@ -64,8 +66,12 @@ export function Sidebar({ activeTab, setActiveTab }) {
                 <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
               </div>
               <div className="min-w-0 text-left">
-                <p className="font-headline text-xl font-extrabold tracking-tight text-[#062327] truncate leading-tight">InsurAI</p>
-                <p className="text-xs text-[#558187] truncate font-medium">Policy Intelligence</p>
+                <p className="font-headline text-xl font-extrabold tracking-tight text-[#062327] truncate leading-tight">
+                  {t('brand_name', 'InsurAI')}
+                </p>
+                <p className="text-xs text-[#558187] truncate font-medium">
+                  {t('brand_tagline', 'Policy Intelligence')}
+                </p>
               </div>
             </button>
             <button
@@ -106,7 +112,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
             : 'px-4 space-y-1.5'
         }`}
       >
-        {!collapsed && <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] px-3 mb-2">Navigation</p>}
+        {!collapsed && <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] px-3 mb-2">{t('nav.navigation', 'Navigation')}</p>}
         {navItems.map(({ id, label, icon: Icon }) => {
           const isActive = activeTab === id;
           if (collapsed) {
@@ -155,35 +161,47 @@ export function Sidebar({ activeTab, setActiveTab }) {
         })}
       </nav>
 
-      {/* User Footer */}
+      {/* User Footer & Security & Language */}
       <div
-        className={`pb-5 pt-4 ${collapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}
+        className={`pb-5 pt-3 ${collapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}
         style={{ borderTop: '1.5px solid rgba(6,35,39,0.08)' }}
       >
         {!collapsed ? (
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-[#f5f8f8] border border-[#062327]/08">
-            <div
-              className="w-8 h-8 rounded-xl bg-[#d2f57b] border-2 border-[#062327] text-[#062327] flex items-center justify-center flex-shrink-0 font-bold"
-            >
-              <User size={14} className="stroke-[2.5]" />
+          <>
+            <div className="mb-2.5">
+              {/* Language selector */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-bold text-[#558187] uppercase tracking-wider">
+                  {t('nav.select_language', 'Language')}
+                </span>
+                <LanguageSelector variant="compact" direction="up" />
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-[#062327] truncate leading-tight">
-                {user?.full_name?.split(' ')[0] || 'User'}
-              </p>
-              <p className="text-[11px] text-[#558187] truncate leading-tight">
-                {user?.email || ''}
-              </p>
+
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-[#f5f8f8] border border-[#062327]/08">
+              <div
+                className="w-8 h-8 rounded-xl bg-[#d2f57b] border-2 border-[#062327] text-[#062327] flex items-center justify-center flex-shrink-0 font-bold"
+              >
+                <User size={14} className="stroke-[2.5]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-[#062327] truncate leading-tight">
+                  {user?.full_name?.split(' ')[0] || t('nav.user', 'User')}
+                </p>
+                <p className="text-[11px] text-[#558187] truncate leading-tight">
+                  {user?.email || ''}
+                </p>
+              </div>
+              <button
+                id="nav-logout"
+                onClick={logout}
+                className="p-1.5 rounded-xl text-[#558187] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                title={t('nav.logout', 'Logout')}
+              >
+                <LogOut size={14} />
+              </button>
             </div>
-            <button
-              id="nav-logout"
-              onClick={logout}
-              className="p-1.5 rounded-xl text-[#558187] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-              title="Logout"
-            >
-              <LogOut size={14} />
-            </button>
-          </div>
+          </>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <div
@@ -196,7 +214,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
               id="nav-logout"
               onClick={logout}
               className="p-2 rounded-xl text-[#558187] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-              title="Logout"
+              title={t('nav.logout', 'Logout')}
               aria-label="Logout"
             >
               <LogOut size={15} />
@@ -209,9 +227,19 @@ export function Sidebar({ activeTab, setActiveTab }) {
 }
 
 // ─── Mobile Top Bar ─────────────────────────────────────────
-export function MobileTopBar({ activeTab, setActiveTab }) {
+export function MobileTopBar({ activeTab, setActiveTab, onOpenSecurityModal }) {
   const { logout } = useAuth();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+
+  const navItems = [
+    { id: 'dashboard', label: t('nav.dashboard', 'Dashboard'),    icon: LayoutGrid },
+    { id: 'recommend', label: t('nav.recommend', 'Recommend'),    icon: Sparkles },
+    { id: 'claims',    label: t('nav.claims', 'Claims'),          icon: ShieldAlert },
+    { id: 'chat',      label: t('nav.chat', 'AI Assistant'),      icon: MessageSquare },
+    { id: 'cost',      label: t('nav.cost', 'Cost'),              icon: DollarSign },
+    { id: 'compare',   label: t('nav.compare', 'Compare'),        icon: GitCompare },
+  ];
 
   return (
     <>
@@ -231,17 +259,24 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
             <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
           </div>
           <div>
-            <span className="font-headline text-lg font-extrabold text-[#062327] tracking-tight block leading-tight">InsurAI</span>
-            <span className="text-[10px] text-[#558187] font-medium block">Policy Intelligence</span>
+            <span className="font-headline text-lg font-extrabold text-[#062327] tracking-tight block leading-tight">
+              {t('brand_name', 'InsurAI')}
+            </span>
+            <span className="text-[10px] text-[#558187] font-medium block">
+              {t('brand_tagline', 'Policy Intelligence')}
+            </span>
           </div>
         </div>
-        <button
-          onClick={() => setOpen(!open)}
-          className="p-2 rounded-xl text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08 cursor-pointer"
-          aria-label="Toggle menu"
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <LanguageSelector variant="compact" direction="down" />
+          <button
+            onClick={() => setOpen(!open)}
+            className="p-2 rounded-xl text-[#558187] hover:text-[#062327] hover:bg-[#062327]/08 cursor-pointer"
+            aria-label="Toggle menu"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </header>
 
       {/* Mobile Drawer */}
@@ -268,8 +303,12 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
                   <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <div>
-                  <span className="font-headline text-xl font-extrabold text-[#062327] block leading-tight">InsurAI</span>
-                  <span className="text-xs text-[#558187] font-medium">Policy Intelligence</span>
+                  <span className="font-headline text-xl font-extrabold text-[#062327] block leading-tight">
+                    {t('brand_name', 'InsurAI')}
+                  </span>
+                  <span className="text-xs text-[#558187] font-medium">
+                    {t('brand_tagline', 'Policy Intelligence')}
+                  </span>
                 </div>
               </div>
               <button
@@ -280,7 +319,7 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
               </button>
             </div>
 
-            <div className="space-y-1.5 flex-1">
+            <div className="space-y-1.5 flex-1 overflow-y-auto">
               {navItems.map(({ id, label, icon: Icon }) => {
                 const isActive = activeTab === id;
                 return (
@@ -300,13 +339,23 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
               })}
             </div>
 
-            <button
-              onClick={() => { logout(); setOpen(false); }}
-              className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 cursor-pointer"
-            >
-              <LogOut size={15} />
-              Logout
-            </button>
+            <div className="pt-4 border-t border-[#062327]/08 space-y-3">
+
+              <div className="flex items-center justify-between px-2">
+                <span className="text-xs font-bold text-[#558187] uppercase tracking-wider">
+                  {t('nav.select_language', 'Language')}
+                </span>
+                <LanguageSelector variant="compact" direction="up" />
+              </div>
+
+              <button
+                onClick={() => { logout(); setOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 cursor-pointer"
+              >
+                <LogOut size={15} />
+                {t('nav.logout', 'Logout')}
+              </button>
+            </div>
           </nav>
         </>
       )}

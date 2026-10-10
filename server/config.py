@@ -37,6 +37,7 @@ class ServerSettings(BaseSettings):
     MONGO_DB_NAME: str = "insurai"
     JWT_SECRET: str = "insureai_super_secret_jwt_key_2026_secure_key"
     JWT_EXPIRES_IN: str = "7d"
+    ENCRYPTION_KEY: Optional[str] = None
     CLIENT_URL: str = "http://localhost:5173"
     ALLOWED_ORIGINS: Union[list[str], str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     UPLOAD_DIR: str = "server/uploads"
@@ -45,6 +46,17 @@ class ServerSettings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:5173"
+
+    # ── Cookie & Session Security ─────────────────────────────────────────────
+    COOKIE_NAME: str = "access_token"
+    COOKIE_SECURE: bool = False  # Set to True for HTTPS / production
+    COOKIE_SAMESITE: str = "lax"
+    COOKIE_DOMAIN: Optional[str] = None
+
+    # ── Rate Limiting & Protection ─────────────────────────────────────────────
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_AUTH_MAX_REQUESTS: int = 20  # per minute per IP for /api/auth
+    RATE_LIMIT_API_MAX_REQUESTS: int = 120   # per minute per IP for other endpoints
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

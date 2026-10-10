@@ -17,11 +17,13 @@ from fastapi.responses import JSONResponse
 try:
     from config import settings
     from db import check_db_health, init_db
+    from middleware.security import CSRFProtectionMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
     from routers import auth, chat, claims, comparisons, cost, dashboard, policies, recommendations
     from services.policy_crawler import policy_crawler_service
 except ImportError:
     from server.config import settings
     from server.db import check_db_health, init_db
+    from server.middleware.security import CSRFProtectionMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
     from server.routers import auth, chat, claims, comparisons, cost, dashboard, policies, recommendations
     from server.services.policy_crawler import policy_crawler_service
 
@@ -57,24 +59,28 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS Security ─────────────────────────────────────────────────────────────
-# Only allow explicitly configured frontend origins with credentials
+# ── CORS & Security Middleware Stack ──────────────────────────────────────────
 allowed_origins = settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGINS, list) else [settings.CLIENT_URL]
 if not allowed_origins:
     allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
-# ── CORS Security ─────────────────────────────────────────────────────────────
-# Only allow explicitly configured frontend origins with credentials
-allowed_origins = settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGINS, list) else [settings.CLIENT_URL]
-if not allowed_origins:
-    allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+# 1. Sliding-window rate limiter per client IP
+app.add_middleware(RateLimitMiddleware)
 
+# 2. Strict OWASP security headers & sensitive route cache prevention
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 3. CSRF origin and referer validation for cookie-authenticated browser requests
+app.add_middleware(CSRFProtectionMiddleware)
+
+# 4. Outermost: CORS middleware (handles OPTIONS preflight before internal middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # ── Include Routers ───────────────────────────────────────────────────────────

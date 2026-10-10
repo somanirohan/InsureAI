@@ -1,7 +1,16 @@
+import sys
+from pathlib import Path
+repo_root = Path(__file__).resolve().parent.parent.parent
+server_dir = repo_root / "server"
+for p in (str(repo_root), str(server_dir)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from datetime import datetime, timedelta
 from bson import ObjectId
 from server.db import get_sync_db
 from server.services.auth_service import hash_password, verify_password
+from server.services.crypto_service import build_user_email_query, secure_user_data, unsecure_user_data
 
 def setup_accounts():
     db = get_sync_db()
@@ -46,15 +55,22 @@ def setup_accounts():
 
     for acc in accounts:
         pwd_hash = hash_password(acc["password"])
-        existing = db.users.find_one({"email": acc["email"]})
+        existing = db.users.find_one(build_user_email_query(acc["email"]))
         if existing:
+            update_payload = secure_user_data({
+                "password_hash": pwd_hash,
+                "full_name": acc["full_name"],
+                "email": acc["email"],
+                "phone": acc["phone"],
+                "is_active": True,
+            })
             db.users.update_one(
                 {"_id": existing["_id"]},
-                {"$set": {"password_hash": pwd_hash, "full_name": acc["full_name"], "is_active": True}}
+                {"$set": update_payload}
             )
             print(f"Updated user: {acc['email']}")
         else:
-            doc = {
+            raw_doc = {
                 "_id": ObjectId(),
                 "full_name": acc["full_name"],
                 "email": acc["email"],
@@ -64,14 +80,16 @@ def setup_accounts():
                 "created_at": datetime.utcnow() - timedelta(days=5),
                 "last_login_at": datetime.utcnow()
             }
+            doc = secure_user_data(raw_doc)
             db.users.insert_one(doc)
             print(f"Created user: {acc['email']}")
 
     print("\nVerifying credentials for all 5 accounts:")
     for acc in accounts:
-        u = db.users.find_one({"email": acc["email"]})
+        u = db.users.find_one(build_user_email_query(acc["email"]))
+        unsecured_u = unsecure_user_data(u)
         ok = verify_password(acc["password"], u["password_hash"])
-        print(f" -> {acc['email']} | pwd: {acc['password']} | verified: {ok}")
+        print(f" -> {unsecured_u['email']} ({unsecured_u['full_name']}) | pwd: {acc['password']} | verified: {ok} | email_hash: {u.get('email_hash')[:16]}...")
 
 if __name__ == "__main__":
     setup_accounts()

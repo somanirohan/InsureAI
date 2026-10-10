@@ -3,13 +3,18 @@ import { API_BASE_URL } from '../constants';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    'X-Requested-With': 'XMLHttpRequest',
+  },
 });
 
-// Interceptor to inject JWT token
+// Interceptor to inject JWT token as fallback (dual authentication) and anti-CSRF header
 api.interceptors.request.use(
   (config) => {
+    config.headers['X-Requested-With'] = 'XMLHttpRequest';
     const token = localStorage.getItem('insurai_token') || localStorage.getItem('medshield_token');
-    if (token) {
+    if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

@@ -19,6 +19,7 @@ from bson import ObjectId
 
 from server.db import get_sync_db
 from server.services.auth_service import hash_password
+from server.services.crypto_service import secure_user_data
 
 from app.ingestion.chunking import Chunk
 from app.rag.vectorstore import index_chunks, delete_policy_index
@@ -78,7 +79,8 @@ def seed_data():
             "last_login_at": datetime.utcnow()
         }
     ]
-    db.users.insert_many(users_docs)
+    secured_users = [secure_user_data(u) for u in users_docs]
+    db.users.insert_many(secured_users)
     print(f"[Seeder] Created {len(users_docs)} Users: demo@insurai.com, rohan@insurai.com, priya.sharma@example.com")
 
     # ── 2. Create Policies & Embedded Facts ───────────────────────────────────

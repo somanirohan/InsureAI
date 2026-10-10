@@ -14,6 +14,7 @@ import {
   History,
 } from 'lucide-react';
 import api from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 
 const TREATMENTS = [
@@ -107,12 +108,14 @@ function AuditRow({ label, value, type = 'normal', note, isDeduction = false }) 
 }
 
 export default function CostEstimatorView({ policies }) {
+  const { t } = useLanguage();
   const [selectedPolicyId, setSelectedPolicyId]     = useState(policies[0]?._id || '');
   const [treatmentSelection, setTreatmentSelection] = useState('Knee Replacement');
   const [customTreatment, setCustomTreatment]       = useState('');
   const [hospitalTier, setHospitalTier]             = useState('tier_1');
   const [roomRentPerDay, setRoomRentPerDay]         = useState(12000);
   const [stayDays, setStayDays]                     = useState(4);
+
   const [loading, setLoading]                       = useState(false);
   const [estimate, setEstimate]                     = useState(null);
   const [history, setHistory]                       = useState([]);
@@ -254,14 +257,11 @@ export default function CostEstimatorView({ policies }) {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
-              Cost Estimator & Bill Audit
+              {t('cost.title', 'Cost Estimator & Bill Audit')}
             </h1>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/15">
-              Smart Simulator
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium max-w-2xl">
-            Simulate hospitalization out-of-pocket expenses and hidden room-rent sub-limit penalties with clause-level precision.
+            {t('cost.subtitle', 'Simulate hospitalization out-of-pocket expenses and hidden room-rent sub-limit penalties with clause-level precision.')}
           </p>
         </div>
 
@@ -291,7 +291,7 @@ export default function CostEstimatorView({ policies }) {
                 </div>
                 <div>
                   <h2 className="font-headline text-sm font-bold text-[#062327] leading-tight">
-                    Simulation Parameters
+                    {t('Simulation Parameters')}
                   </h2>
                   <p className="text-[11px] text-[#558187]">Admission & hospital specifications</p>
                 </div>
@@ -301,7 +301,7 @@ export default function CostEstimatorView({ policies }) {
             <form onSubmit={handleCalculate} className="space-y-4">
               {policies.length > 0 ? (
                 <Select
-                  label="Policy Document"
+                  label={t('cost.select_policy', 'Policy Document')}
                   value={selectedPolicyId}
                   onChange={handlePolicyChange}
                   options={policyOptions}
@@ -314,7 +314,7 @@ export default function CostEstimatorView({ policies }) {
 
               <div>
                 <Select
-                  label="Medical Procedure"
+                  label={t('cost.medical_procedure', 'Medical Procedure')}
                   value={treatmentSelection}
                   onChange={setTreatmentSelection}
                   options={TREATMENTS}
@@ -342,7 +342,7 @@ export default function CostEstimatorView({ policies }) {
               </div>
 
               <Select
-                label="Hospital Tier Category"
+                label={t('cost.hospital_tier', 'Hospital Tier Category')}
                 value={hospitalTier}
                 onChange={setHospitalTier}
                 options={HOSPITAL_TIERS}
@@ -351,7 +351,7 @@ export default function CostEstimatorView({ policies }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-1.5">
-                    Room Rent (₹/Day)
+                    {t('cost.room_rent_per_day', 'Room Rent (₹/Day)')}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#558187]">₹</span>
@@ -368,7 +368,7 @@ export default function CostEstimatorView({ policies }) {
 
                 <div>
                   <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-1.5">
-                    Stay Duration
+                    {t('cost.stay_duration', 'Stay Duration')}
                   </label>
                   <div className="relative">
                     <input
@@ -380,7 +380,7 @@ export default function CostEstimatorView({ policies }) {
                       className="input-field pr-12 font-sans font-bold text-sm text-[#062327] tabular-nums"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[#558187]">
-                      Days
+                      {t('common.days', 'Days')}
                     </span>
                   </div>
                 </div>
@@ -395,12 +395,12 @@ export default function CostEstimatorView({ policies }) {
                   {loading ? (
                     <>
                       <Spinner size={15} className="text-[#062327]" />
-                      <span>Adjusting & Calculating Breakdown…</span>
+                      <span>{t('common.calculating', 'Adjusting & Calculating Breakdown…')}</span>
                     </>
                   ) : (
                     <>
                       <Calculator size={16} />
-                      <span>Calculate Bill Breakdown</span>
+                      <span>{t('Calculate Bill Breakdown')}</span>
                     </>
                   )}
                 </button>
@@ -415,13 +415,14 @@ export default function CostEstimatorView({ policies }) {
                 <div className="flex items-center gap-1.5">
                   <History size={14} className="text-[#558187]" />
                   <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187]">
-                    Recent Simulations
+                    {t('Recent Simulations')}
                   </p>
                 </div>
                 <span className="text-[10px] text-[#558187] font-semibold">
                   {history.length} saved
                 </span>
               </div>
+
 
               <div className="space-y-1.5 max-h-56 overflow-y-auto scroll-area pr-0.5">
                 {history.map(est => {
@@ -503,7 +504,7 @@ export default function CostEstimatorView({ policies }) {
                   <div className="bg-[#f8fbfb] border border-[#062327]/08 p-5 rounded-2xl flex flex-col justify-between">
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1.5">
-                        Total Hospital Bill
+                        {t('Total Hospital Bill')}
                       </p>
                       <p className="font-sans text-2xl sm:text-3xl font-extrabold text-[#062327] tabular-nums tracking-tight">
                         {fmt(estimate.estimated_total_cost)}
@@ -519,7 +520,7 @@ export default function CostEstimatorView({ policies }) {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-                          Insurer Pays
+                          {t('Insurer Pays')}
                         </p>
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                           {pct(estimate.covered_amount, estimate.estimated_total_cost)}
@@ -540,7 +541,7 @@ export default function CostEstimatorView({ policies }) {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-rose-700">
-                          Your Out-of-Pocket
+                          {t('Your Out-of-Pocket')}
                         </p>
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
                           {pct(estimate.out_of_pocket_amount, estimate.estimated_total_cost)}
@@ -562,11 +563,11 @@ export default function CostEstimatorView({ policies }) {
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-[#062327] flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" />
-                      Insurer Covered: <strong className="font-bold">{pct(estimate.covered_amount, estimate.estimated_total_cost)}</strong>
+                      {t('Insurer Pays')}: <strong className="font-bold">{pct(estimate.covered_amount, estimate.estimated_total_cost)}</strong>
                     </span>
                     <span className="font-semibold text-rose-700 flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
-                      Patient Out-of-Pocket: <strong className="font-bold">{pct(estimate.out_of_pocket_amount, estimate.estimated_total_cost)}</strong>
+                      {t('Your Out-of-Pocket')}: <strong className="font-bold">{pct(estimate.out_of_pocket_amount, estimate.estimated_total_cost)}</strong>
                     </span>
                   </div>
 
@@ -590,7 +591,7 @@ export default function CostEstimatorView({ policies }) {
               <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
                 <div>
                   <h3 className="font-headline text-base sm:text-lg font-bold text-[#062327]">
-                    Detailed Audit & Deductions Breakdown
+                    {t('Detailed Audit & Deductions Breakdown')}
                   </h3>
                   <p className="text-xs text-[#558187] mt-0.5">
                     Itemized transparent audit showing applicable penalties, IRDAI excluded non-payables, and patient co-shares.

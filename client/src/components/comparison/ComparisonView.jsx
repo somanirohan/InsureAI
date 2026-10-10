@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import api from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import { Spinner, EmptyState, ErrorBanner } from '../common/ui';
 import { exportComparisonToExcel, exportComparisonToPdf } from '../../services/exportComparison';
 
@@ -77,12 +78,14 @@ export default function ComparisonView({
   recommendedPlans = null,
   onNavigateToRecommend,
 }) {
+  const { t } = useLanguage();
   const [activeMode, setActiveMode] = useState(() => {
     if (recommendedPlans && recommendedPlans.length >= 2) return 'recommended';
     if (policies.length >= 2) return 'uploaded';
     if (recommendedPlans && recommendedPlans.length > 0) return 'recommended';
     return 'recommended';
   });
+
 
   const [highlightDiffs, setHighlightDiffs] = useState(false);
 
@@ -331,10 +334,10 @@ export default function ComparisonView({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Compare Policies
+              {t('compare.title', 'Compare Policies')}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Side-by-side comparison of coverage, limits, co-pay, waiting periods, and network hospitals
+              {t('compare.subtitle', 'Side-by-side comparison of coverage, limits, co-pay, waiting periods, and network hospitals')}
             </p>
           </div>
 
@@ -352,7 +355,7 @@ export default function ComparisonView({
                   }`}
                 >
                   <Sparkles size={13} className={activeMode === 'recommended' ? 'text-[#062327]' : 'text-slate-400'} />
-                  <span>Market Plans ({recommendedPlans?.length || 0})</span>
+                  <span>{t('Market Plans')} ({recommendedPlans?.length || 0})</span>
                 </button>
                 <button
                   type="button"
@@ -364,7 +367,7 @@ export default function ComparisonView({
                   }`}
                 >
                   <FileText size={13} className={activeMode === 'uploaded' ? 'text-[#062327]' : 'text-slate-400'} />
-                  <span>Uploaded Docs ({policies.length})</span>
+                  <span>{t('Uploaded Docs')} ({policies.length})</span>
                 </button>
               </div>
             )}
@@ -381,7 +384,7 @@ export default function ComparisonView({
               }`}
             >
               <Layers size={13} className={highlightDiffs ? 'text-[#062327]' : 'text-slate-400'} />
-              <span>Highlight differences</span>
+              <span>{t('Highlight differences')}</span>
             </button>
 
             {/* Export Dropdown Button */}
@@ -394,7 +397,7 @@ export default function ComparisonView({
                 className="btn-pill-lime text-xs py-2 px-4 font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
               >
                 <Download size={13} />
-                <span>Export</span>
+                <span>{t('Export')}</span>
                 <ChevronDown size={12} className={`transition-transform duration-200 ${exportOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -425,6 +428,7 @@ export default function ComparisonView({
                 </div>
               )}
             </div>
+
           </div>
         </div>
       </div>

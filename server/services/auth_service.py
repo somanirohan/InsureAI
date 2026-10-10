@@ -13,19 +13,21 @@ from typing import Any, Dict, Optional
 import bcrypt
 import jwt
 from bson import ObjectId
-from fastapi import HTTPException, Request, Security, status
+from fastapi import HTTPException, Request, Response, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 try:
     from config import settings
     from db import get_async_db, to_object_id
+    from services.crypto_service import unsecure_user_data
 except ImportError:
     from server.config import settings
     from server.db import get_async_db, to_object_id
+    from server.services.crypto_service import unsecure_user_data
 
 logger = logging.getLogger("insureai.auth")
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 INSECURE_DEFAULT_SECRETS = {
     "medshield_super_secret_jwt_key_2026",
@@ -119,9 +121,63 @@ def create_access_token(user_id: str, email: Optional[str] = None) -> str:
     return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)) -> Dict[str, Any]:
-    """FastAPI dependency to extract and authenticate the current user from Bearer token."""
-    token = credentials.credentials
+def set_auth_cookie(response: Response, token: str) -> None:
+    """Set secure HttpOnly authentication cookie."""
+    expire_delta = _parse_duration(settings.JWT_EXPIRES_IN)
+    max_age_seconds = int(expire_delta.total_seconds())
+    secure = settings.COOKIE_SECURE or (settings.ENVIRONMENT == "production")
+    response.set_cookie(
+        key=settings.COOKIE_NAME,
+        value=token,
+        max_age=max_age_seconds,
+        expires=max_age_seconds,
+        httponly=True,
+        secure=secure,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
+        path="/",
+    )
+
+
+def clear_auth_cookie(response: Response) -> None:
+    """Clear HttpOnly authentication cookie upon logout."""
+    secure = settings.COOKIE_SECURE or (settings.ENVIRONMENT == "production")
+    for cookie_key in {settings.COOKIE_NAME, "access_token", "insureai_token"}:
+        response.delete_cookie(
+            key=cookie_key,
+            path="/",
+            domain=settings.COOKIE_DOMAIN,
+            httponly=True,
+            secure=secure,
+            samesite=settings.COOKIE_SAMESITE,
+        )
+
+
+async def get_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+) -> Dict[str, Any]:
+    """
+    FastAPI dependency to extract and authenticate the current user.
+    Supports Dual Authentication:
+      1. HTTP Bearer Authorization header (for APIs, tests, external clients)
+      2. Secure HttpOnly cookie (for browser web application session)
+    """
+    token: Optional[str] = None
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+    elif request and settings.COOKIE_NAME in request.cookies:
+        token = request.cookies.get(settings.COOKIE_NAME)
+    elif request and "insureai_token" in request.cookies:
+        token = request.cookies.get("insureai_token")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please log in.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
         user_id_str = payload.get("sub") or payload.get("user_id")
@@ -158,7 +214,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(
             detail="User account is deactivated.",
         )
 
-    # Sanitize user dict for security: never expose password_hash
+    # Sanitize and decrypt user dict for security
+    user = unsecure_user_data(user)
     user["_id"] = str(user["_id"])
     user.pop("password_hash", None)
     return user
@@ -189,6 +246,7 @@ async def get_current_user_optional(request: Request) -> Optional[Dict[str, Any]
         query = {"_id": oid} if oid else {"_id": user_id_str}
         user = await db.users.find_one(query)
         if user and user.get("is_active", True):
+            user = unsecure_user_data(user)
             user["_id"] = str(user["_id"])
             user.pop("password_hash", None)
             return user

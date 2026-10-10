@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import api from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import { Spinner, Skeleton, EmptyState, ErrorBanner } from '../components/common/ui';
 
 import TreatmentForm from './TreatmentForm';
@@ -34,10 +35,12 @@ const STEPS = [
 ];
 
 export default function ClaimsWorkflowView({ policies = [] }) {
+  const { t } = useLanguage();
   const [claims, setClaims] = useState([]);
   const [activeClaimId, setActiveClaimId] = useState(null);
   const [activeClaim, setActiveClaim] = useState(null);
   const [activeStep, setActiveStep] = useState('treatment');
+
 
   const [loadingClaims, setLoadingClaims] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -331,14 +334,11 @@ export default function ClaimsWorkflowView({ policies = [] }) {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
-                Claim Readiness & Settlement
+                {t('Claim Readiness & Settlement')}
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#d2f57b]/30 text-[#062327] border border-[#062327]/15">
-                Policy Grounded
-              </span>
             </div>
             <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium max-w-2xl">
-              Deterministic, policy-cited preparation from First Notice of Loss to settlement tracking without hallucination.
+              {t('Deterministic, policy-cited preparation from First Notice of Loss to settlement tracking without hallucination.')}
             </p>
           </div>
 
@@ -347,7 +347,7 @@ export default function ClaimsWorkflowView({ policies = [] }) {
             className="btn-pill-lime py-3 px-6 text-xs sm:text-sm font-bold shadow-md cursor-pointer flex items-center gap-2 self-start sm:self-auto"
           >
             <Plus size={16} />
-            <span>New Claim</span>
+            <span>{t('New Claim')}</span>
           </button>
         </div>
 
@@ -379,15 +379,15 @@ export default function ClaimsWorkflowView({ policies = [] }) {
         ) : claims.length === 0 ? (
           <EmptyState
             icon={FileCheck}
-            title="No Claims Initialized Yet"
-            description="Create a claim against an uploaded policy to verify eligibility, prepare documents, and estimate settlement."
+            title={t('No Claims Initialized Yet')}
+            description={t('Create a claim against an uploaded policy to verify eligibility, prepare documents, and estimate settlement.')}
             action={
               <button
                 onClick={() => setIsCreatingModal(true)}
                 className="btn-pill-lime py-3 px-6 text-xs font-bold shadow-md cursor-pointer flex items-center gap-2"
               >
                 <Plus size={15} />
-                <span>Initialize First Claim</span>
+                <span>{t('Initialize First Claim')}</span>
               </button>
             }
           />
@@ -428,7 +428,7 @@ export default function ClaimsWorkflowView({ policies = [] }) {
                       {c.created_at ? new Date(c.created_at).toLocaleDateString('en-IN') : '—'}
                     </span>
                     <span className="text-[#062327] font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      <span>Open Claim</span>
+                      <span>{t('Open Claim')}</span>
                       <ChevronRight size={14} />
                     </span>
                   </div>
@@ -444,10 +444,10 @@ export default function ClaimsWorkflowView({ policies = [] }) {
             <div className="bg-white border border-[#062327]/15 rounded-3xl p-6 max-w-md w-full flex flex-col gap-5 shadow-2xl animate-fade-in">
               <div>
                 <h3 className="font-headline text-base font-bold text-[#062327]">
-                  Select Policy for New Claim
+                  {t('Select Policy for New Claim')}
                 </h3>
                 <p className="text-xs text-[#558187] mt-1 font-medium">
-                  Choose the insurance policy against which this claim will be evaluated.
+                  {t('Choose the insurance policy against which this claim will be evaluated.')}
                 </p>
               </div>
 
@@ -481,7 +481,7 @@ export default function ClaimsWorkflowView({ policies = [] }) {
                       onClick={() => setIsCreatingModal(false)}
                       className="text-xs px-4 py-2 rounded-full border border-[#062327]/15 text-[#558187] hover:text-[#062327] font-bold cursor-pointer"
                     >
-                      Cancel
+                      {t('common.cancel', 'Cancel')}
                     </button>
                     <button
                       type="submit"
@@ -489,7 +489,7 @@ export default function ClaimsWorkflowView({ policies = [] }) {
                       className="btn-pill-lime text-xs px-5 py-2 font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                     >
                       {actionLoading ? <Spinner size="xs" /> : <Plus size={15} />}
-                      <span>Initialize Claim</span>
+                      <span>{t('Initialize Claim')}</span>
                     </button>
                   </div>
                 </form>
@@ -554,7 +554,7 @@ export default function ClaimsWorkflowView({ policies = [] }) {
               }`}
             >
               <Icon size={14} className={isActive ? 'text-[#d2f57b]' : 'text-[#558187]'} />
-              <span>{st.label}</span>
+              <span>{t(st.label)}</span>
             </button>
           );
         })}

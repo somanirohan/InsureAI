@@ -251,11 +251,20 @@ async def init_db() -> None:
     logger.info("Ensuring required MongoDB indexes on database '%s'...", database.name)
     try:
         # Users
-        await database.users.create_index("email", unique=True)
+        try:
+            await database.users.create_index("email_hash", unique=True, sparse=True)
+            await database.users.create_index("full_name_hash", sparse=True)
+            await database.users.create_index("phone_hash", sparse=True)
+        except Exception:
+            pass
 
         # Policies
         await database.policies.create_index("user_id")
         await database.policies.create_index("status")
+        try:
+            await database.policies.create_index("policy_number_hash", sparse=True)
+        except Exception:
+            pass
 
         # Policy chunks
         await database.policy_chunks.create_index("policy_id")
@@ -278,6 +287,11 @@ async def init_db() -> None:
         await database.claims.create_index("user_id")
         await database.claims.create_index("policy_id")
         await database.claims.create_index([("user_id", 1), ("status", 1)])
+        try:
+            await database.claims.create_index("treatment_hash", sparse=True)
+            await database.claims.create_index("patient_name_hash", sparse=True)
+        except Exception:
+            pass
 
         # Policy recommendations & catalog
         await database.catalog_policies.create_index("product_id", unique=True)

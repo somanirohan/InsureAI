@@ -10,6 +10,8 @@ import RecommendationView from './components/recommendations/RecommendationView'
 import ClaimsWorkflowView from './claims/ClaimsWorkflowView';
 import { LiquidBlob } from './components/common/LiquidBlob';
 import HealthPage from './components/common/HealthPage';
+import SecurityModal from './components/common/SecurityModal';
+import CookieConsentBanner from './components/common/CookieConsentBanner';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
@@ -19,41 +21,25 @@ export default function App() {
   const [policies, setPolicies]             = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [chatTargetPolicy, setChatTargetPolicy] = useState(null);
-  const [recommendationCompareData, setRecommendationCompareData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('insurai_compare_recommendations') || localStorage.getItem('insurai_latest_recommendations');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.top_recommendations || (Array.isArray(parsed) ? parsed : null);
-      }
-    } catch {
-      return null;
-    }
-  });
+  const [recommendationCompareData, setRecommendationCompareData] = useState(null);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
 
-  // Handle Google OAuth redirect code if redirected back from Google
+  // Handle Google OAuth redirect code or error if redirected back from Google
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    if (code) {
+    const oauthError = params.get('error');
+
+    if (oauthError) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      console.warn('Google OAuth redirected with error:', oauthError, params.get('error_description'));
+    } else if (code) {
       window.history.replaceState({}, document.title, window.location.pathname);
       loginWithGoogle({ code, redirect_uri: window.location.origin }).catch(err => {
         console.error('Google OAuth callback error:', err);
       });
     }
   }, [loginWithGoogle]);
-
-  const handleNavigateToCompare = (data) => {
-    if (data && data.length > 0) {
-      setRecommendationCompareData(data);
-      try {
-        localStorage.setItem('insurai_compare_recommendations', JSON.stringify(data));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    setActiveTab('compare');
-  };
 
   const fetchPolicies = async () => {
     try {
@@ -67,9 +53,44 @@ export default function App() {
     }
   };
 
+  // Reset tab to dashboard and scope compare data whenever user changes (login, logout, new account)
   useEffect(() => {
-    if (user) fetchPolicies();
-  }, [user]);
+    setActiveTab('dashboard');
+    setChatTargetPolicy(null);
+
+    if (!user?._id) {
+      setPolicies([]);
+      setRecommendationCompareData(null);
+    } else {
+      fetchPolicies();
+      try {
+        const userCompareKey = `insurai_compare_recommendations_${user._id}`;
+        const saved = localStorage.getItem(userCompareKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setRecommendationCompareData(Array.isArray(parsed) ? parsed : null);
+        } else {
+          setRecommendationCompareData(null);
+        }
+      } catch {
+        setRecommendationCompareData(null);
+      }
+    }
+  }, [user?._id]);
+
+  const handleNavigateToCompare = (data) => {
+    if (data && data.length > 0) {
+      setRecommendationCompareData(data);
+      if (user?._id) {
+        try {
+          localStorage.setItem(`insurai_compare_recommendations_${user._id}`, JSON.stringify(data));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    setActiveTab('compare');
+  };
 
   const handlePolicyUploadSuccess = () => fetchPolicies();
 
@@ -117,7 +138,15 @@ export default function App() {
   }
 
   // ── Not logged in → Landing Page ───────────────────────
-  if (!user) return <LandingPage />;
+  if (!user) {
+    return (
+      <>
+        <LandingPage onOpenSecurityModal={() => setIsSecurityModalOpen(true)} />
+        <CookieConsentBanner onOpenSecurityModal={() => setIsSecurityModalOpen(true)} />
+        <SecurityModal isOpen={isSecurityModalOpen} onClose={() => setIsSecurityModalOpen(false)} />
+      </>
+    );
+  }
 
   // ── Render view ────────────────────────────────────────
   const renderView = () => {
@@ -157,7 +186,15 @@ export default function App() {
             onNavigateToRecommend={() => setActiveTab('recommend')}
             onClearRecommendedPlans={() => {
               setRecommendationCompareData(null);
-              localStorage.removeItem('insurai_compare_recommendations');
+              if (user?._id) {
+                try {
+                  localStorage.removeItem(`insurai_compare_recommendations_${user._id}`);
+                } catch {}
+              }
+              try {
+                localStorage.removeItem('insurai_compare_recommendations');
+                localStorage.removeItem('insurai_latest_recommendations');
+              } catch {}
             }}
           />
         );
@@ -210,10 +247,18 @@ export default function App() {
         </div>
       )}
 
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <MobileTopBar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MobileTopBar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
+        />
         <main className={`flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8 w-full mx-auto ${
           activeTab === 'compare' ? 'max-w-[102rem] 2xl:max-w-[97vw]' : 'max-w-6xl'
         }`}>
@@ -222,6 +267,10 @@ export default function App() {
           </div>
         </main>
       </div>
+
+      {/* Cookie Notice & Security Architecture Modal */}
+      <CookieConsentBanner onOpenSecurityModal={() => setIsSecurityModalOpen(true)} />
+      <SecurityModal isOpen={isSecurityModalOpen} onClose={() => setIsSecurityModalOpen(false)} />
     </div>
   );
 }

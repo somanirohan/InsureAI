@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Trash2, MessageSquare, Eye } from 'lucide-react';
 import { StatusBadge } from '../common/ui';
+import { useLanguage } from '../../context/LanguageContext';
 
 const formatCoverage = (v) =>
   v ? `₹${(v / 100000).toFixed(1)}L` : '—';
@@ -9,6 +10,7 @@ const formatPremium = (v) =>
   v ? `₹${v.toLocaleString('en-IN')}` : '—';
 
 export default function PolicyCard({ policy, onSelect, onDelete, onStartChat }) {
+  const { t } = useLanguage();
   const isReady = policy.status === 'ready';
   const redFlags = policy.red_flag_summary || {};
   const factCount = policy.facts?.length ?? 0;
@@ -60,11 +62,15 @@ export default function PolicyCard({ policy, onSelect, onDelete, onStartChat }) 
           {/* Coverage row */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-[#f5f8f8] border border-[#062327]/08 p-3.5 rounded-2xl">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1">Sum Insured</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1">
+                {t('dashboard.policy_card.sum_insured', 'Sum Insured')}
+              </p>
               <p className="font-sans text-base font-bold text-[#062327] tabular-nums">{formatCoverage(policy.sum_insured)}</p>
             </div>
             <div className="bg-[#f5f8f8] border border-[#062327]/08 p-3.5 rounded-2xl">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1">Premium</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] mb-1">
+                {t('common.premium', 'Premium')}
+              </p>
               <p className="font-sans text-base font-bold text-[#062327] tabular-nums">{formatPremium(policy.premium_amount)}</p>
             </div>
           </div>
@@ -74,29 +80,29 @@ export default function PolicyCard({ policy, onSelect, onDelete, onStartChat }) 
         <div className="pt-4 border-t border-[#062327]/08">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187]">
-              {factCount > 0 ? `${factCount} Extracted Facts` : '0 Extracted Facts'}
+              {factCount > 0 ? `${factCount} ${t('facts_modal.extracted_facts', 'Extracted Facts')}` : `0 ${t('facts_modal.extracted_facts', 'Extracted Facts')}`}
             </p>
           </div>
           <div className="min-h-[22px] flex items-center">
             {redFlags.room_rent_cap ? (
               <div className="flex items-start gap-2 text-xs text-[#062327]">
                 <span className="text-amber-500 font-bold mt-0.5 flex-shrink-0">●</span>
-                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">Room Rent:</strong> {redFlags.room_rent_cap}</span>
+                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">{t('dashboard.policy_card.room_rent_cap', 'Room Rent')}:</strong> {redFlags.room_rent_cap}</span>
               </div>
             ) : redFlags.copay_percentage ? (
               <div className="flex items-start gap-2 text-xs text-[#062327]">
                 <span className="text-sky-500 font-bold mt-0.5 flex-shrink-0">●</span>
-                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">Co-pay:</strong> {redFlags.copay_percentage}</span>
+                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">{t('dashboard.policy_card.copay', 'Co-pay')}:</strong> {redFlags.copay_percentage}</span>
               </div>
             ) : redFlags.waiting_periods?.length > 0 ? (
               <div className="flex items-start gap-2 text-xs text-[#062327]">
                 <span className="text-amber-500 font-bold mt-0.5 flex-shrink-0">●</span>
-                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">Waiting:</strong> {redFlags.waiting_periods[0]}</span>
+                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">{t('upload_modal.waiting_label', 'Waiting')}:</strong> {redFlags.waiting_periods[0]}</span>
               </div>
             ) : redFlags.major_exclusions?.length > 0 ? (
               <div className="flex items-start gap-2 text-xs text-[#062327]">
                 <span className="text-rose-500 font-bold mt-0.5 flex-shrink-0">●</span>
-                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">Exclusion:</strong> {redFlags.major_exclusions[0]}</span>
+                <span className="line-clamp-1"><strong className="text-[#2d6a71] font-semibold">{t('upload_modal.exclusions_label', 'Exclusion')}:</strong> {redFlags.major_exclusions[0]}</span>
               </div>
             ) : factCount > 0 ? (
               <div className="flex items-start gap-2 text-xs text-[#062327]">
@@ -120,7 +126,7 @@ export default function PolicyCard({ policy, onSelect, onDelete, onStartChat }) 
           className="flex items-center gap-1.5 text-xs font-bold text-[#558187] hover:text-[#062327] transition-colors cursor-pointer"
         >
           <Eye size={14} />
-          <span>View facts</span>
+          <span>{t('dashboard.policy_card.view_facts', 'View facts')}</span>
         </button>
         <div className="flex items-center gap-2">
           <button
@@ -133,7 +139,7 @@ export default function PolicyCard({ policy, onSelect, onDelete, onStartChat }) 
             title={!isReady ? 'Policy still processing' : 'Ask AI about this policy'}
           >
             <MessageSquare size={13} />
-            <span>Ask AI</span>
+            <span>{t('dashboard.policy_card.ask_ai', 'Ask AI')}</span>
           </button>
           <button
             onClick={(e) => {

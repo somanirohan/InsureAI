@@ -22,6 +22,8 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { Spinner, ErrorBanner } from '../common/ui';
 
 // ─── Preset constants for minimal friction questionnaire ─────────────────────
@@ -58,6 +60,11 @@ const FEATURE_PREFERENCES = [
 ];
 
 export default function RecommendationView({ policies = [], onNavigateToCompare }) {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const userId = user?._id || null;
+
+
   // Questionnaire state
   const [coverageType, setCoverageType] = useState('individual');
   const [age, setAge] = useState(28);
@@ -78,28 +85,43 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
   // Application state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [recommendationsData, setRecommendationsData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('insurai_latest_recommendations');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [selectedForCompare, setSelectedForCompare] = useState(() => {
-    try {
-      const saved = localStorage.getItem('insurai_latest_recommendations');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.top_recommendations?.length) {
-          return parsed.top_recommendations.map(r => r.product_id);
-        }
-      }
-    } catch {}
-    return [];
-  });
+  const [recommendationsData, setRecommendationsData] = useState(null);
+  const [selectedForCompare, setSelectedForCompare] = useState([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [showRunnerUps, setShowRunnerUps] = useState(false);
+
+  // Sync recommendation state whenever authenticated user changes (prevents cross-account data leak)
+  useEffect(() => {
+    try {
+      localStorage.removeItem('insurai_latest_recommendations');
+      localStorage.removeItem('insurai_compare_recommendations');
+    } catch {}
+
+    if (userId) {
+      try {
+        const userRecKey = `insurai_latest_recommendations_${userId}`;
+        const saved = localStorage.getItem(userRecKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setRecommendationsData(parsed);
+          if (parsed?.top_recommendations?.length) {
+            setSelectedForCompare(parsed.top_recommendations.map(r => r.product_id));
+          } else {
+            setSelectedForCompare([]);
+          }
+        } else {
+          setRecommendationsData(null);
+          setSelectedForCompare([]);
+        }
+      } catch {
+        setRecommendationsData(null);
+        setSelectedForCompare([]);
+      }
+    } else {
+      setRecommendationsData(null);
+      setSelectedForCompare([]);
+    }
+  }, [userId]);
 
   // Update children ages array when count changes
   const handleChildCountChange = (count) => {
@@ -161,13 +183,15 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
     try {
       const res = await api.post('/recommendations', payload);
       setRecommendationsData(res.data);
-      try {
-        localStorage.setItem('insurai_latest_recommendations', JSON.stringify(res.data));
-        if (res.data.top_recommendations?.length) {
-          localStorage.setItem('insurai_compare_recommendations', JSON.stringify(res.data.top_recommendations));
+      if (userId) {
+        try {
+          localStorage.setItem(`insurai_latest_recommendations_${userId}`, JSON.stringify(res.data));
+          if (res.data.top_recommendations?.length) {
+            localStorage.setItem(`insurai_compare_recommendations_${userId}`, JSON.stringify(res.data.top_recommendations));
+          }
+        } catch (e) {
+          console.error(e);
         }
-      } catch (e) {
-        console.error(e);
       }
       // Automatically preselect the top 3 recommendations for comparison
       if (res.data.top_recommendations?.length) {
@@ -184,6 +208,14 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
   const handleReset = () => {
     setRecommendationsData(null);
     setSelectedForCompare([]);
+    if (userId) {
+      try {
+        localStorage.removeItem(`insurai_latest_recommendations_${userId}`);
+        localStorage.removeItem(`insurai_compare_recommendations_${userId}`);
+      } catch (e) {
+        console.error(e);
+      }
+    }
     try {
       localStorage.removeItem('insurai_latest_recommendations');
       localStorage.removeItem('insurai_compare_recommendations');
@@ -200,7 +232,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
       {/* ─── Header ────────────────────────────────────────── */}
       <div className="pt-2">
         <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
-          Find the Health Insurance Policy Best Suited for You
+          {t('Find the Health Insurance Policy Best Suited for You')}
         </h1>
       </div>
 
@@ -214,7 +246,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#558187] flex items-center gap-1.5 mb-3">
                 <Users size={15} className="text-[#062327]" />
-                1. Who are you protecting?
+                {t('1. Who are you protecting?')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
@@ -232,8 +264,8 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                     <User size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#062327]">Individual Cover</p>
-                    <p className="text-xs text-[#558187]">Coverage for yourself only</p>
+                    <p className="text-sm font-bold text-[#062327]">{t('Individual Cover')}</p>
+                    <p className="text-xs text-[#558187]">{t('Coverage for yourself only')}</p>
                   </div>
                 </button>
 
@@ -252,8 +284,8 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                     <Users size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#062327]">Family Floater</p>
-                    <p className="text-xs text-[#558187]">Shared sum insured for spouse & children</p>
+                    <p className="text-sm font-bold text-[#062327]">{t('Family Floater')}</p>
+                    <p className="text-xs text-[#558187]">{t('Shared sum insured for spouse & children')}</p>
                   </div>
                 </button>
               </div>
@@ -269,11 +301,11 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                         onChange={(e) => setHasSpouse(e.target.checked)}
                         className="rounded border-[#062327]/20 text-[#062327] focus:ring-[#062327]"
                       />
-                      Include Spouse
+                      {t('Include Spouse')}
                     </label>
                     {hasSpouse && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#558187]">Spouse Age:</span>
+                        <span className="text-xs text-[#558187]">{t('Spouse Age:')}</span>
                         <input
                           type="number"
                           min="18"
@@ -287,7 +319,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-xs text-[#558187]">Children:</span>
+                    <span className="text-xs text-[#558187]">{t('Children:')}</span>
                     <div className="flex items-center gap-1.5">
                       {[0, 1, 2, 3].map(cnt => (
                         <button
@@ -309,7 +341,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                       <div className="flex items-center gap-2 flex-wrap ml-2">
                         {childAges.map((cAge, idx) => (
                           <div key={idx} className="flex items-center gap-1">
-                            <span className="text-2xs text-[#558187]">Child {idx + 1} Age:</span>
+                            <span className="text-2xs text-[#558187]">{t('Children:')} {idx + 1}:</span>
                             <input
                               type="number"
                               min="0"
@@ -337,7 +369,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             {/* 2. Primary Age */}
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#558187] block mb-2">
-                2. Your Age (Primary Insured)
+                {t('2. Your Age (Primary Insured)')}
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -348,7 +380,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   onChange={(e) => setAge(Number(e.target.value))}
                   className="input-field font-sans font-bold text-sm text-[#062327] tabular-nums w-28 px-3.5 py-2.5 rounded-xl border border-[#062327]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#062327]/20"
                 />
-                <span className="text-xs font-semibold text-[#558187]">Years old</span>
+                <span className="text-xs font-semibold text-[#558187]">{t('Years old')}</span>
               </div>
             </div>
 
@@ -356,7 +388,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#558187] flex items-center gap-1.5 mb-2.5">
                 <ShieldCheck size={15} className="text-[#062327]" />
-                3. Desired Sum Insured (Hospitalization Cover)
+                {t('3. Desired Sum Insured (Hospitalization Cover)')}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
                 {SUM_INSURED_OPTIONS.map(opt => {
@@ -385,7 +417,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             {/* 4. Preferred Annual Premium Budget */}
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#558187] flex items-center gap-1.5 mb-2.5">
-                4. Preferred Annual Premium Budget
+                {t('4. Preferred Annual Premium Budget')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
                 {BUDGET_OPTIONS.map(opt => {
@@ -413,7 +445,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#558187] flex items-center gap-1.5 mb-2">
                 <Building2 size={15} className="text-[#062327]" />
-                5. Location Category (Hospital Zonal Pricing)
+                {t('5. Location Category (Hospital Zonal Pricing)')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
@@ -426,7 +458,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   }`}
                 >
                   <div>
-                    <p className="text-xs font-bold text-[#062327]">Tier 1 Metro</p>
+                    <p className="text-xs font-bold text-[#062327]">{t('Tier 1 Metro')}</p>
                     <p className="text-[11px] text-[#558187]">Delhi NCR, Mumbai, Bengaluru, Chennai, Kolkata, Pune</p>
                   </div>
                   {cityTier === 'tier_1' && <Check size={16} className="text-[#062327]" />}
@@ -442,7 +474,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   }`}
                 >
                   <div>
-                    <p className="text-xs font-bold text-[#062327]">Tier 2 / Non-Metro</p>
+                    <p className="text-xs font-bold text-[#062327]">{t('Tier 2 / Non-Metro')}</p>
                     <p className="text-[11px] text-[#558187]">All other cities, state capitals and regional hubs</p>
                   </div>
                   {cityTier === 'tier_2_non_metro' && <Check size={16} className="text-[#062327]" />}
@@ -459,7 +491,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
               >
                 <div className="flex items-center gap-2">
                   <Sliders size={14} />
-                  <span>Personalize Further (Optional • Pre-existing Conditions & Priorities)</span>
+                  <span>{t('Personalize Further (Optional • Pre-existing Conditions & Priorities)')}</span>
                 </div>
                 {showOptional ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
@@ -470,7 +502,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   <div>
                     <p className="text-xs font-bold text-[#062327] mb-1.5 flex items-center gap-1.5">
                       <HeartPulse size={14} className="text-rose-500" />
-                      Any Pre-Existing Medical Conditions?
+                      {t('Any Pre-Existing Medical Conditions?')}
                     </p>
                     <p className="text-2xs text-[#558187] mb-2.5">
                       Disclosing conditions allows us to rank policies with 12 to 24-month waiting periods over 36 to 48-month plans.
@@ -498,7 +530,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
 
                   {/* Feature Preferences */}
                   <div>
-                    <p className="text-xs font-bold text-[#062327] mb-1.5">Priority Feature Preferences</p>
+                    <p className="text-xs font-bold text-[#062327] mb-1.5">{t('Priority Feature Preferences')}</p>
                     <div className="flex flex-wrap gap-2">
                       {FEATURE_PREFERENCES.map(feat => {
                         const isSel = selectedFeatures.includes(feat.id);
@@ -522,12 +554,12 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
 
                   {/* Existing insurance */}
                   <div>
-                    <p className="text-xs font-bold text-[#062327] mb-1.5">Current Insurance Status</p>
+                    <p className="text-xs font-bold text-[#062327] mb-1.5">{t('Current Insurance Status')}</p>
                     <div className="flex flex-wrap gap-2.5">
                       {[
-                        { id: 'none', label: 'No existing policy' },
-                        { id: 'employer_corporate', label: 'Employer corporate cover' },
-                        { id: 'individual_retail', label: 'Existing personal policy' },
+                        { id: 'none', label: t('No existing policy') },
+                        { id: 'employer_corporate', label: t('Employer corporate cover') },
+                        { id: 'individual_retail', label: t('Existing personal policy') },
                       ].map(item => (
                         <label key={item.id} className="flex items-center gap-1.5 text-xs text-[#062327] cursor-pointer">
                           <input
@@ -562,11 +594,11 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 {loading ? (
                   <>
                     <Spinner size={16} className="text-[#062327]" />
-                    <span>Analyzing Policy Catalogs…</span>
+                    <span>{t('Analyzing Policy Catalogs…')}</span>
                   </>
                 ) : (
                   <>
-                    <span>Recommend Policies</span>
+                    <span>{t('Recommend Policies')}</span>
                     <ArrowRight size={16} />
                   </>
                 )}
@@ -583,9 +615,9 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
           <div className="bg-white border border-[#062327]/10 rounded-[24px] p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2d6a71]">Profile Analyzed:</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2d6a71]">{t('Profile Analyzed:')}</span>
                 <span className="text-xs font-semibold font-sans tabular-nums px-2 py-0.5 rounded-md bg-[#f2f8f8] text-[#062327]">
-                  {coverageType === 'family_floater' ? 'Family Floater' : 'Individual'} • Age {age}
+                  {coverageType === 'family_floater' ? t('Family Floater') : t('Individual Cover')} • Age {age}
                 </span>
                 <span className="text-xs font-semibold font-sans tabular-nums px-2 py-0.5 rounded-md bg-[#f2f8f8] text-[#062327]">
                   ₹{(sumInsured / 100000).toFixed(1)}L Cover
@@ -597,7 +629,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 )}
                 {cityTier === 'tier_1' && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#f2f8f8] text-[#062327]">
-                    Tier-1 Metro
+                    {t('Tier 1 Metro')}
                   </span>
                 )}
               </div>
@@ -613,7 +645,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 className="px-4 py-2 rounded-xl border border-[#062327]/15 bg-white text-xs font-bold text-[#062327] hover:bg-[#f5f8f8] transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft size={14} />
-                <span>Edit Profile</span>
+                <span>{t('Edit Profile')}</span>
               </button>
 
               {topList.length >= 2 && (
@@ -632,10 +664,11 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   className="btn-pill-lime text-xs py-2 px-4 flex items-center gap-1.5 font-bold cursor-pointer shadow-md"
                 >
                   <GitCompare size={14} />
-                  <span>Compare Top {topList.length} Plans</span>
+                  <span>{t('Compare Top Plans')} ({topList.length})</span>
                   <ArrowRight size={13} />
                 </button>
               )}
+
             </div>
           </div>
 
@@ -687,7 +720,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
 
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#558187]">Match Score</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#558187]">{t('Match Score')}</span>
                         <div className="text-lg font-sans font-bold text-[#062327] tabular-nums tracking-tight">
                           {item.overall_match_score}<span className="text-xs text-[#558187] font-normal"> / 100</span>
                         </div>
@@ -728,7 +761,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   <div className="my-4 p-4 rounded-2xl bg-[#f4f8f8] border border-[#062327]/08">
                     <p className="text-xs font-bold uppercase tracking-wider text-[#2d6a71] mb-1 flex items-center gap-1.5">
                       <Sparkles size={13} className="text-[#062327]" />
-                      Why It Fits Your Profile:
+                      {t('Why It Fits Your Profile:')}
                     </p>
                     <p className="text-xs text-[#062327] leading-relaxed">
                       {item.why_recommended}
@@ -738,11 +771,11 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   {/* 5-Factor Score Breakdown */}
                   <div className="my-4 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                     {[
-                      { label: 'Affordability', score: breakdown.affordability_score, max: 30 },
-                      { label: 'Coverage & SI', score: breakdown.coverage_score, max: 25 },
-                      { label: 'Waiting Period', score: breakdown.waiting_period_score, max: 20 },
-                      { label: 'Hospital Network', score: breakdown.hospital_network_score, max: 15 },
-                      { label: 'Terms & Copay', score: breakdown.terms_score, max: 10 },
+                      { label: t('Affordability'), score: breakdown.affordability_score, max: 30 },
+                      { label: t('Coverage & SI'), score: breakdown.coverage_score, max: 25 },
+                      { label: t('Waiting Period'), score: breakdown.waiting_period_score, max: 20 },
+                      { label: t('Hospital Network'), score: breakdown.hospital_network_score, max: 15 },
+                      { label: t('Terms & Copay'), score: breakdown.terms_score, max: 10 },
                     ].map(factor => {
                       const pct = Math.round((factor.score / factor.max) * 100);
                       return (
@@ -762,24 +795,24 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   {/* Policy Highlights Matrix */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
                     <div className="p-3 rounded-xl bg-[#fbfdfd] border border-[#062327]/08">
-                      <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">Room Rent Limit</p>
+                      <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">{t('Room Rent Limit')}</p>
                       <p className="text-xs font-bold text-[#062327] mt-1">{item.room_rent_summary}</p>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#fbfdfd] border border-[#062327]/08">
-                      <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">Co-Payment Terms</p>
+                      <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">{t('Co-Payment Terms')}</p>
                       <p className="text-xs font-bold text-[#062327] mt-1">{item.copay_summary}</p>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#fbfdfd] border border-[#062327]/08">
-                      <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">Pre-Existing Disease Wait</p>
+                      <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">{t('Pre-Existing Disease Wait')}</p>
                       <p className="text-xs font-bold text-[#062327] mt-1">{item.waiting_periods_summary.pre_existing}</p>
                     </div>
                   </div>
 
                   {/* Benefits & Limitations */}
                   <div className="space-y-2 mt-4 pt-4 border-t border-[#062327]/08">
-                    <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">Key Standout Inclusions</p>
+                    <p className="text-2xs font-bold uppercase tracking-wider text-[#558187]">{t('Key Standout Inclusions')}</p>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {item.key_benefits.slice(0, 4).map((ben, bIdx) => (
                         <li key={bIdx} className="flex items-start gap-2 text-xs text-[#062327]">
@@ -800,13 +833,13 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                           rel="noopener noreferrer"
                           className="text-xs font-bold text-[#062327] hover:text-[#0b3d45] underline inline-flex items-center gap-1"
                         >
-                          <span>Official Policy Brochure / CIS</span>
+                          <span>{t('Official Policy Brochure / CIS')}</span>
                           <ExternalLink size={12} />
                         </a>
                       )}
                       <span className="text-zinc-300">•</span>
                       <span className="text-2xs text-[#558187]">
-                        <span className="font-sans font-semibold tabular-nums">{item.network_hospitals_count.toLocaleString('en-IN')}+</span> Cashless Hospitals
+                        <span className="font-sans font-semibold tabular-nums">{item.network_hospitals_count.toLocaleString('en-IN')}+</span> {t('Cashless Hospitals')}
                       </span>
                     </div>
 
@@ -818,7 +851,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                           onChange={() => toggleCompareSelection(item.product_id)}
                           className="rounded border-[#062327]/20 text-[#062327] focus:ring-[#062327]"
                         />
-                        <span>Compare Side-by-Side</span>
+                        <span>{t('Compare Side-by-Side')}</span>
                       </label>
                     </div>
                   </div>
@@ -837,7 +870,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
               >
                 <div>
                   <h4 className="text-base font-headline font-bold text-[#062327]">
-                    Other Eligible Plans ({runnerUps.length} Alternative Options)
+                    {t('Other Eligible Plans')} ({runnerUps.length})
                   </h4>
                   <p className="text-xs text-[#558187] mt-0.5">
                     Qualified policies evaluated that achieved runner-up match scores.
@@ -911,7 +944,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             className="btn-pill-lime text-xs py-2 px-4 flex items-center gap-1.5 font-bold cursor-pointer"
           >
             <GitCompare size={13} />
-            <span>Compare Selected Plans</span>
+            <span>{t('Compare Selected Plans')}</span>
             <ArrowRight size={13} />
           </button>
         </div>
@@ -925,7 +958,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">
-                  Side-by-Side Plan Comparison
+                  {t('Side-by-Side Plan Comparison')}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Direct evaluation of top ranked policies against your requested parameters
@@ -945,7 +978,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                     className="btn-pill-lime text-xs py-2 px-3.5 flex items-center gap-1.5 font-bold cursor-pointer"
                   >
                     <GitCompare size={13} />
-                    <span>Open in Compare Tab</span>
+                    <span>{t('Open in Compare Tab')}</span>
                     <ArrowRight size={13} />
                   </button>
                 )}
@@ -977,7 +1010,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 </thead>
                 <tbody className="divide-y divide-[#062327]/08">
                   <tr>
-                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">Match Score</td>
+                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">{t('Match Score')}</td>
                     {topList.map(item => (
                       <td key={item.product_id} className="p-3 font-bold text-[#062327]">
                         <span className="px-2 py-0.5 rounded-full bg-[#d2f57b]/30 text-[#062327] font-sans font-bold tabular-nums">
@@ -997,7 +1030,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   </tr>
 
                   <tr>
-                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">Sum Insured</td>
+                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">{t('Sum Insured')}</td>
                     {topList.map(item => (
                       <td key={item.product_id} className="p-3 font-semibold font-sans tabular-nums text-[#062327]">
                         ₹{(item.recommended_sum_insured / 100000).toFixed(1)} Lakhs
@@ -1006,7 +1039,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   </tr>
 
                   <tr>
-                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">Room Rent Limit</td>
+                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">{t('Room Rent Limit')}</td>
                     {topList.map(item => (
                       <td key={item.product_id} className="p-3 font-semibold text-[#062327]">
                         {item.room_rent_summary}
@@ -1015,7 +1048,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   </tr>
 
                   <tr>
-                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">Co-Payment</td>
+                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">{t('Co-Payment Terms')}</td>
                     {topList.map(item => (
                       <td key={item.product_id} className="p-3 font-semibold text-[#062327]">
                         {item.copay_summary}
@@ -1024,7 +1057,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   </tr>
 
                   <tr>
-                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">Pre-Existing Disease Wait</td>
+                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">{t('Pre-Existing Disease Wait')}</td>
                     {topList.map(item => (
                       <td key={item.product_id} className="p-3 font-semibold text-[#062327]">
                         {item.waiting_periods_summary.pre_existing}
@@ -1042,7 +1075,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   </tr>
 
                   <tr>
-                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">Cashless Network</td>
+                    <td className="p-3 font-bold text-[#558187] bg-[#f8fafb]">{t('Cashless Hospitals')}</td>
                     {topList.map(item => (
                       <td key={item.product_id} className="p-3 font-semibold font-sans tabular-nums text-[#062327]">
                         {item.network_hospitals_count.toLocaleString('en-IN')}+ partner hospitals
@@ -1087,7 +1120,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   className="btn-pill-lime text-xs py-2 px-4 flex items-center gap-1.5 font-bold cursor-pointer"
                 >
                   <GitCompare size={13} />
-                  <span>Open in Compare Tab</span>
+                  <span>{t('Open in Compare Tab')}</span>
                   <ArrowRight size={13} />
                 </button>
               )}
@@ -1096,7 +1129,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 onClick={() => setShowCompareModal(false)}
                 className="px-4 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
               >
-                Close
+                {t('common.close', 'Close')}
               </button>
             </div>
           </div>

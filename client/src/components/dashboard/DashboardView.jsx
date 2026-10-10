@@ -4,6 +4,7 @@ import PolicyCard from './PolicyCard';
 import PolicyFactsModal from './PolicyFactsModal';
 import UploadPolicyModal from './UploadPolicyModal';
 import { SectionHeader, EmptyState, Spinner } from '../common/ui';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function DashboardView({
   policies,
@@ -16,6 +17,7 @@ export default function DashboardView({
   onNavigateToClaims,
   onNavigateToRecommend,
 }) {
+  const { t } = useLanguage();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedPolicyForFacts, setSelectedPolicyForFacts] = useState(null);
 
@@ -26,11 +28,13 @@ export default function DashboardView({
       {/* ─── Page header ────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">Dashboard</h1>
+          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
+            {t('nav.dashboard', 'Dashboard')}
+          </h1>
           <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium">
             {policies.length > 0
-              ? `${policies.length} polic${policies.length === 1 ? 'y' : 'ies'} · ${readyPolicies} analyzed & ready`
-              : 'Upload a policy document to extract facts and query clauses'
+              ? `${policies.length} ${t('dashboard.active_policies', 'Policies')} · ${readyPolicies} ${t('common.ready', 'Ready')}`
+              : t('dashboard.subtitle', 'Upload a policy document to extract facts and query clauses')
             }
           </p>
         </div>
@@ -39,7 +43,7 @@ export default function DashboardView({
           className="btn-pill-lime py-3 px-6 flex items-center gap-2 text-xs sm:text-sm font-bold shadow-md cursor-pointer"
         >
           <Upload size={16} />
-          <span>Upload Policy</span>
+          <span>{t('dashboard.upload_cta', 'Upload Policy')}</span>
         </button>
       </div>
 
@@ -52,10 +56,14 @@ export default function DashboardView({
           <div className="flex items-center justify-between">
             <div>
               <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#d2f57b]/30 text-[#062327] text-[10px] font-bold uppercase tracking-wider mb-2">
-                New AI Feature
+                {t('recommend.title', 'AI Advisor')}
               </div>
-              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">AI Advisor</p>
-              <p className="text-xs text-[#558187] mt-1">Get personalized policy recommendations based on age & budget</p>
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">
+                {t('nav.recommend', 'AI Advisor')}
+              </p>
+              <p className="text-xs text-[#558187] mt-1">
+                {t('recommend.subtitle', 'Get personalized policy recommendations based on age & budget')}
+              </p>
             </div>
             <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
           </div>
@@ -66,8 +74,12 @@ export default function DashboardView({
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Claims Workflow</p>
-              <p className="text-xs text-[#558187] mt-1">Policy-cited readiness checklist & settlement tracking</p>
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">
+                {t('nav.claims', 'Claims Workflow')}
+              </p>
+              <p className="text-xs text-[#558187] mt-1">
+                {t('claims.subtitle', 'Policy-cited readiness checklist & settlement tracking')}
+              </p>
             </div>
             <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
           </div>
@@ -78,8 +90,12 @@ export default function DashboardView({
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Cost Estimator</p>
-              <p className="text-xs text-[#558187] mt-1">Simulate treatment out-of-pocket costs with exact sub-limits</p>
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">
+                {t('nav.cost', 'Cost Estimator')}
+              </p>
+              <p className="text-xs text-[#558187] mt-1">
+                {t('cost.subtitle', 'Simulate treatment out-of-pocket costs with exact sub-limits')}
+              </p>
             </div>
             <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
           </div>
@@ -90,8 +106,12 @@ export default function DashboardView({
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Compare Policies</p>
-              <p className="text-xs text-[#558187] mt-1">Side-by-side room rent, waiting period, and co-payment comparison</p>
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">
+                {t('nav.compare', 'Compare Policies')}
+              </p>
+              <p className="text-xs text-[#558187] mt-1">
+                {t('compare.subtitle', 'Side-by-side room rent, waiting period, and co-payment comparison')}
+              </p>
             </div>
             <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
           </div>
@@ -101,8 +121,8 @@ export default function DashboardView({
       {/* ─── Policies grid ──────────────────────────────── */}
       <div>
         <SectionHeader
-          title="Your Analyzed Policies"
-          subtitle="Click any policy to review extracted contract facts or initiate an AI consultation"
+          title={t('dashboard.active_policies', 'Your Analyzed Policies')}
+          subtitle={t('dashboard.subtitle', 'Click any policy to review extracted contract facts or initiate an AI consultation')}
           action={
             policies.length > 0 && (
               <button
@@ -110,7 +130,7 @@ export default function DashboardView({
                 className="btn-pill-dark px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus size={14} className="text-[#d2f57b]" />
-                <span>Add Policy</span>
+                <span>{t('common.upload', 'Add Policy')}</span>
               </button>
             )
           }
@@ -119,14 +139,14 @@ export default function DashboardView({
         {loadingPolicies ? (
           <div className="flex flex-col items-center py-20 gap-3">
             <Spinner size={24} className="text-[#062327]" />
-            <p className="text-sm font-semibold text-[#558187]">Loading policies…</p>
+            <p className="text-sm font-semibold text-[#558187]">{t('common.processing', 'Loading policies…')}</p>
           </div>
         ) : policies.length === 0 ? (
           <div className="bg-white border-2 border-dashed border-[#062327]/12 rounded-3xl overflow-hidden">
             <EmptyState
               icon={FileText}
-              title="No policies uploaded yet"
-              description="Upload your health insurance policy PDF to automatically index clauses, flag hidden sub-limits, and simulate medical bills."
+              title={t('dashboard.no_policies_title', 'No policies uploaded yet')}
+              description={t('dashboard.no_policies_desc', 'Upload your health insurance policy PDF to automatically index clauses, flag hidden sub-limits, and simulate medical bills.')}
               action={
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <button
@@ -134,14 +154,14 @@ export default function DashboardView({
                     className="btn-pill-lime py-3 px-6 flex items-center gap-2 text-sm font-bold shadow-md cursor-pointer"
                   >
                     <Upload size={16} />
-                    <span>Upload your first policy</span>
+                    <span>{t('dashboard.upload_cta', 'Upload your first policy')}</span>
                   </button>
                   <button
                     onClick={onNavigateToRecommend}
                     className="btn-pill-dark py-3 px-6 flex items-center gap-2 text-sm font-bold shadow-sm cursor-pointer"
                   >
                     <Activity size={16} className="text-[#d2f57b]" />
-                    <span>Find Policies with AI Advisor</span>
+                    <span>{t('recommend.title', 'Find Policies with AI Advisor')}</span>
                   </button>
                 </div>
               }

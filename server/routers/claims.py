@@ -22,11 +22,13 @@ try:
     from db import get_async_db, serialize_doc, to_object_id
     from services.auth_service import get_current_user
     from services.fact_mapper import mongo_facts_to_rag_facts
+    from services.crypto_service import secure_claim_data, unsecure_claim_data
 except ImportError:
     from server.config import settings
     from server.db import get_async_db, serialize_doc, to_object_id
     from server.services.auth_service import get_current_user
     from server.services.fact_mapper import mongo_facts_to_rag_facts
+    from server.services.crypto_service import secure_claim_data, unsecure_claim_data
 
 from app.claims.builder import build_claim_workflow_checklist
 from app.claims.documents import process_uploaded_claim_document, validate_document
@@ -54,7 +56,7 @@ router = APIRouter(prefix="/api/claims", tags=["Claims"])
 # ── Helper Functions ──────────────────────────────────────────────────────────
 
 async def _get_claim_or_404(claim_id: str, user_id: str) -> Dict[str, Any]:
-    """Retrieve claim and verify ownership."""
+    """Retrieve claim, verify ownership, and return unsecure/decrypted claim data."""
     db = get_async_db()
     claim = await db.claims.find_one({"claim_id": claim_id, "user_id": user_id})
     if not claim:
@@ -63,7 +65,7 @@ async def _get_claim_or_404(claim_id: str, user_id: str) -> Dict[str, Any]:
         if existing:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this claim.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found.")
-    return claim
+    return unsecure_claim_data(claim)
 
 
 async def _get_policy_or_404(policy_id: str, user_id: str) -> Dict[str, Any]:
@@ -121,7 +123,8 @@ async def create_claim(
     }
 
     db = get_async_db()
-    await db.claims.insert_one(claim_doc)
+    secured_claim = secure_claim_data(claim_doc)
+    await db.claims.insert_one(secured_claim)
 
     return {"success": True, "claim": serialize_doc(claim_doc)}
 
@@ -133,7 +136,8 @@ async def list_claims(current_user: dict = Depends(get_current_user)):
     user_id = str(current_user["_id"])
     db = get_async_db()
     claims = await db.claims.find({"user_id": user_id}).sort("created_at", -1).to_list(100)
-    return {"claims": [serialize_doc(c) for c in claims]}
+    unsecured_claims = [unsecure_claim_data(c) for c in claims]
+    return {"claims": [serialize_doc(c) for c in unsecured_claims]}
 
 
 @router.get("/{claim_id}")
@@ -165,13 +169,19 @@ async def update_treatment(
     })
 
     db = get_async_db()
+    secured = secure_claim_data({"treatment": treatment_data})
+    set_fields = {
+        "treatment": secured.get("treatment"),
+        "timeline": timeline,
+        "updated_at": now_iso,
+    }
+    for h_field in ("treatment_hash", "patient_name_hash", "doctor_name_hash", "hospital_hash", "diagnosis_hash"):
+        if h_field in secured:
+            set_fields[h_field] = secured[h_field]
+
     await db.claims.update_one(
         {"claim_id": claim_id},
-        {"$set": {
-            "treatment": treatment_data,
-            "timeline": timeline,
-            "updated_at": now_iso,
-        }}
+        {"$set": set_fields}
     )
 
     claim["treatment"] = treatment_data

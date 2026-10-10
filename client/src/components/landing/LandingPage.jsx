@@ -8,6 +8,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage, LanguageSelector } from '../../context/LanguageContext';
 import { Spinner } from '../common/ui';
 import GoogleLoginButton from '../auth/GoogleLoginButton';
 
@@ -569,7 +570,7 @@ const CAROUSEL_CARDS = [
 /* ─────────────────────────────────────────────────────────────
    MAIN CHAINLY-THEMED LANDING PAGE
    ───────────────────────────────────────────────────────────── */
-export default function LandingPage() {
+export default function LandingPage({ onOpenSecurityModal }) {
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab]   = useState('login');
 
@@ -687,13 +688,29 @@ export default function LandingPage() {
                 <a href="#features" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
                   Solutions
                 </a>
-                <a href="#how-it-works" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
+                <button
+                  type="button"
+                  onClick={onOpenSecurityModal}
+                  className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors cursor-pointer text-white flex items-center gap-1 uppercase tracking-wider text-xs font-bold"
+                >
                   Security
-                </a>
+                </button>
                 <a href="#features" className="px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">
                   Resources
                 </a>
               </nav>
+
+              <button
+                type="button"
+                onClick={onOpenSecurityModal}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                title="Inspect OWASP Session Security & Cookies"
+              >
+                <Shield size={13} className="text-emerald-600" />
+                <span className="hidden sm:inline">Security</span>
+              </button>
+
+              <LanguageSelector variant="compact" direction="down" />
 
               <button
                 id="nav-getstarted"

@@ -29,6 +29,7 @@ import { Toggle, Select, Spinner, EmptyState, ErrorBanner } from '../common/ui';
 import { useWebRTCVoice } from '../../hooks/useWebRTCVoice';
 import { VoiceInputButton, VoiceInputBanner } from './VoiceInput';
 import { WS_CHAT_URL } from '../../constants';
+import { useLanguage } from '../../context/LanguageContext';
 
 const WS_URL = WS_CHAT_URL;
 
@@ -95,6 +96,7 @@ function ConversationItem({
   onConfirmDelete,
   onCancelDelete,
 }) {
+  const { t } = useLanguage();
   const editInputRef = useRef(null);
 
   useEffect(() => {
@@ -139,19 +141,19 @@ function ConversationItem({
   if (isConfirmingDelete) {
     return (
       <div className="flex items-center justify-between px-2.5 py-2 rounded-xl bg-rose-50 border border-rose-200 animate-fade-in my-0.5 text-2xs">
-        <span className="text-rose-700 font-medium truncate">Delete this chat?</span>
+        <span className="text-rose-700 font-medium truncate">{t('Delete this chat?')}</span>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={() => onConfirmDelete(conv._id)}
             className="px-2 py-0.5 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors"
           >
-            Delete
+            {t('common.delete', 'Delete')}
           </button>
           <button
             onClick={onCancelDelete}
             className="px-2 py-0.5 rounded bg-white text-[#558187] hover:text-[#062327] border border-[#062327]/10 transition-colors"
           >
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </button>
         </div>
       </div>
@@ -234,6 +236,7 @@ function ChatSidebarContent({
   setPlainLanguageMode,
   wsConnected,
 }) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col h-full overflow-hidden bg-white">
       {/* New conversation button */}
@@ -243,14 +246,14 @@ function ChatSidebarContent({
           className="btn-pill-lime w-full gap-2 text-xs font-bold justify-center py-3 flex items-center cursor-pointer shadow-md"
         >
           <Plus size={16} className="stroke-[2.5]" />
-          <span>New consultation</span>
+          <span>{t('New consultation')}</span>
         </button>
       </div>
 
       {/* Policy scope selector */}
       <div className="p-3.5 border-b border-[#062327]/08">
         <Select
-          label="Policy Scope"
+          label={t('chat.select_policy', 'Policy Scope')}
           value={selectedPolicyId}
           onChange={setSelectedPolicyId}
           options={policyOptions}
@@ -265,7 +268,7 @@ function ChatSidebarContent({
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search past consultations…"
+            placeholder={t('Search past consultations…')}
             className="w-full pl-8 pr-7 py-2 text-xs rounded-xl bg-[#f5f8f8] border border-[#062327]/12 text-[#062327] placeholder-[#558187] focus:outline-none focus:border-[#062327] transition-colors"
           />
           {searchQuery && (
@@ -285,14 +288,14 @@ function ChatSidebarContent({
           <div className="text-center py-10 px-4">
             <MessageSquare size={22} className="text-[#558187] mx-auto mb-2 opacity-50" />
             <p className="text-xs text-[#558187]">
-              {searchQuery ? 'No chats found matching search' : 'No previous consultations'}
+              {searchQuery ? t('No chats found matching search') : t('No previous consultations')}
             </p>
           </div>
         ) : (
           groupedConversations.map(group => (
             <div key={group.title} className="mb-3">
               <p className="text-[10px] font-bold text-[#558187] uppercase tracking-wider px-3 py-1">
-                {group.title}
+                {t(group.title)}
               </p>
               <div className="space-y-1">
                 {group.items.map(c => (
@@ -324,18 +327,9 @@ function ChatSidebarContent({
         <Toggle
           checked={plainLanguageMode}
           onChange={setPlainLanguageMode}
-          label="Plain language"
-          description="Simplify insurance jargon"
+          label={t('chat.plain_language', 'Plain language')}
+          description={t('chat.plain_language_desc', 'Simplify insurance jargon')}
         />
-      </div>
-
-      {/* Streaming connection status */}
-      <div className={`px-4 py-2.5 flex items-center justify-between border-t border-[#062327]/08 text-[11px] font-semibold ${wsConnected ? 'text-emerald-600' : 'text-[#558187]'}`}>
-        <div className="flex items-center gap-1.5">
-          {wsConnected ? <Wifi size={11} /> : <WifiOff size={11} />}
-          <span>{wsConnected ? 'Streaming active' : 'REST API mode'}</span>
-        </div>
-        <span className="text-[#558187] font-mono text-[10px]">v1.2</span>
       </div>
     </div>
   );
@@ -604,6 +598,7 @@ function renderFormattedText(text) {
 
 // ─── Message bubble ────────────────────────────────────────────────────────
 function MessageBubble({ msg, plainLanguageMode }) {
+  const { t } = useLanguage();
   const isUser = msg.role === 'user';
   const content = plainLanguageMode && msg.plain_language ? msg.plain_language : msg.content;
 
@@ -628,11 +623,11 @@ function MessageBubble({ msg, plainLanguageMode }) {
       {/* Bubble */}
       <div className={`max-w-2xl min-w-0 ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
         {/* Meta row (assistant only) */}
-        {!isUser && (msg.query_type || msg.confidence_level || msg.verification_passed) && (
+        {!isUser && (msg.query_type || msg.confidence_level) && (
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
             {msg.query_type && (
               <span className="text-[10px] font-bold text-[#2d6a71] bg-[#f0fbfb] border border-[#062327]/10 px-2.5 py-0.5 rounded-full">
-                {msg.query_type === 'structured' ? 'Structured Lookup' : 'Semantic Search'}
+                {msg.query_type === 'structured' ? t('chat.structured_lookup', 'Structured Lookup') : t('chat.semantic_search', 'Semantic Search')}
               </span>
             )}
             {msg.confidence_level && (
@@ -641,13 +636,7 @@ function MessageBubble({ msg, plainLanguageMode }) {
                 msg.confidence_level === 'medium' ? 'status-pending' :
                 'status-error'
               }`}>
-                {msg.confidence_level} confidence
-              </span>
-            )}
-            {msg.verification_passed && (
-              <span className="text-[11px] font-bold flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                <ShieldCheck size={12} className="stroke-[2.5]" />
-                Zero Hallucinations Verified
+                {msg.confidence_level} {t('confidence')}
               </span>
             )}
           </div>
@@ -737,6 +726,7 @@ function TypingIndicator({ statusMsg }) {
 
 // ─── Main ChatBox ──────────────────────────────────────────────────────────
 export default function ChatBox({ initialPolicy, policies }) {
+  const { t } = useLanguage();
   const [selectedPolicyId, setSelectedPolicyId] = useState(initialPolicy?._id || '');
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
@@ -1108,12 +1098,12 @@ export default function ChatBox({ initialPolicy, policies }) {
   };
 
   const policyOptions = useMemo(() => [
-    { value: '', label: 'All Policies' },
+    { value: '', label: t('chat.all_policies', 'All Policies') },
     ...policies.map(p => ({
       value: p._id,
       label: `${p.insurer_name || p.file_name}`,
     })),
-  ], [policies]);
+  ], [policies, t]);
 
   const groupedConversations = useMemo(
     () => groupConversations(conversations, searchQuery),
@@ -1164,7 +1154,7 @@ export default function ChatBox({ initialPolicy, policies }) {
             <div className="p-4 border-b border-[#062327]/08 flex items-center justify-between bg-white">
               <span className="font-headline text-sm font-bold text-[#062327] flex items-center gap-2">
                 <History size={16} className="text-[#062327]" />
-                Consultation History
+                {t('Consultation History')}
               </span>
               <button
                 onClick={() => setMobileDrawerOpen(false)}
@@ -1213,7 +1203,7 @@ export default function ChatBox({ initialPolicy, policies }) {
             title="Chat history"
           >
             <History size={14} className="text-[#062327]" />
-            <span className="text-[#062327] font-bold">Chats</span>
+            <span className="text-[#062327] font-bold">{t('Chats')}</span>
             {conversations.length > 0 && (
               <span className="text-[10px] text-[#062327] bg-[#d2f57b] font-black px-1.5 py-0.2 rounded-full">
                 {conversations.length}
@@ -1249,7 +1239,7 @@ export default function ChatBox({ initialPolicy, policies }) {
           {loadingChat ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
               <Spinner size={26} className="text-[#062327] mb-3" />
-              <p className="text-xs font-semibold text-[#558187]">Loading consultation history…</p>
+              <p className="text-xs font-semibold text-[#558187]">{t('Loading consultation history…')}</p>
             </div>
           ) : messages.length === 0 && !loading ? (
             // Empty state
@@ -1258,19 +1248,19 @@ export default function ChatBox({ initialPolicy, policies }) {
                 <Bot size={24} className="stroke-[2.5]" />
               </div>
               <h3 className="font-headline text-lg sm:text-xl font-bold text-[#062327] mb-2">
-                Policy Intelligence Assistant
+                {t('chat.title', 'Policy Intelligence Assistant')}
               </h3>
               <p className="text-xs sm:text-sm text-[#558187] leading-relaxed mb-6 font-medium">
-                Ask anything about room-rent sub-limits, waiting periods, modern treatments, or co-pays. Every answer is grounded with verbatim page citations.
+                {t('chat.subtitle', 'Ask anything about room-rent sub-limits, waiting periods, modern treatments, or co-pays. Every answer is grounded with verbatim page citations.')}
               </p>
               <div className="grid grid-cols-1 gap-2.5 w-full">
-                {SAMPLE_QUESTIONS.map((q, i) => (
+                {(Array.isArray(t('chat.samples')) && t('chat.samples').length > 0 ? t('chat.samples') : SAMPLE_QUESTIONS).map((q, i) => (
                   <button
                     key={i}
                     onClick={() => setInput(q)}
                     className="text-left px-4 py-3 rounded-2xl bg-white border border-[#062327]/10 hover:border-[#062327]/30 hover:bg-[#f5f8f8] text-xs font-semibold text-[#062327] transition-all duration-150 cursor-pointer shadow-xs"
                   >
-                    "{q}"
+                    "{t(q)}"
                   </button>
                 ))}
               </div>
@@ -1319,7 +1309,7 @@ export default function ChatBox({ initialPolicy, policies }) {
             <Toggle
               checked={plainLanguageMode}
               onChange={setPlainLanguageMode}
-              label="Plain language mode"
+              label={t('chat.plain_language', 'Plain language mode')}
             />
           </div>
 
@@ -1357,13 +1347,13 @@ export default function ChatBox({ initialPolicy, policies }) {
                 placeholder={
                   isVoiceListening
                     ? isVoicePauseDetected
-                      ? "⏸️ Pause detected — click 'Use Transcript' to insert, or keep speaking..."
+                      ? t("⏸️ Pause detected — click 'Use Transcript' to insert, or keep speaking...")
                       : isVoiceSpeaking
-                      ? "🎙️ Listening... Streaming words onto screen..."
-                      : "Listening... speak now or press Alt+V to finish"
+                      ? t("🎙️ Listening... Streaming words onto screen...")
+                      : t("Listening... speak now or press Alt+V to finish")
                     : isVoiceTranscribing
-                    ? "Transcribing with Whisper Turbo..."
-                    : "Ask about room rent limits, exclusions, ICU caps, or claim procedures…"
+                    ? t("Transcribing with Whisper Turbo...")
+                    : t('chat.input_placeholder', "Ask about room rent limits, exclusions, ICU caps, or claim procedures…")
                 }
                 className="
                   input-field resize-none py-3.5 pr-12 leading-relaxed
@@ -1391,7 +1381,7 @@ export default function ChatBox({ initialPolicy, policies }) {
               type="submit"
               disabled={loading || !input.trim() || isVoiceTranscribing}
               className="btn-pill-lime h-12 w-12 p-0 rounded-2xl flex-shrink-0 flex items-center justify-center cursor-pointer disabled:opacity-40 shadow-sm text-[#062327]"
-              aria-label="Send message"
+              aria-label={t('chat.send', 'Send message')}
             >
               {loading ? (
                 <Spinner size={18} className="text-[#062327] shrink-0" />
@@ -1400,12 +1390,6 @@ export default function ChatBox({ initialPolicy, policies }) {
               )}
             </button>
           </div>
-          <p className="text-[11px] text-[#558187] mt-2.5 text-center font-medium">
-            {wsConnected ? 'Streaming via WebSocket' : 'REST API mode'}
-            {selectedPolicyId ? '' : ' · Searching across all policies'}
-            {' · WebRTC Instant Voice (Alt+V)'}
-            {' · Fully grounded with contract citations'}
-          </p>
         </form>
       </div>
     </div>

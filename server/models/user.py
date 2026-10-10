@@ -34,5 +34,7 @@ class AuthTokenResponse(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     credential: Optional[str] = None
+    id_token: Optional[str] = None
     code: Optional[str] = None
     redirect_uri: Optional[str] = None
+    access_token: Optional[str] = None

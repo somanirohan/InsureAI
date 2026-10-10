@@ -21,10 +21,12 @@ try:
     from db import get_async_db, to_object_id
     from services.fact_mapper import rag_facts_to_mongo_facts
     from services.policy_validator import validate_policy_text
+    from services.crypto_service import hash_sha256
 except ImportError:
     from server.db import get_async_db, to_object_id
     from server.services.fact_mapper import rag_facts_to_mongo_facts
     from server.services.policy_validator import validate_policy_text
+    from server.services.crypto_service import hash_sha256
 
 from app.ingestion.pdf_extract import extract_pages, PageText
 from app.ingestion.chunking import chunk_pages, Chunk
@@ -212,6 +214,7 @@ class PolicyService:
                 update_fields["policy_type"] = detected_policy_type
             if detected_policy_number:
                 update_fields["policy_number"] = detected_policy_number
+                update_fields["policy_number_hash"] = hash_sha256(detected_policy_number, normalize=True)
             if sum_insured_num is not None:
                 update_fields["sum_insured"] = sum_insured_num
             if premium_num is not None:

@@ -20,12 +20,14 @@ try:
     from services.auth_service import get_current_user
     from services.policy_service import policy_service
     from services.policy_validator import check_duplicate_policy, validate_policy_text
+    from services.crypto_service import unsecure_policy_data
 except ImportError:
     from server.config import settings
     from server.db import get_async_db, serialize_doc, to_object_id
     from server.services.auth_service import get_current_user
     from server.services.policy_service import policy_service
     from server.services.policy_validator import check_duplicate_policy, validate_policy_text
+    from server.services.crypto_service import unsecure_policy_data
 
 import hashlib
 from app.ingestion.pdf_extract import extract_pages
@@ -224,7 +226,7 @@ async def get_user_policies(current_user: dict = Depends(get_current_user)):
         .to_list(length=100)
     )
 
-    return {"policies": [serialize_doc(p) for p in policies]}
+    return {"policies": [serialize_doc(unsecure_policy_data(p)) for p in policies]}
 
 
 @router.get("/{policy_id}")
@@ -244,7 +246,7 @@ async def get_policy_by_id(policy_id: str, current_user: dict = Depends(get_curr
             raise HTTPException(status_code=403, detail="Access denied to this policy.")
         raise HTTPException(status_code=404, detail="Policy document not found.")
 
-    return {"policy": serialize_doc(policy)}
+    return {"policy": serialize_doc(unsecure_policy_data(policy))}
 
 
 @router.delete("/{policy_id}")
