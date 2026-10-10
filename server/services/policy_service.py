@@ -18,10 +18,12 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 
 try:
+    from config import settings
     from db import get_async_db, to_object_id
     from services.fact_mapper import rag_facts_to_mongo_facts
     from services.policy_validator import validate_policy_text
 except ImportError:
+    from server.config import settings
     from server.db import get_async_db, to_object_id
     from server.services.fact_mapper import rag_facts_to_mongo_facts
     from server.services.policy_validator import validate_policy_text
@@ -239,11 +241,13 @@ class PolicyService:
                 }}
             )
 
-    async def delete_policy_cascade(self, user_id: str, policy_id: str) -> Dict[str, Any]:
+    async def delete_policy_cascade(self, user_id: str, policy_id: str, cascade: bool = False) -> Dict[str, Any]:
         """
         Cascade delete policy and clean vector store, chunk records, and references.
         Verifies ownership before deleting.
+        Blocks deletion if any claims reference this policy unless cascade is True.
         """
+        import shutil
         db = get_async_db()
         p_oid = to_object_id(policy_id)
         u_oid = to_object_id(user_id)
@@ -253,6 +257,35 @@ class PolicyService:
         policy = await db.policies.find_one({"_id": p_oid, "user_id": u_oid})
         if not policy:
             raise PermissionError("Policy not found or access denied.")
+
+        # Check if any claims reference this policy (stored either as string or ObjectId)
+        referencing_claims = await db.claims.find({
+            "user_id": str(u_oid),
+            "$or": [{"policy_id": str(p_oid)}, {"policy_id": str(policy_id)}]
+        }).to_list(length=1000)
+
+        if referencing_claims and not cascade:
+            claims_count = len(referencing_claims)
+            raise ValueError(
+                f"Cannot delete policy: {claims_count} claim(s) reference this policy. "
+                "Pass ?cascade=true to delete the policy and all associated claims."
+            )
+
+        # If cascade=True and referencing claims exist, delete claims and their upload directories
+        if referencing_claims and cascade:
+            for c in referencing_claims:
+                cid = c.get("claim_id")
+                if cid:
+                    claim_dir = os.path.join(settings.UPLOAD_DIR, "claims", cid)
+                    if os.path.exists(claim_dir):
+                        try:
+                            shutil.rmtree(claim_dir, ignore_errors=True)
+                        except Exception as exc:
+                            logger.warning("Could not delete claim uploads directory %s: %s", claim_dir, exc)
+            await db.claims.delete_many({
+                "user_id": str(u_oid),
+                "$or": [{"policy_id": str(p_oid)}, {"policy_id": str(policy_id)}]
+            })
 
         # 1. Clean ChromaDB isolated vector collection
         try:

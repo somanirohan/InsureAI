@@ -115,6 +115,56 @@ export default function ClaimReviewScreen({
         <SettlementReceiptCard settlementEstimate={settlement_estimate} />
       )}
 
+      {/* Itemised Bill Line Items Breakdown */}
+      {(() => {
+        const billDoc = claim?.documents?.find(
+          (d) =>
+            ['final_hospital_bill', 'hospital_bill', 'itemised_bill', 'bill'].includes(d.item_id) &&
+            d.line_items &&
+            d.line_items.length > 0
+        );
+        if (!billDoc) return null;
+        return (
+          <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-[#062327]">
+                  Itemised Bill Line Items
+                </h3>
+                <p className="text-xs text-[#558187] font-medium mt-0.5">
+                  Extracted from verified hospital bill ({billDoc.filename || 'Bill'})
+                </p>
+              </div>
+              <span className="font-mono text-sm font-bold text-[#15803d]">
+                ₹{billDoc.line_items.reduce((acc, li) => acc + (Number(li.amount) || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="border border-[#062327]/10 rounded-2xl overflow-hidden">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-[#f5f8f8] text-[#558187] font-semibold border-b border-[#062327]/10">
+                  <tr>
+                    <th className="py-2 px-3">Description</th>
+                    <th className="py-2 px-3 text-center w-20">Quantity</th>
+                    <th className="py-2 px-3 text-right w-32">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#062327]/05">
+                  {billDoc.line_items.map((li, idx) => (
+                    <tr key={idx} className="hover:bg-[#f5f8f8]/50">
+                      <td className="py-2 px-3 font-medium text-[#062327]">{li.description}</td>
+                      <td className="py-2 px-3 text-center text-[#558187]">{li.quantity != null ? li.quantity : '—'}</td>
+                      <td className="py-2 px-3 text-right font-mono font-semibold text-[#062327]">
+                        {Number(li.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Submission Gate Alert / Submission Action */}
       <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
         {!can_submit ? (

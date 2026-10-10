@@ -87,6 +87,13 @@ class ChecklistItem(BaseModel):
     due_date_hint: Optional[str] = None
 
 
+class LineItem(BaseModel):
+    description: str
+    amount: float
+    quantity: Optional[float] = None
+    confidence: float = 1.0
+
+
 class ClaimDocument(BaseModel):
     document_id: str
     item_id: str
@@ -94,6 +101,7 @@ class ClaimDocument(BaseModel):
     file_path: Optional[str] = None
     extracted_fields: Dict[str, Any] = Field(default_factory=dict)
     field_confidence: Dict[str, float] = Field(default_factory=dict)
+    line_items: List[LineItem] = Field(default_factory=list)
     validation_issues: List[str] = Field(default_factory=list)
     needs_confirmation: bool = False
 
@@ -156,3 +164,4 @@ class UpdateStatusRequest(BaseModel):
 
 class ConfirmDocumentFieldsRequest(BaseModel):
     confirmed_fields: Dict[str, Any]
+    line_items: Optional[List[LineItem]] = None

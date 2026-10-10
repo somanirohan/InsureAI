@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     # Cosine similarity threshold for routing questions to structured fields
     router_similarity_threshold: float = 0.75
 
+    # ── Claims & Settlement ──────────────────────────────────────────────────
+    # Absolute tolerance in Rupees for discrepancy between bill total and sum of line items
+    line_item_sum_tolerance: float = 100.0
+
 
 # Module-level singleton — import this everywhere.
 settings = Settings()

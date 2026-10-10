@@ -428,6 +428,17 @@ async def upload_claim_document(
                 detail=f"Unknown checklist item slot '{item_id}'.",
             )
 
+    # Delete previous document file from disk if re-uploading to the same slot
+    existing_doc_for_slot = next((d for d in claim.get("documents", []) if d.get("item_id") == item_id), None)
+    if existing_doc_for_slot and existing_doc_for_slot.get("file_path"):
+        old_fpath = existing_doc_for_slot["file_path"]
+        if os.path.exists(old_fpath):
+            try:
+                os.remove(old_fpath)
+                logger.info("[%s] Deleted previous document file from disk: %s", claim_id, old_fpath)
+            except OSError as err:
+                logger.warning("[%s] Failed to delete previous document file %s: %s", claim_id, old_fpath, err)
+
     # Save file safely
     doc_dir = os.path.join(settings.UPLOAD_DIR, "claims", claim_id)
     os.makedirs(doc_dir, exist_ok=True)
@@ -441,17 +452,18 @@ async def upload_claim_document(
     treatment = TreatmentDetails(**claim["treatment"]) if claim.get("treatment") else None
     patient_name = current_user.get("full_name") or current_user.get("name") or current_user.get("email", "").split("@")[0]
 
-    # Process and validate document
+    # Process and validate document (clears old validation results completely)
     claim_doc_obj = process_uploaded_claim_document(
         file_path=file_path,
         filename=orig_filename,
         item_id=item_id,
         treatment=treatment,
         expected_patient_name=patient_name,
+        claim_id=claim_id,
     )
     doc_dict = claim_doc_obj.model_dump()
 
-    # Update or append document in claim
+    # Update or append document in claim (replaces old validation state completely)
     docs = claim.get("documents", [])
     docs = [d for d in docs if d.get("item_id") != item_id]
     docs.append(doc_dict)
@@ -653,6 +665,8 @@ async def confirm_document_fields(
 
     # Apply confirmed fields
     target_doc["extracted_fields"].update(payload.confirmed_fields)
+    if payload.line_items is not None:
+        target_doc["line_items"] = [li.model_dump() for li in payload.line_items]
     target_doc["needs_confirmation"] = False
     target_doc["validation_issues"] = []  # User has explicitly verified fields
 
@@ -820,3 +834,37 @@ async def get_claim_timeline(
     user_id = str(current_user["_id"])
     claim = await _get_claim_or_404(claim_id, user_id)
     return {"timeline": claim.get("timeline", [])}
+
+
+@router.delete("/{claim_id}", status_code=status.HTTP_200_OK)
+async def delete_claim(
+    claim_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Delete a claim, its MongoDB record, and all associated document files on disk.
+    Enforces ownership check.
+    """
+    import shutil
+    user_id = str(current_user["_id"])
+    claim = await _get_claim_or_404(claim_id, user_id)
+
+    db = get_async_db()
+    # 1. Delete MongoDB claim record
+    del_res = await db.claims.delete_one({"claim_id": claim_id, "user_id": user_id})
+    if del_res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Claim not found or access denied.")
+
+    # 2. Delete uploads folder on disk for this claim
+    claim_dir = os.path.join(settings.UPLOAD_DIR, "claims", claim_id)
+    if os.path.exists(claim_dir):
+        try:
+            shutil.rmtree(claim_dir, ignore_errors=True)
+            logger.info("Deleted claim uploads directory: %s", claim_dir)
+        except Exception as exc:
+            logger.warning("Failed to remove claim directory %s: %s", claim_dir, exc)
+
+    return {
+        "success": True,
+        "message": f"Claim {claim_id} and all associated files deleted successfully.",
+    }
