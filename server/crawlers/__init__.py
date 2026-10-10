@@ -1,0 +1,3 @@
+"""
+InsureAI Scrapy Crawlers package.
+"""

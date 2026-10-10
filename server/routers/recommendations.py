@@ -148,7 +148,50 @@ async def refresh_policy_catalog(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@router.head("/brochure/{product_id}")
+@router.get("/brochure/{product_id}")
+async def get_or_stream_brochure(product_id: str, proxy: bool = False):
+    """
+    Fetch, stream, or redirect to the verified policy brochure PDF.
+    Guarantees clean accessibility without browser CORS or referer blocks.
+    """
+    try:
+        from fastapi.responses import RedirectResponse, Response
+        db = get_async_db()
+        policy = await db.catalog_policies.find_one({"product_id": product_id})
+        if not policy:
+            from server.services.policy_crawler import CURATED_INDIAN_POLICIES
+            policy = next((p for p in CURATED_INDIAN_POLICIES if p.get("product_id") == product_id), None)
+
+        if not policy or not policy.get("official_brochure_url"):
+            raise HTTPException(status_code=404, detail=f"Policy brochure for '{product_id}' not found.")
+
+        target_url = policy.get("brochure_pdf_url") or policy.get("official_brochure_url")
+
+        if proxy:
+            import httpx
+            try:
+                async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                    resp = await client.get(
+                        target_url,
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"},
+                    )
+                    if resp.status_code == 200:
+                        content_type = resp.headers.get("content-type", "application/pdf")
+                        return Response(content=resp.content, media_type=content_type)
+            except Exception as proxy_err:
+                logger.warning("Proxy fetch failed for %s, falling back to redirect: %s", target_url, proxy_err)
+
+        return RedirectResponse(url=target_url, status_code=307)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Error serving brochure for %s: %s", product_id, exc)
+        raise HTTPException(status_code=500, detail=f"Could not retrieve brochure: {exc}")
+
+
 @router.get("/history")
+
 async def get_recommendation_history(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):

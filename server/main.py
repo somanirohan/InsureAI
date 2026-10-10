@@ -129,7 +129,28 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# ── Health Check ──────────────────────────────────────────────────────────────
+# ── Root & Health Check ───────────────────────────────────────────────────────
+@app.get("/")
+async def root():
+    """Root endpoint welcoming API consumers and pointing to documentation and frontend."""
+    return {
+        "service": "InsureAI Intelligence API Backend",
+        "status": "online",
+        "documentation": "/docs",
+        "health": "/api/health",
+        "client_frontend": "http://localhost:5173",
+        "timestamp": datetime.utcnow().isoformat(),
+        "endpoints": {
+            "recommendations": "/api/recommendations",
+            "brochure_proxy": "/api/recommendations/brochure/{product_id}",
+            "catalog_refresh": "/api/recommendations/refresh",
+            "chat": "/api/chat",
+            "claims": "/api/claims",
+            "comparisons": "/api/comparisons",
+        },
+    }
+
+
 @app.head("/health")
 @app.get("/health")
 @app.head("/api/health")
