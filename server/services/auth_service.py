@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 import bcrypt
 import jwt
 from bson import ObjectId
-from fastapi import HTTPException, Security, status
+from fastapi import HTTPException, Request, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 try:
@@ -162,3 +162,37 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(
     user["_id"] = str(user["_id"])
     user.pop("password_hash", None)
     return user
+
+
+async def get_current_user_optional(request: Request) -> Optional[Dict[str, Any]]:
+    """
+    Optional user dependency: returns authenticated user dict if token or cookie present,
+    otherwise returns None without raising 401.
+    """
+    token = None
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        token = auth_header[7:].strip()
+    if not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        user_id_str = payload.get("sub") or payload.get("user_id")
+        if not user_id_str:
+            return None
+        db = get_async_db()
+        oid = to_object_id(user_id_str)
+        query = {"_id": oid} if oid else {"_id": user_id_str}
+        user = await db.users.find_one(query)
+        if user and user.get("is_active", True):
+            user["_id"] = str(user["_id"])
+            user.pop("password_hash", None)
+            return user
+    except Exception:
+        return None
+    return None
+

@@ -14,24 +14,27 @@ from datetime import datetime
 from typing import Optional
 import jwt
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect, status
 
 try:
     from config import settings
     from db import get_async_db, to_object_id
     from models.chat import QuestionRequest, RenameConversationRequest
-    from services.auth_service import get_current_user
+    from services.auth_service import get_current_user, get_current_user_optional
     from services.rag_service import rag_service
+    from services.whisper_service import whisper_service
 except ImportError:
     from server.config import settings
     from server.db import get_async_db, to_object_id
     from server.models.chat import QuestionRequest, RenameConversationRequest
-    from server.services.auth_service import get_current_user
+    from server.services.auth_service import get_current_user, get_current_user_optional
     from server.services.rag_service import rag_service
+    from server.services.whisper_service import whisper_service
 
 logger = logging.getLogger("insureai.chat")
 
 router = APIRouter(prefix="/api/chat", tags=["Chat & RAG"])
+
 
 
 def generate_title(question: str) -> str:
@@ -137,6 +140,54 @@ async def save_chat_turn(
     )
 
     return user_msg, assistant_msg, conv_id, conv_title
+
+
+@router.post("/transcribe")
+async def transcribe_audio_endpoint(
+    file: UploadFile = File(...),
+    language: Optional[str] = Form(None),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
+    """
+    POST /api/chat/transcribe
+    Transcribe audio using Whisper AI (via Groq whisper-large-v3-turbo).
+    Provides rapid, accurate speech-to-text for the InsureAI chatbot.
+    """
+    try:
+        audio_bytes = await file.read()
+        if not audio_bytes or len(audio_bytes) < 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Recording is too short or empty. Please speak clearly into your microphone.",
+            )
+
+        transcribed_text = await asyncio.to_thread(
+            whisper_service.transcribe,
+            audio_bytes=audio_bytes,
+            filename=file.filename or "recording.webm",
+            content_type=file.content_type or "audio/webm",
+            language=language,
+        )
+
+        return {
+            "success": True,
+            "text": transcribed_text,
+            "model": "whisper-large-v3-turbo",
+            "provider": "Groq Whisper AI",
+        }
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Error during Whisper audio transcription: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Speech transcription failed: {str(exc)}",
+        )
 
 
 @router.post("/message")
