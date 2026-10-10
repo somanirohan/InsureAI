@@ -10,6 +10,7 @@ import RecommendationView from './components/recommendations/RecommendationView'
 import ClaimsWorkflowView from './claims/ClaimsWorkflowView';
 import { LiquidBlob } from './components/common/LiquidBlob';
 import HealthPage from './components/common/HealthPage';
+import NotFoundPage from './components/common/NotFoundPage';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
@@ -91,6 +92,12 @@ export default function App() {
   // ── Health Check Route ───────────────────────────────────
   if (typeof window !== 'undefined' && (window.location.pathname === '/health' || window.location.pathname === '/api/health')) {
     return <HealthPage />;
+  }
+
+  // ── 404 Route for Unrecognized Top-Level Paths ────────────
+  const knownPaths = ['/', '/dashboard', '/recommend', '/claims', '/chat', '/cost', '/compare', '/health', '/api/health'];
+  if (typeof window !== 'undefined' && window.location.pathname !== '/' && !knownPaths.includes(window.location.pathname)) {
+    return <NotFoundPage />;
   }
 
   // ── Auth loading ───────────────────────────────────────
