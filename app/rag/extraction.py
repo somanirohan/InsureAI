@@ -67,7 +67,8 @@ def _parse_json_object(raw: str) -> dict[str, Any]:
 # ── Page selection helpers ───────────────────────────────────────────────────
 
 _SCALAR_KEYWORDS = [
-    "sum insured", "room rent", "bed charges", "co-pay", "copay", "deductible", "schedule"
+    "sum insured", "premium", "annual premium", "gross premium", "net premium", "total premium",
+    "room rent", "bed charges", "co-pay", "copay", "deductible", "schedule", "table of benefits"
 ]
 _WAITING_EXCLUSION_KEYWORDS = [
     "waiting period", "pre-existing", "exclusions", "shall not be liable", "not covered", "cosmetic", "experimental"
@@ -120,20 +121,21 @@ def _pages_to_corpus(pages: Sequence[PageText]) -> str:
 
 _SCALAR_PROMPT = """\
 You are an insurance data analyst. Extract key policy metadata and scalar coverage terms from the policy text:
-- insurer_name: Official name of the insurance company (e.g. "Star Health & Allied Insurance", "HDFC ERGO General Insurance")
+- insurer_name: Official name of the insurance company (e.g. "Star Health & Allied Insurance", "HDFC ERGO General Insurance", "Bajaj Allianz")
 - policy_type: Type of health policy (e.g. "Individual Health Insurance", "Family Floater", "Comprehensive Health Insurance")
 - policy_number: Policy or Certificate number (e.g. "SH-IND-2024-89214")
-- premium_amount: Annual or total premium amount (e.g. "Rs. 14,500")
-- sum_insured: Overall coverage limit amount (e.g. "Rs. 10,00,000")
+- premium_amount: Annual, gross, or total premium amount (e.g. "Rs. 12,480", "Rs. 14,500")
+- sum_insured: Overall coverage limit amount (e.g. "Rs. 10,00,000", "Rs. 5,00,000")
 - room_rent_limit: Daily cap on room rent charges
 - co_pay: Co-payment percentage or amount
 - deductible: Initial deductible amount before coverage
 
 RULES:
 1. Extract ONLY values with EXPLICIT evidence in the text.
-2. Record the exact page number (integer) from === PAGE N ===.
-3. If absent, set field to null.
-4. Output valid JSON matching this schema:
+2. In Indian policy schedules, the Rupee currency symbol ₹ is sometimes rendered as 'I' or 'Rs' (e.g. 'I10,00,000' is 'Rs. 10,00,000', and 'I12,480' is 'Rs. 12,480'). Normalize such currency values to clean format like 'Rs. 10,00,000'.
+3. Record the exact page number (integer) from === PAGE N ===.
+4. If absent, set field to null.
+5. Output valid JSON matching this schema:
 {
   "insurer_name": {"value": str, "page": int} or null,
   "policy_type": {"value": str, "page": int} or null,
@@ -297,40 +299,43 @@ def extract_heuristic_facts(pages: Sequence[PageText]) -> dict[str, Any]:
     # 4. Sum Insured (supporting Indian currency units like Lakh, Lac, Crore, Cr)
     sum_insured = None
     for p in pages:
-        # Pattern A: Label followed by amount (e.g. Sum Insured: Rs. 2 Lakhs, Base Sum Insured: ₹5,00,000)
+        # Pattern A: Label followed by amount (e.g. Sum Insured: Rs. 2 Lakhs, Base Sum Insured: ₹5,00,000 or I10,00,000)
         m_si = re.search(
-            r"(?:Base\s*)?(?:Sum\s*Insured|Total\s*Coverage|Risk\s*Cover(?:age)?|SI|Cover\s+Amount)\s*[:\-]?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?|cr|thousand|k)?(?:\s*/\-|\b))",
+            r"(?:Base\s*)?(?:Sum\s*Insured|Total\s*Coverage|Risk\s*Cover(?:age)?|SI|Cover\s+Amount)\s*[:\-]?\s*(?:INR|Rs\.?|[₹I|])?\s*([₹I|]?\s*[\d,]+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?|cr|thousand|k)?(?:\s*/\-|\b))",
             p.text,
             re.I,
         )
         if m_si:
             raw_val = m_si.group(1).strip().rstrip("/-").strip()
-            clean_val = raw_val if any(c in raw_val.lower() for c in ("rs", "inr", "₹")) else f"Rs. {raw_val}"
+            clean_digits = re.sub(r"^[₹I|]\s*", "", raw_val).strip()
+            clean_val = clean_digits if any(c in clean_digits.lower() for c in ("rs", "inr")) else f"Rs. {clean_digits}"
             sum_insured = {"value": clean_val, "page": p.page_number}
             break
 
         # Pattern B: Sentence style (e.g. "cover of Rs. 2 Lakh", "coverage of Rs. 5,00,000", "benefits of up to Rs. 5 Lakhs")
         m_si_sent = re.search(
-            r"(?:cover(?:age)?|benefit|sum\s+insured)\s+(?:of|up\s+to|equal\s+to)\s+(?:INR|Rs\.?|₹)\s*([\d,]+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?|cr|thousand|k)?)",
+            r"(?:cover(?:age)?|benefit|sum\s+insured)\s+(?:of|up\s+to|equal\s+to)\s+(?:INR|Rs\.?|[₹I|])\s*([\d,]+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?|cr|thousand|k)?)",
             p.text,
             re.I,
         )
         if m_si_sent:
             val = m_si_sent.group(1).strip()
-            sum_insured = {"value": f"Rs. {val}", "page": p.page_number}
+            clean_digits = re.sub(r"^[₹I|]\s*", "", val).strip()
+            sum_insured = {"value": f"Rs. {clean_digits}", "page": p.page_number}
             break
 
     # 5. Premium Amount
     premium_amount = None
     for p in pages:
         m_pr = re.search(
-            r"(?:Annual\s*)?Premium\s*[:\-]?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?(?:\s*/\-|\b))",
+            r"(?:Gross\s*|Net\s*|Total\s*|Annual\s*)?Premium\s*(?:Amount|Payable)?\s*[:\-]?\s*(?:INR|Rs\.?|[₹I|])?\s*([₹I|]?\s*[\d,]+(?:\.\d+)?(?:\s*/\-|\b))",
             p.text,
             re.I,
         )
         if m_pr:
-            clean_pr = m_pr.group(1).strip().rstrip("/-").strip()
-            premium_amount = {"value": f"Rs. {clean_pr}", "page": p.page_number}
+            raw_pr = m_pr.group(1).strip().rstrip("/-").strip()
+            clean_digits = re.sub(r"^[₹I|]\s*", "", raw_pr).strip()
+            premium_amount = {"value": f"Rs. {clean_digits}", "page": p.page_number}
             break
 
     # 6. Room Rent Limit
@@ -505,7 +510,7 @@ def extract_structured_facts(
         data_scalar = _parse_json_object(res_scalar)
 
         # ── Call 2: Waiting Periods & Exclusions ──────────────────────────────
-        we_pages = _filter_pages(pages, _WAITING_EXCLUSION_KEYWORDS, max_pages=2)
+        we_pages = _filter_pages(pages, _WAITING_EXCLUSION_KEYWORDS, max_pages=4)
         corpus_we = _pages_to_corpus(we_pages)
         logger.info("Extraction call 2/3: waiting & exclusions (%d chars across pages %s)", len(corpus_we), [p.page_number for p in we_pages])
         res_we = llm.chat(
@@ -520,7 +525,7 @@ def extract_structured_facts(
         data_we = _parse_json_object(res_we)
 
         # ── Call 3: Claim Conditions ──────────────────────────────────────────
-        claim_pages = _filter_pages(pages, _CLAIM_KEYWORDS, max_pages=2)
+        claim_pages = _filter_pages(pages, _CLAIM_KEYWORDS, max_pages=3)
         corpus_claim = _pages_to_corpus(claim_pages)
         logger.info("Extraction call 3/3: claims (%d chars across pages %s)", len(corpus_claim), [p.page_number for p in claim_pages])
         res_claim = llm.chat(

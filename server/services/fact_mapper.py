@@ -36,7 +36,7 @@ def _parse_numeric_and_unit(val_str: Optional[str]) -> tuple[Optional[float], Op
     # Indian currency multiplier (Lakh / Lac / Crore / Cr / Thousand / K):
     # e.g. 'Rs. 2 Lakh', '₹ 5 Lakhs', 'INR 10 Lac', '1.5 Crore', '50 Lakhs'
     mult_match = re.search(
-        r'(?:(?:rs\.?|inr|₹)\s*)?([\d,]+(?:\.\d+)?)\s*(lakhs?|lacs?|crores?|cr|thousand|k)\b',
+        r'(?:(?:rs\.?|inr|₹|[I|])\s*)?([\d,]+(?:\.\d+)?)\s*(lakhs?|lacs?|crores?|cr|thousand|k)\b',
         text,
         re.IGNORECASE,
     )
@@ -56,8 +56,8 @@ def _parse_numeric_and_unit(val_str: Optional[str]) -> tuple[Optional[float], Op
         except (ValueError, TypeError):
             pass
 
-    # Rupee currency match: e.g. 'Rs. 10,00,000', 'INR 15,00,000', '₹ 5,00,000', 'Rs. 2,00,000/-'
-    curr_match = re.search(r'(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)', text, re.IGNORECASE)
+    # Rupee currency match: e.g. 'Rs. 10,00,000', 'INR 15,00,000', '₹ 5,00,000', 'Rs. 2,00,000/-', 'I10,00,000', 'I12,480'
+    curr_match = re.search(r'(?:rs\.?|inr|₹|[I|])\s*([\d]{1,3}(?:,\d{2,3})*(?:\.\d+)?)', text, re.IGNORECASE)
     if curr_match:
         try:
             clean_num = curr_match.group(1).replace(",", "")
@@ -66,7 +66,8 @@ def _parse_numeric_and_unit(val_str: Optional[str]) -> tuple[Optional[float], Op
             pass
 
     # Standalone plain currency with commas if in sum_insured/deductible like '10,00,000' or '2,00,000'
-    pure_num_match = re.search(r'\b([\d]{1,3}(?:,\d{2,3})+(?:\.\d+)?)\b', text)
+    norm_text = re.sub(r'^[I|/₹]\s*(?=\d)', '', text)
+    pure_num_match = re.search(r'\b([\d]{1,3}(?:,\d{2,3})+(?:\.\d+)?)\b', norm_text)
     if pure_num_match:
         try:
             clean_num = pure_num_match.group(1).replace(",", "")

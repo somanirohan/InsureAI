@@ -22,6 +22,15 @@ else
     echo "   Start it with: ollama serve"
 fi
 
+# Clean up any leftover processes on ports 5001, 5173, and 5174
+for port in 5001 5173 5174; do
+    pid=$(lsof -ti :$port 2>/dev/null || true)
+    if [ -n "$pid" ]; then
+        echo "🧹 Freeing port $port (killing process $pid)..."
+        kill -9 $pid 2>/dev/null || true
+    fi
+done
+
 echo ""
 echo "🚀 Starting FastAPI backend (:5001)..."
 python3.11 server/main.py &

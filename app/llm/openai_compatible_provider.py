@@ -34,6 +34,12 @@ class OpenAICompatibleProvider(LLMProvider):
         model: str,
     ) -> None:
         self.model = model
+        self.base_url = base_url
+        if not api_key:
+            raise ValueError(
+                f"API key for model '{model}' ({base_url}) is not configured. "
+                "Please set GROQ_API_KEY (or appropriate provider key) in your .env file."
+            )
         # The openai SDK handles auth headers, retries, and response parsing.
         self._client = OpenAI(base_url=base_url, api_key=api_key)
 
@@ -48,10 +54,32 @@ class OpenAICompatibleProvider(LLMProvider):
         Temperature defaults to 0.1 to keep factual extractions deterministic;
         callers can override via kwargs.
         """
-        response = self._client.chat.completions.create(
-            model=self.model,
-            messages=messages,  # type: ignore[arg-type]
-            temperature=kwargs.get("temperature", 0.1),
-            max_tokens=kwargs.get("max_tokens", 2048),
-        )
-        return response.choices[0].message.content or ""
+        create_kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,  # type: ignore[arg-type]
+            "temperature": kwargs.get("temperature", 0.1),
+            "max_tokens": kwargs.get("max_tokens", 2048),
+        }
+
+        # Enable JSON object format if requested (supported natively by Groq and OpenAI)
+        if kwargs.get("format") == "json" or kwargs.get("json_mode"):
+            create_kwargs["response_format"] = {"type": "json_object"}
+
+        try:
+            response = self._client.chat.completions.create(**create_kwargs)
+            return response.choices[0].message.content or ""
+        except Exception as exc:
+            # If the model does not exist or account lacks access, auto-fallback to available model
+            err_str = str(exc).lower()
+            if "model_not_found" in err_str or "does not exist" in err_str:
+                try:
+                    available = [m.id for m in self._client.models.list().data if not any(x in m.id.lower() for x in ("guard", "whisper", "embed"))]
+                    if available:
+                        fallback_model = available[0]
+                        create_kwargs["model"] = fallback_model
+                        self.model = fallback_model
+                        response = self._client.chat.completions.create(**create_kwargs)
+                        return response.choices[0].message.content or ""
+                except Exception:
+                    pass
+            raise
