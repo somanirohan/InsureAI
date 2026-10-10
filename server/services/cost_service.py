@@ -68,8 +68,25 @@ class CostEstimatorService:
 
         # Room rent cap
         room_rent_cap = sum_insured * 0.01
+        has_no_room_rent_cap = False
         room_fact = next((f for f in policy.get("facts", []) if f.get("category") == "room_rent_limit"), None) if policy else None
-        if room_fact and room_fact.get("fact_value_numeric") is not None:
+
+        # Check for explicit 'no cap' phrasing in room_fact or red_flag_summary
+        rf_text = (room_fact.get("fact_value", "") if room_fact else "") or (
+            policy.get("red_flag_summary", {}).get("room_rent_cap", "") if policy and isinstance(policy.get("red_flag_summary"), dict) else ""
+        )
+        rf_text_lower = rf_text.lower()
+        if any(phrase in rf_text_lower for phrase in ["no room rent cap", "no cap", "no limit", "any room", "without cap", "no capping"]):
+            has_no_room_rent_cap = True
+            room_rent_cap = 0.0
+            if room_fact:
+                citations.append({
+                    "category": "room_rent_limit",
+                    "page": room_fact.get("source_page"),
+                    "text": room_fact.get("fact_value"),
+                })
+            assumptions.append(f"No room rent cap under {policy.get('insurer_name', 'this policy')}: Full room rent eligible without deductions.")
+        elif room_fact and room_fact.get("fact_value_numeric") is not None:
             room_rent_cap = float(room_fact["fact_value_numeric"])
             citations.append({
                 "category": "room_rent_limit",
@@ -83,7 +100,7 @@ class CostEstimatorService:
         total_room_bill = room_rent_per_day * stay_days
         room_rent_copay_penalty = 0.0
 
-        if room_rent_per_day > room_rent_cap and room_rent_cap > 0:
+        if not has_no_room_rent_cap and room_rent_per_day > room_rent_cap and room_rent_cap > 0:
             excess_ratio = (room_rent_per_day - room_rent_cap) / room_rent_per_day
             room_rent_copay_penalty = round(base_cost * (excess_ratio * 0.4))
             assumptions.append(f"Room rent limit breached by INR {room_rent_per_day - room_rent_cap:,.0f}/day; proportionate deduction applied.")
@@ -133,7 +150,8 @@ class CostEstimatorService:
         breakdown = {
             "base_hospital_charges": base_cost,
             "room_rent_applied": total_room_bill,
-            "room_rent_cap_per_day": room_rent_cap,
+            "room_rent_cap_per_day": None if has_no_room_rent_cap else room_rent_cap,
+            "has_no_room_rent_cap": has_no_room_rent_cap,
             "room_rent_copay_penalty": room_rent_copay_penalty,
             "deductible_deducted": deductible_deducted,
             "copay_percentage": copay_percentage,
@@ -142,6 +160,8 @@ class CostEstimatorService:
             "excluded_items_cost": excluded_items_cost,
             "final_payable_by_insurer": payable_by_insurer,
             "final_payable_by_user": out_of_pocket,
+            "policy_sum_insured": sum_insured,
+            "policy_name": policy.get("insurer_name") if policy else "Standard Policy",
         }
 
         return {
@@ -185,6 +205,8 @@ class CostEstimatorService:
         estimate_doc = {
             "user_id": u_oid,
             "policy_id": p_oid,
+            "policy_name": policy.get("insurer_name") or policy.get("file_name", "Insurance Policy"),
+            "policy_sum_insured": float(policy.get("sum_insured") or 0.0),
             "treatment_name": treatment_name,
             "hospital_tier": hospital_tier,
             "room_rent_per_day": room_rent_per_day,

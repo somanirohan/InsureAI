@@ -124,6 +124,7 @@ export default function CostEstimatorView({ policies }) {
   const [whatIfLoading, setWhatIfLoading]     = useState(false);
   const [showWhatIf, setShowWhatIf]           = useState(true);
 
+  // Ensure default policy is set when policies load
   useEffect(() => {
     if (policies.length > 0 && !selectedPolicyId) {
       setSelectedPolicyId(policies[0]._id);
@@ -134,22 +135,28 @@ export default function CostEstimatorView({ policies }) {
   const fetchHistory = async () => {
     try {
       const res = await api.get('/cost/history');
-      setHistory(res.data.estimates || []);
-      if (res.data.estimates?.length > 0 && !estimate) {
-        setEstimate(res.data.estimates[0]);
+      const fetchedEstimates = res.data.estimates || [];
+      setHistory(fetchedEstimates);
+      if (fetchedEstimates.length > 0 && !estimate) {
+        // If current selectedPolicy has an estimate, pick it, otherwise first estimate
+        const activePolicyEst = fetchedEstimates.find(e => e.policy_id === selectedPolicyId) || fetchedEstimates[0];
+        setEstimate(activePolicyEst);
+        if (activePolicyEst.policy_id && activePolicyEst.policy_id !== selectedPolicyId) {
+          setSelectedPolicyId(activePolicyEst.policy_id);
+        }
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleCalculate = async (e) => {
-    e.preventDefault();
-    const effectiveTreatment = treatmentSelection === 'custom'
-      ? customTreatment.trim()
-      : treatmentSelection;
+  const calculateEstimate = async (targetPolicyId, customTreatmentName = null) => {
+    const polId = targetPolicyId || selectedPolicyId;
+    const effectiveTreatment = customTreatmentName || (
+      treatmentSelection === 'custom' ? customTreatment.trim() : treatmentSelection
+    );
 
-    if (!selectedPolicyId || !effectiveTreatment) {
+    if (!polId || !effectiveTreatment) {
       if (treatmentSelection === 'custom' && !customTreatment.trim()) {
         setError('Please enter the custom medical procedure name.');
       }
@@ -159,7 +166,7 @@ export default function CostEstimatorView({ policies }) {
     try {
       setLoading(true);
       const res = await api.post('/cost/estimate', {
-        policy_id: selectedPolicyId,
+        policy_id: polId,
         treatment_name: effectiveTreatment,
         hospital_tier: hospitalTier,
         room_rent_per_day: roomRentPerDay,
@@ -168,10 +175,41 @@ export default function CostEstimatorView({ policies }) {
       setEstimate(res.data.estimate);
       fetchHistory();
     } catch (err) {
-      setError(err.response?.data?.error || 'Calculation failed. Please check inputs and try again.');
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Calculation failed. Please check inputs and try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePolicyChange = (newPolicyId) => {
+    setSelectedPolicyId(newPolicyId);
+    // Automatically adjust and recalculate costs for the newly selected policy
+    if (newPolicyId) {
+      calculateEstimate(newPolicyId);
+    }
+  };
+
+  const handleCalculate = async (e) => {
+    if (e) e.preventDefault();
+    calculateEstimate(selectedPolicyId);
+  };
+
+  const handleSelectHistoryItem = (est) => {
+    setEstimate(est);
+    if (est.policy_id) {
+      setSelectedPolicyId(est.policy_id);
+    }
+    if (est.treatment_name) {
+      if (TREATMENTS.some(t => t.value === est.treatment_name)) {
+        setTreatmentSelection(est.treatment_name);
+      } else {
+        setTreatmentSelection('custom');
+        setCustomTreatment(est.treatment_name);
+      }
+    }
+    if (est.hospital_tier) setHospitalTier(est.hospital_tier);
+    if (est.room_rent_per_day) setRoomRentPerDay(Number(est.room_rent_per_day));
+    if (est.stay_days) setStayDays(Number(est.stay_days));
   };
 
   const handleWhatIf = async () => {
@@ -195,6 +233,7 @@ export default function CostEstimatorView({ policies }) {
   const variants  = estimate?.what_if_variants || [];
 
   const selectedPolicy = policies.find(p => p._id === selectedPolicyId);
+  const estimatePolicy = policies.find(p => p._id === estimate?.policy_id) || selectedPolicy;
 
   const policyOptions = policies.map(p => ({
     value: p._id,
@@ -264,7 +303,7 @@ export default function CostEstimatorView({ policies }) {
                 <Select
                   label="Policy Document"
                   value={selectedPolicyId}
-                  onChange={setSelectedPolicyId}
+                  onChange={handlePolicyChange}
                   options={policyOptions}
                 />
               ) : (
@@ -356,7 +395,7 @@ export default function CostEstimatorView({ policies }) {
                   {loading ? (
                     <>
                       <Spinner size={15} className="text-[#062327]" />
-                      <span>Calculating Bill Breakdown…</span>
+                      <span>Adjusting & Calculating Breakdown…</span>
                     </>
                   ) : (
                     <>
@@ -387,10 +426,11 @@ export default function CostEstimatorView({ policies }) {
               <div className="space-y-1.5 max-h-56 overflow-y-auto scroll-area pr-0.5">
                 {history.map(est => {
                   const isCurrent = estimate?._id === est._id;
+                  const estPolicy = policies.find(p => p._id === est.policy_id);
                   return (
                     <button
                       key={est._id}
-                      onClick={() => setEstimate(est)}
+                      onClick={() => handleSelectHistoryItem(est)}
                       className={`w-full text-left px-3.5 py-3 rounded-2xl text-xs flex items-center justify-between transition-all cursor-pointer ${
                         isCurrent
                           ? 'bg-[#d2f57b]/25 border-2 border-[#062327] text-[#062327] font-bold shadow-xs'
@@ -401,9 +441,14 @@ export default function CostEstimatorView({ policies }) {
                         <span className="block truncate font-semibold text-[#062327]">
                           {est.treatment_name}
                         </span>
-                        <span className="block text-[10px] text-[#558187] capitalize mt-0.5 font-medium">
-                          {est.hospital_tier?.replace('_', ' ')} · {est.stay_days || 4}d
-                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="block text-[10px] text-[#2d6a71] font-semibold truncate max-w-[120px]">
+                            {estPolicy?.insurer_name || est.policy_name || 'Policy'}
+                          </span>
+                          <span className="text-[10px] text-[#558187] capitalize font-medium">
+                            · {est.hospital_tier?.replace('_', ' ')}
+                          </span>
+                        </div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <span className="font-sans font-bold text-xs text-[#062327] tabular-nums block">
@@ -427,7 +472,7 @@ export default function CostEstimatorView({ policies }) {
             <>
               {/* ── Card 1: Cohesive Executive Summary Panel ── */}
               <div className="bg-white border border-[#062327]/10 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#062327]/08 gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#062327]/08 gap-3">
                   <div>
                     <span className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block">
                       Audited Estimate For
@@ -436,7 +481,13 @@ export default function CostEstimatorView({ policies }) {
                       {estimate.treatment_name}
                     </h2>
                   </div>
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    {estimatePolicy && (
+                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#d2f57b]/25 text-[#062327] border border-[#062327]/15">
+                        <Shield size={13} className="text-[#062327]" />
+                        <span>Applied: {estimatePolicy.insurer_name}</span>
+                      </span>
+                    )}
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#f5f8f8] text-[#2d6a71] border border-[#062327]/10 capitalize">
                       {estimate.hospital_tier?.replace('_', ' ')}
                     </span>
@@ -563,6 +614,14 @@ export default function CostEstimatorView({ policies }) {
                       type="deduction"
                       isDeduction
                     />
+                  ) : breakdown.has_no_room_rent_cap ? (
+                    <div className="py-3 flex items-center justify-between text-xs text-[#558187]">
+                      <span className="flex items-center gap-1.5 text-emerald-800 font-medium">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
+                        No Room Rent Sub-Limit: 100% room rent eligible under this policy (No Proportionate Deductions)
+                      </span>
+                      <span className="font-sans font-semibold text-emerald-700">₹0</span>
+                    </div>
                   ) : (
                     <div className="py-3 flex items-center justify-between text-xs text-[#558187]">
                       <span className="flex items-center gap-1.5 text-[#2d6a71]">
@@ -574,14 +633,22 @@ export default function CostEstimatorView({ policies }) {
                   )}
 
                   {/* Co-Payment */}
-                  {breakdown.copay_percentage > 0 && (
+                  {breakdown.copay_percentage > 0 ? (
                     <AuditRow
                       label={`Mandatory Co-Payment (${breakdown.copay_percentage}%)`}
-                      note={`Tier-based or age-based co-pay requirement clause.`}
+                      note={`Tier-based or age-based co-pay requirement clause from policy terms.`}
                       value={fmt(breakdown.copay_amount)}
                       type="deduction"
                       isDeduction
                     />
+                  ) : (
+                    <div className="py-3 flex items-center justify-between text-xs text-[#558187]">
+                      <span className="flex items-center gap-1.5 text-emerald-800 font-medium">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
+                        Zero Co-Payment Clause: 0% co-payment applied across eligible expenses
+                      </span>
+                      <span className="font-sans font-semibold text-emerald-700">₹0</span>
+                    </div>
                   )}
 
                   {/* Excluded Items */}
@@ -611,6 +678,24 @@ export default function CostEstimatorView({ policies }) {
                     />
                   </div>
                 </div>
+
+                {/* Policy Clauses & Assumptions audit notes */}
+                {((estimate.assumptions && estimate.assumptions.length > 0) || (estimate.citations && estimate.citations.length > 0)) && (
+                  <div className="mt-5 pt-4 border-t border-[#062327]/08 space-y-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187] flex items-center gap-1.5">
+                      <Shield size={12} className="text-[#2d6a71]" />
+                      <span>Policy Rules & Clauses Applied ({estimatePolicy?.insurer_name || 'Selected Policy'})</span>
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-[#558187]">
+                      {estimate.assumptions?.map((assump, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5 p-2 rounded-xl bg-[#f8fbfb] border border-[#062327]/05">
+                          <CheckCircle2 size={12} className="text-emerald-700 flex-shrink-0 mt-0.5" />
+                          <span className="leading-tight">{assump}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ── Card 3: What-If Scenario Simulator ──────── */}
