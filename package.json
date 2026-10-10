@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "InsurAI — AI-Powered Insurance Policy Intelligence Assistant",
   "scripts": {
-    "server": "python -m uvicorn server.main:app --port 5001 --reload",
+    "server": "python -m uvicorn server.main:app --host 0.0.0.0 --reload",
     "client": "npm --prefix client run dev",
     "seed": "python -m server.utils.seeder",
     "build:server": "python -m pip install -r server/requirements.txt && python -m compileall server/",

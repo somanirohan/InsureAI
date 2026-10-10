@@ -9,6 +9,7 @@ import ComparisonView from './components/comparison/ComparisonView';
 import RecommendationView from './components/recommendations/RecommendationView';
 import ClaimsWorkflowView from './claims/ClaimsWorkflowView';
 import { LiquidBlob } from './components/common/LiquidBlob';
+import HealthPage from './components/common/HealthPage';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
@@ -74,6 +75,11 @@ export default function App() {
     setChatTargetPolicy(policy);
     setActiveTab('chat');
   };
+
+  // ── Health Check Route ───────────────────────────────────
+  if (typeof window !== 'undefined' && (window.location.pathname === '/health' || window.location.pathname === '/api/health')) {
+    return <HealthPage />;
+  }
 
   // ── Auth loading ───────────────────────────────────────
   if (authLoading) {
