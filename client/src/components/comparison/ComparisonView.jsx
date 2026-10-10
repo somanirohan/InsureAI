@@ -8,9 +8,14 @@ import {
   FileText,
   Layers,
   Sparkles,
+  Download,
+  FileSpreadsheet,
+  Printer,
+  ChevronDown,
 } from 'lucide-react';
 import api from '../../services/api';
 import { Spinner, EmptyState, ErrorBanner } from '../common/ui';
+import { exportComparisonToExcel, exportComparisonToPdf } from '../../services/exportComparison';
 
 // ─── Status Badge Helper ──────────────────────────────────
 function Tag({ text, variant = 'neutral' }) {
@@ -157,6 +162,168 @@ export default function ComparisonView({
     return new Set(values).size > 1;
   };
 
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleExport = (type) => {
+    setExportOpen(false);
+
+    if (activeMode === 'recommended') {
+      if (!comparedRecPlans || comparedRecPlans.length === 0) return;
+
+      const columns = [
+        { key: 'feature', label: 'Feature / Benefit' },
+        ...comparedRecPlans.map((p) => ({
+          key: p.product_id,
+          label: `${p.product_name} (${p.insurer_name})`,
+        })),
+      ];
+
+      const getVal = (extractor) => {
+        const row = {};
+        comparedRecPlans.forEach((p) => {
+          row[p.product_id] = extractor(p);
+        });
+        return row;
+      };
+
+      const sections = [
+        {
+          title: 'Core Highlights & Recommendation Fit',
+          rows: [
+            { label: 'Overall Match Score', values: getVal((p) => `${p.overall_match_score}% Match`) },
+            { label: 'Rank', values: getVal((p) => `Rank #${p.rank}`) },
+            { label: 'Fit Summary', values: getVal((p) => p.why_recommended || '—') },
+          ],
+        },
+        {
+          title: 'Pricing & Coverage Limits',
+          rows: [
+            {
+              label: 'Annual Premium',
+              values: getVal((p) => `₹${p.estimated_annual_premium?.toLocaleString('en-IN') || 0} / yr (₹${Math.round((p.estimated_annual_premium || 0) / 12).toLocaleString('en-IN')}/mo)`),
+            },
+            {
+              label: 'Sum Insured Base Cover',
+              values: getVal((p) => `₹${((p.recommended_sum_insured || 0) / 100000).toFixed(1)} Lakhs`),
+            },
+            {
+              label: 'Tax Benefit (Sec 80D)',
+              values: getVal(() => 'Eligible up to ₹25,000 - ₹1,00,000 deduction'),
+            },
+          ],
+        },
+        {
+          title: 'Hospitalization & Room Rent Terms',
+          rows: [
+            { label: 'Room Rent Limit', values: getVal((p) => p.room_rent_summary || '—') },
+            { label: 'Co-Payment Requirement', values: getVal((p) => p.copay_summary || '0% (Nil)') },
+            {
+              label: 'Pre/Post Hospitalization',
+              values: getVal((p) => `${p.pre_post_hospitalization?.pre_days || 60} Days Pre / ${p.pre_post_hospitalization?.post_days || 180} Days Post`),
+            },
+            { label: 'Restoration / Refill Benefit', values: getVal((p) => p.restoration_benefit || '100% Unlimited Restorations') },
+          ],
+        },
+        {
+          title: 'Waiting Periods',
+          rows: [
+            { label: 'Pre-Existing Disease (PED)', values: getVal((p) => p.waiting_periods_summary?.ped || '—') },
+            { label: 'Specific Ailments', values: getVal((p) => p.waiting_periods_summary?.specific_ailments || '—') },
+            { label: 'Initial Waiting Period', values: getVal((p) => p.waiting_periods_summary?.initial || '30 Days') },
+          ],
+        },
+        {
+          title: 'Hospital Network & Standouts',
+          rows: [
+            { label: 'Cashless Network Hospitals', values: getVal((p) => `${p.network_hospitals_count?.toLocaleString('en-IN')}+ Network Hospitals`) },
+            { label: 'Key Standout Benefits', values: getVal((p) => p.key_benefits?.join('; ') || '—') },
+            { label: 'Key Limitations / Cautions', values: getVal((p) => p.key_limitations?.join('; ') || 'None reported') },
+          ],
+        },
+      ];
+
+      const opts = {
+        title: 'Health Insurance Market Plans Comparison',
+        subtitle: `Comparison of ${comparedRecPlans.length} market plans: ${comparedRecPlans.map((p) => p.product_name).join(', ')}`,
+        columns,
+        sections,
+        filename: `InsurAI_Market_Comparison_${new Date().toISOString().slice(0, 10)}`,
+      };
+
+      if (type === 'xlsx') exportComparisonToExcel(opts);
+      else exportComparisonToPdf(opts);
+    } else {
+      if (!uploadedResult || !metadata || metadata.length === 0) return;
+
+      const columns = [
+        { key: 'feature', label: 'Feature / Benefit' },
+        ...metadata.map((m) => ({
+          key: m.policy_id,
+          label: `${m.insurer_name || m.file_name} (${m.policy_type?.replace(/_/g, ' ') || 'Health'})`,
+        })),
+      ];
+
+      const getVal = (extractor) => {
+        const row = {};
+        metadata.forEach((m) => {
+          row[m.policy_id] = extractor(m);
+        });
+        return row;
+      };
+
+      const sections = [
+        {
+          title: 'Contractual Benefits & Coverage',
+          rows: [
+            { label: 'Sum Insured', values: getVal((m) => uploadedResult.coverage_comparison?.[m.policy_id] || '—') },
+            { label: 'Annual Premium', values: getVal((m) => uploadedResult.premium_comparison?.[m.policy_id] || '—') },
+            { label: 'Room Rent Limit', values: getVal((m) => uploadedResult.room_rent_comparison?.[m.policy_id] || '—') },
+            { label: 'Co-Payment', values: getVal((m) => uploadedResult.copay_comparison?.[m.policy_id] || '—') },
+          ],
+        },
+        {
+          title: 'Waiting Periods & Exclusions',
+          rows: [
+            {
+              label: 'Waiting Periods',
+              values: getVal((m) => uploadedResult.waiting_periods_comparison?.[m.policy_id]?.join('; ') || '—'),
+            },
+            {
+              label: 'Key Exclusions',
+              values: getVal((m) => uploadedResult.exclusions_diff?.[m.policy_id]?.join('; ') || '—'),
+            },
+          ],
+        },
+      ];
+
+      const opts = {
+        title: 'Uploaded Policies Document Comparison',
+        subtitle: `Ground-truth analysis of ${metadata.length} uploaded policies: ${metadata.map((m) => m.insurer_name).join(', ')}`,
+        columns,
+        sections,
+        filename: `InsurAI_Uploaded_Policies_Comparison_${new Date().toISOString().slice(0, 10)}`,
+      };
+
+      if (type === 'xlsx') exportComparisonToExcel(opts);
+      else exportComparisonToPdf(opts);
+    }
+  };
+
+  const hasExportableData =
+    (activeMode === 'recommended' && comparedRecPlans.length >= 2) ||
+    (activeMode === 'uploaded' && uploadedResult && metadata.length >= 2);
+
   return (
     <div className="space-y-6 w-full">
       {/* ─── Top Control Header ───────────────────────────── */}
@@ -216,6 +383,48 @@ export default function ComparisonView({
               <Layers size={13} className={highlightDiffs ? 'text-[#062327]' : 'text-slate-400'} />
               <span>Highlight differences</span>
             </button>
+
+            {/* Export Dropdown Button */}
+            <div className="relative" ref={exportDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setExportOpen(!exportOpen)}
+                disabled={!hasExportableData}
+                title={hasExportableData ? 'Export comparison as Excel or PDF' : 'Compare at least 2 policies to export'}
+                className="btn-pill-lime text-xs py-2 px-4 font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+              >
+                <Download size={13} />
+                <span>Export</span>
+                <ChevronDown size={12} className={`transition-transform duration-200 ${exportOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {exportOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-40 animate-fade-in text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleExport('xlsx')}
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer transition-colors"
+                  >
+                    <FileSpreadsheet size={15} className="text-emerald-600" />
+                    <div>
+                      <div className="font-semibold text-slate-900">Excel Spreadsheet</div>
+                      <div className="text-3xs text-slate-400">Download formatted .xlsx / .xls</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport('pdf')}
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer transition-colors border-t border-slate-100"
+                  >
+                    <Printer size={15} className="text-rose-600" />
+                    <div>
+                      <div className="font-semibold text-slate-900">PDF Report</div>
+                      <div className="text-3xs text-slate-400">Print or save styled PDF</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
