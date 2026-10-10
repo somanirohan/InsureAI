@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.git/
+.gitignore
+.env
+client/
+node_modules/
+dist/
+chroma_store/
+uploads/
+server/uploads/*
+!server/uploads/.gitkeep
