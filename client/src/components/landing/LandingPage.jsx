@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Spinner } from '../common/ui';
+import GoogleLoginButton from '../auth/GoogleLoginButton';
 
 /* ─────────────────────────────────────────────────────────────
    CLOVER WATERMARK BLOOM
@@ -61,7 +62,7 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
   const [phone, setPhone]       = useState('');
   const [error, setError]       = useState(null);
   const [loading, setLoading]   = useState(false);
-  const { login, register }     = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
 
   const switchTab = (toLogin) => {
     setIsLogin(toLogin);
@@ -180,6 +181,21 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
               <span>{error}</span>
             </div>
           )}
+
+          {/* Google Sign-in */}
+          <div className="mb-5">
+            <GoogleLoginButton
+              label={isLogin ? 'Sign in with Google' : 'Sign up with Google'}
+              onGoogleSuccess={loginWithGoogle}
+              onError={err => setError(err)}
+            />
+          </div>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-white/40">or with email</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
 
           <form id="drawer-auth-form" onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (

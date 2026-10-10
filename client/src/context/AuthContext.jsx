@@ -53,6 +53,16 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  const loginWithGoogle = async (googlePayload) => {
+    const res = await api.post('/auth/google', googlePayload);
+    const { token: newToken, user: newUser } = res.data;
+    localStorage.setItem('insurai_token', newToken);
+    localStorage.setItem('insurai_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+    return res.data;
+  };
+
   const logout = () => {
     localStorage.removeItem('insurai_token');
     localStorage.removeItem('insurai_user');
@@ -63,7 +73,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );
