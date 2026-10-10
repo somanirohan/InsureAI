@@ -162,7 +162,26 @@ def check_ocr_availability() -> Dict[str, Any]:
         import pytesseract
         import shutil
 
-        tess_bin = shutil.which("tesseract") or getattr(pytesseract.pytesseract, "tesseract_cmd", "tesseract")
+        # Check standard PATH first, then well-known installation locations on Linux/Docker and Windows
+        candidate_paths = [
+            shutil.which("tesseract"),
+            "/usr/bin/tesseract",
+            "/usr/local/bin/tesseract",
+            "/bin/tesseract",
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        ]
+        tess_bin = None
+        for p in candidate_paths:
+            if p and os.path.exists(p) if os.path.isabs(p or "") else p:
+                tess_bin = p
+                break
+
+        if tess_bin:
+            pytesseract.pytesseract.tesseract_cmd = tess_bin
+        else:
+            tess_bin = getattr(pytesseract.pytesseract, "tesseract_cmd", "tesseract")
+
         version = str(pytesseract.get_tesseract_version())
         langs = pytesseract.get_languages(config="")
         return {
