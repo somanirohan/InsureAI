@@ -39,7 +39,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
   return (
     <aside
       className={`hidden lg:flex flex-col flex-shrink-0 h-screen sticky top-0 transition-all duration-300 ease-in-out relative ${
-        collapsed ? 'w-18' : 'w-60'
+        collapsed ? 'w-18' : 'w-64'
       }`}
       style={{
         background: '#ffffff',
@@ -48,7 +48,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
       }}
     >
       {/* Header with toggle */}
-      <div className={`pt-6 pb-5 ${collapsed ? 'px-2 flex flex-col items-center gap-3' : 'px-5 flex items-center justify-between'}`}>
+      <div className={`pt-5 pb-3 ${collapsed ? 'px-2 flex flex-col items-center gap-3' : 'px-5 flex items-center justify-between'}`}>
         {!collapsed ? (
           <>
             <button
@@ -57,13 +57,13 @@ export function Sidebar({ activeTab, setActiveTab }) {
               title="InsurAI Dashboard"
             >
               <div
-                className="w-9 h-9 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1 group-hover:scale-105 transition-transform shadow-sm"
+                className="w-11 h-11 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1.5 group-hover:scale-105 transition-transform shadow-sm"
               >
                 <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
               </div>
               <div className="min-w-0 text-left">
-                <p className="font-headline text-base font-bold tracking-tight text-[#062327] truncate leading-tight">InsurAI</p>
-                <p className="text-[11px] text-[#558187] truncate font-medium">Policy Intelligence</p>
+                <p className="font-headline text-xl font-extrabold tracking-tight text-[#062327] truncate leading-tight">InsurAI</p>
+                <p className="text-xs text-[#558187] truncate font-medium">Policy Intelligence</p>
               </div>
             </button>
             <button
@@ -87,7 +87,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
             </button>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className="w-9 h-9 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1 hover:scale-105 transition-transform cursor-pointer shadow-sm"
+              className="w-10 h-10 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1.5 hover:scale-105 transition-transform cursor-pointer shadow-sm"
               title="InsurAI Dashboard"
             >
               <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
@@ -98,7 +98,7 @@ export function Sidebar({ activeTab, setActiveTab }) {
 
       {/* Navigation */}
       <nav
-        className={`flex-1 flex flex-col justify-center ${
+        className={`flex-1 flex flex-col justify-start pt-3 ${
           collapsed
             ? 'items-center gap-3 px-2'
             : 'px-4 space-y-1.5'
@@ -222,13 +222,16 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
           WebkitBackdropFilter: 'blur(20px)',
         }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <div
-            className="w-8 h-8 rounded-xl bg-[#d2f57b] border-2 border-[#062327] overflow-hidden flex items-center justify-center flex-shrink-0 p-1 shadow-sm"
+            className="w-10 h-10 rounded-xl bg-[#d2f57b] border-2 border-[#062327] overflow-hidden flex items-center justify-center flex-shrink-0 p-1 shadow-sm"
           >
             <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
           </div>
-          <span className="font-headline text-base font-bold text-[#062327] tracking-tight">InsurAI</span>
+          <div>
+            <span className="font-headline text-lg font-extrabold text-[#062327] tracking-tight block leading-tight">InsurAI</span>
+            <span className="text-[10px] text-[#558187] font-medium block">Policy Intelligence</span>
+          </div>
         </div>
         <button
           onClick={() => setOpen(!open)}
@@ -258,13 +261,13 @@ export function MobileTopBar({ activeTab, setActiveTab }) {
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-8 h-8 rounded-xl bg-[#d2f57b] border-2 border-[#062327] overflow-hidden flex items-center justify-center flex-shrink-0 p-1"
+                  className="w-11 h-11 rounded-xl bg-[#d2f57b] border-2 border-[#062327] overflow-hidden flex items-center justify-center flex-shrink-0 p-1.5"
                 >
                   <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <div>
-                  <span className="font-headline text-base font-bold text-[#062327] block leading-tight">InsurAI</span>
-                  <span className="text-[11px] text-[#558187]">Policy Intelligence</span>
+                  <span className="font-headline text-xl font-extrabold text-[#062327] block leading-tight">InsurAI</span>
+                  <span className="text-xs text-[#558187] font-medium">Policy Intelligence</span>
                 </div>
               </div>
               <button

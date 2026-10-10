@@ -24,6 +24,7 @@ const TREATMENTS = [
   { value: 'Gallbladder Removal',      label: 'Gallbladder Removal (Laparoscopic)' },
   { value: 'Cardiac Bypass (CABG)',    label: 'Cardiac Bypass CABG' },
   { value: 'Chemotherapy (per cycle)', label: 'Chemotherapy (per cycle)' },
+  { value: 'custom',                   label: 'Other (Custom Procedure...)' },
 ];
 
 const HOSPITAL_TIERS = [
@@ -106,15 +107,16 @@ function AuditRow({ label, value, type = 'normal', note, isDeduction = false }) 
 }
 
 export default function CostEstimatorView({ policies }) {
-  const [selectedPolicyId, setSelectedPolicyId] = useState(policies[0]?._id || '');
-  const [treatmentName, setTreatmentName]     = useState('Knee Replacement');
-  const [hospitalTier, setHospitalTier]       = useState('tier_1');
-  const [roomRentPerDay, setRoomRentPerDay]   = useState(12000);
-  const [stayDays, setStayDays]               = useState(4);
-  const [loading, setLoading]                 = useState(false);
-  const [estimate, setEstimate]               = useState(null);
-  const [history, setHistory]                 = useState([]);
-  const [error, setError]                     = useState(null);
+  const [selectedPolicyId, setSelectedPolicyId]     = useState(policies[0]?._id || '');
+  const [treatmentSelection, setTreatmentSelection] = useState('Knee Replacement');
+  const [customTreatment, setCustomTreatment]       = useState('');
+  const [hospitalTier, setHospitalTier]             = useState('tier_1');
+  const [roomRentPerDay, setRoomRentPerDay]         = useState(12000);
+  const [stayDays, setStayDays]                     = useState(4);
+  const [loading, setLoading]                       = useState(false);
+  const [estimate, setEstimate]                     = useState(null);
+  const [history, setHistory]                       = useState([]);
+  const [error, setError]                           = useState(null);
 
   // What-if simulator
   const [whatIfVar, setWhatIfVar]             = useState('hospital_tier');
@@ -143,13 +145,22 @@ export default function CostEstimatorView({ policies }) {
 
   const handleCalculate = async (e) => {
     e.preventDefault();
-    if (!selectedPolicyId || !treatmentName) return;
+    const effectiveTreatment = treatmentSelection === 'custom'
+      ? customTreatment.trim()
+      : treatmentSelection;
+
+    if (!selectedPolicyId || !effectiveTreatment) {
+      if (treatmentSelection === 'custom' && !customTreatment.trim()) {
+        setError('Please enter the custom medical procedure name.');
+      }
+      return;
+    }
     setError(null);
     try {
       setLoading(true);
       const res = await api.post('/cost/estimate', {
         policy_id: selectedPolicyId,
-        treatment_name: treatmentName,
+        treatment_name: effectiveTreatment,
         hospital_tier: hospitalTier,
         room_rent_per_day: roomRentPerDay,
         stay_days: stayDays,
@@ -262,12 +273,34 @@ export default function CostEstimatorView({ policies }) {
                 </div>
               )}
 
-              <Select
-                label="Medical Procedure"
-                value={treatmentName}
-                onChange={setTreatmentName}
-                options={TREATMENTS}
-              />
+              <div>
+                <Select
+                  label="Medical Procedure"
+                  value={treatmentSelection}
+                  onChange={setTreatmentSelection}
+                  options={TREATMENTS}
+                />
+
+                {treatmentSelection === 'custom' && (
+                  <div className="mt-2.5 animate-fade-in">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#558187] block mb-1.5">
+                      Specify Custom Procedure Name
+                    </label>
+                    <input
+                      type="text"
+                      value={customTreatment}
+                      onChange={e => setCustomTreatment(e.target.value)}
+                      placeholder="e.g., Hip Replacement, Hernia Repair, Arthroscopy..."
+                      className="input-field font-sans font-bold text-sm text-[#062327] placeholder:text-[#558187]/50"
+                      autoFocus
+                      required
+                    />
+                    <p className="text-[11px] text-[#558187] mt-1 font-medium">
+                      Enter the procedure name to evaluate against your policy rules and caps.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <Select
                 label="Hospital Tier Category"

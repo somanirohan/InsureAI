@@ -125,12 +125,12 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#d2f57b] flex items-center justify-center p-2 text-[#062327] font-black text-lg border-2 border-[#062327]">
-              <Shield size={20} className="stroke-[2.5]" />
+            <div className="w-11 h-11 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1.5 shadow-sm">
+              <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <div>
-              <p className="font-headline text-lg font-bold text-white tracking-tight leading-tight">InsurAI</p>
-              <p className="text-xs text-[#a0c5c9]">Policy Intelligence</p>
+              <p className="font-headline text-xl font-extrabold text-white tracking-tight leading-tight">InsurAI</p>
+              <p className="text-xs text-[#a0c5c9] font-medium">Policy Intelligence</p>
             </div>
           </div>
           <button
@@ -631,13 +631,12 @@ export default function LandingPage() {
 
         {/* Master White Card Canvas that smoothly zooms in with scroll */}
         <div
-          className="bg-[#ffffff] relative flex flex-col justify-between overflow-hidden transition-all duration-75 w-full h-full"
+          className="bg-[#ffffff] relative flex flex-col justify-between overflow-hidden transition-all duration-75 w-full h-full p-6 sm:p-8 lg:p-10"
           style={{
             maxWidth: heroProgress >= 0.98 ? '100vw' : '1540px',
             borderRadius: `${Math.max(0, 36 * (1 - heroProgress * 1.1))}px`,
             boxShadow: heroProgress >= 0.95 ? 'none' : '0 24px 60px rgba(0,0,0,0.30)',
             border: heroProgress >= 0.92 ? 'none' : '1px solid rgba(255,255,255,0.18)',
-            padding: heroProgress >= 0.95 ? '24px 32px' : '20px 24px sm:28px sm:36px lg:32px 48px',
           }}
         >
           {/* Subtle inner card watermarks */}
@@ -647,13 +646,20 @@ export default function LandingPage() {
           {/* ── Top Navbar ── */}
           <header className="relative z-20 flex items-center justify-between pb-3 sm:pb-6 border-b border-black/[0.05] shrink-0">
             {/* Logo */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-[#062327] flex items-center justify-center p-2 text-[#d2f57b]">
-                <Shield size={22} className="stroke-[2.5]" />
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center flex-shrink-0 p-1.5 shadow-sm"
+              >
+                <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-full h-full object-contain rounded-xl" />
               </div>
-              <span className="font-headline text-2xl sm:text-3xl font-extrabold tracking-tight text-[#062327]">
-                InsurAI
-              </span>
+              <div className="min-w-0 text-left">
+                <p className="font-headline text-xl font-extrabold tracking-tight text-[#062327] truncate leading-tight">
+                  InsurAI
+                </p>
+                <p className="text-xs text-[#558187] truncate font-medium">
+                  Policy Intelligence
+                </p>
+              </div>
             </div>
 
             {/* Center & Right Navigation Capsule */}
@@ -740,8 +746,8 @@ export default function LandingPage() {
 
           {/* Card 3: Top-Right */}
           <FloatingSticker
-            imageSrc="/images/cute-sticker.jpg"
-            label="Stress-Free Claims"
+            imageSrc="/images/tokens-3d.jpg"
+            label="Cashless Payouts"
             rotation={7}
             className="hidden lg:block top-20 xl:top-24 right-4 sm:right-6 xl:right-10 2xl:right-14 z-10"
             animClass="float-anim-2"
@@ -750,10 +756,10 @@ export default function LandingPage() {
             }}
           />
 
-          {/* Card 4: Bottom-Right (Secure Coverage sleeping fox, replacing the pills card; separated by ~400px from top-right) */}
+          {/* Card 4: Bottom-Right (Verified Coverage 3D Policy Document) */}
           <FloatingSticker
-            imageSrc="/images/sleep-peace.jpg"
-            label="Secure Coverage"
+            imageSrc="/images/policy-3d.jpg"
+            label="Verified Coverage"
             rotation={9}
             className="hidden lg:block bottom-8 sm:bottom-10 right-4 sm:right-6 xl:right-10 2xl:right-14 z-10"
             animClass="float-anim-4"
