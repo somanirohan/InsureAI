@@ -71,11 +71,14 @@ class CostEstimatorService:
         has_no_room_rent_cap = False
         room_fact = next((f for f in policy.get("facts", []) if f.get("category") == "room_rent_limit"), None) if policy else None
 
-        # Check for explicit 'no cap' phrasing in room_fact or red_flag_summary
-        rf_text = (room_fact.get("fact_value", "") if room_fact else "") or (
-            policy.get("red_flag_summary", {}).get("room_rent_cap", "") if policy and isinstance(policy.get("red_flag_summary"), dict) else ""
-        )
-        rf_text_lower = rf_text.lower()
+        # Check for explicit 'no cap' phrasing in room_fact or red_flag_summary safely
+        rf_text = ""
+        if room_fact and room_fact.get("fact_value"):
+            rf_text = str(room_fact.get("fact_value"))
+        elif policy and isinstance(policy.get("red_flag_summary"), dict):
+            rf_text = str(policy.get("red_flag_summary", {}).get("room_rent_cap") or "")
+
+        rf_text_lower = rf_text.lower() if rf_text else ""
         if any(phrase in rf_text_lower for phrase in ["no room rent cap", "no cap", "no limit", "any room", "without cap", "no capping"]):
             has_no_room_rent_cap = True
             room_rent_cap = 0.0
