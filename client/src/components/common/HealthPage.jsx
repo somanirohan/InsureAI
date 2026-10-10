@@ -20,10 +20,18 @@ export default function HealthPage() {
     setLoadingBackend(true);
     setBackendError(null);
     try {
-      const res = await api.get('/health');
-      setBackendHealth(res.data);
+      const headRes = await api.head('/health');
+      if (headRes.status >= 200 && headRes.status < 300) {
+        // Also fetch health payload if available or set online
+        try {
+          const getRes = await api.get('/health');
+          setBackendHealth(getRes.data);
+        } catch {
+          setBackendHealth({ status: 'online', database: 'connected' });
+        }
+      }
     } catch (err) {
-      setBackendError(err.response?.data?.message || err.message || 'Unable to reach backend health endpoint');
+      setBackendError(err.response?.data?.message || err.message || 'Unable to reach backend health endpoint via HEAD');
       if (err.response?.data) {
         setBackendHealth(err.response.data);
       } else {

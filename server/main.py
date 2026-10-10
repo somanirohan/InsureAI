@@ -119,7 +119,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────
+@app.head("/health")
 @app.get("/health")
+@app.head("/api/health")
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint. Reports DB health, OCR availability, and LLM provider reachability."""
