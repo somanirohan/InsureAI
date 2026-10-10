@@ -8,27 +8,44 @@ export default {
     extend: {
       colors: {
         brand: {
-          50:  '#fdf8ed',
-          100: '#f7e9c4',
-          200: '#f0d898',
-          300: '#e8c97e',
-          400: '#d8b060',
-          500: '#c8a96e', // primary gold accent
-          600: '#a07840',
-          700: '#7a5a28',
-          800: '#553e18',
-          900: '#33250c',
+          50:  '#f7fee7',
+          100: '#ecfccb',
+          200: '#d9f99d',
+          300: '#e2fa9e',
+          400: '#dbfa86',
+          500: '#d2f57b', // primary landing page lime accent
+          600: '#b4e350',
+          700: '#8ec42b',
+          800: '#0e3e46',
+          900: '#062327', // dark petrol teal
+        },
+        petrol: {
+          50:  '#f0fbfb',
+          100: '#daf2f4',
+          200: '#b2d5d9',
+          300: '#88b4b8',
+          400: '#5b9399',
+          500: '#266970',
+          600: '#134e56',
+          700: '#0a343c',
+          800: '#07262b',
+          900: '#062327',
+          950: '#04181b',
         },
         surface: {
-          DEFAULT: '#0a0a12',  // page bg
-          card:    'rgba(12,12,24,0.85)',
-          inset:   'rgba(255,255,255,0.03)',
-          modal:   'rgba(10,10,22,0.97)',
+          DEFAULT: '#062327',  // landing page bg
+          card:    '#07262b',  // landing page card bg
+          inset:   '#04181b',  // landing page dark input / inset bg
+          elevated:'#0a343c',
+          modal:   '#07262b',
         },
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'SF Mono', 'Menlo', 'monospace'],
+        headline: ['Syne', 'Plus Jakarta Sans', '-apple-system', 'sans-serif'],
+        display:  ['Plus Jakarta Sans', '-apple-system', 'sans-serif'],
+        sans:     ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        mono:     ['JetBrains Mono', 'SF Mono', 'Menlo', 'monospace'],
+        handwriting: ['Caveat', 'cursive'],
       },
       fontSize: {
         '2xs': ['10px', { lineHeight: '14px', letterSpacing: '0.04em' }],

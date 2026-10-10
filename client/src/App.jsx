@@ -6,7 +6,7 @@ import DashboardView from './components/dashboard/DashboardView';
 import ChatBox from './components/chat/ChatBox';
 import CostEstimatorView from './components/cost/CostEstimatorView';
 import ComparisonView from './components/comparison/ComparisonView';
-import { LiquidBlob, Starfield } from './components/common/LiquidBlob';
+import { LiquidBlob } from './components/common/LiquidBlob';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
@@ -53,20 +53,21 @@ export default function App() {
   // ── Auth loading ───────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#07070d' }}>
-        <Starfield count={60} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f4f7f7' }}>
         <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="relative w-20 h-20">
             <div className="animate-blob-float w-20 h-20" style={{
               borderRadius: '60% 40% 55% 45% / 50% 60% 40% 50%',
-              background: 'radial-gradient(ellipse at 40% 35%, rgba(240,200,100,0.25) 0%, rgba(60,40,160,0.3) 100%)',
+              background: 'radial-gradient(ellipse at 40% 35%, rgba(210,245,123,0.55) 0%, rgba(200,235,200,0.3) 100%)',
               filter: 'blur(2px)',
             }} />
             <div className="absolute inset-0 flex items-center justify-center">
-              <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-10 h-10 object-contain rounded-xl animate-pulse shadow-lg" />
+              <div className="w-11 h-11 rounded-2xl bg-[#d2f57b] border-2 border-[#062327] flex items-center justify-center text-[#062327] font-black text-xl shadow-lg">
+                <img src="/favicon_io/apple-touch-icon.png" alt="InsurAI Logo" className="w-8 h-8 object-contain rounded-xl" />
+              </div>
             </div>
           </div>
-          <p className="text-sm font-medium tracking-tight" style={{ color: 'rgba(255,255,255,0.45)' }}>Loading InsurAI...</p>
+          <p className="text-sm font-semibold tracking-tight text-[#558187]">Loading InsurAI…</p>
         </div>
       </div>
     );
@@ -102,34 +103,43 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#07070d' }}>
-      <Starfield count={70} />
-
-      {/* Ambient nebula */}
+    <div className="flex min-h-screen relative text-[#062327]" style={{ background: '#f4f7f7' }}>
+      {/* Subtle ambient background — light watermark clover shapes */}
       <div
         aria-hidden
         className="fixed inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse at 15% 50%, rgba(60,40,160,0.08) 0%, transparent 50%),
-            radial-gradient(ellipse at 85% 20%, rgba(80,50,15,0.05) 0%, transparent 45%),
-            radial-gradient(ellipse at 50% 100%, rgba(20,15,50,0.12) 0%, transparent 60%)
+            radial-gradient(ellipse at 5% 0%, rgba(210,245,123,0.18) 0%, transparent 45%),
+            radial-gradient(ellipse at 95% 5%, rgba(210,245,123,0.12) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 100%, rgba(6,35,39,0.04) 0%, transparent 60%)
           `,
         }}
       />
 
-      {/* Liquid blob hero (dashboard only) */}
+      {/* Subtle organic clover watermark in background */}
+      <div className="fixed -top-16 -right-16 pointer-events-none opacity-30 select-none" aria-hidden>
+        <svg width="420" height="420" viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="65" r="46" fill="rgba(6,35,39,0.03)" />
+          <circle cx="135" cy="100" r="46" fill="rgba(6,35,39,0.03)" />
+          <circle cx="100" cy="135" r="46" fill="rgba(6,35,39,0.03)" />
+          <circle cx="65" cy="100" r="46" fill="rgba(6,35,39,0.03)" />
+          <circle cx="100" cy="100" r="38" fill="rgba(6,35,39,0.03)" />
+        </svg>
+      </div>
+
+      {/* Liquid blob accent (dashboard only) */}
       {activeTab === 'dashboard' && (
         <div
           aria-hidden
           className="fixed pointer-events-none"
           style={{
-            right: '-5%',
-            bottom: '-15%',
-            width: 'clamp(360px, 55vw, 760px)',
-            height: 'clamp(360px, 55vw, 760px)',
+            right: '-6%',
+            bottom: '-12%',
+            width: 'clamp(380px, 50vw, 720px)',
+            height: 'clamp(380px, 50vw, 720px)',
             zIndex: 0,
-            opacity: 0.32,
+            opacity: 0.22,
           }}
         >
           <LiquidBlob className="w-full h-full" />

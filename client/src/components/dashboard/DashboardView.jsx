@@ -24,48 +24,48 @@ export default function DashboardView({
       {/* ─── Page header ────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Dashboard</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">
+          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium">
             {policies.length > 0
-              ? `${policies.length} polic${policies.length === 1 ? 'y' : 'ies'} · ${readyPolicies} ready`
-              : 'Upload a policy to get started'
+              ? `${policies.length} polic${policies.length === 1 ? 'y' : 'ies'} · ${readyPolicies} analyzed & ready`
+              : 'Upload a policy document to extract facts and query clauses'
             }
           </p>
         </div>
         <button
           onClick={() => setIsUploadOpen(true)}
-          className="btn btn-primary gap-2"
+          className="btn-pill-lime py-3 px-6 flex items-center gap-2 text-xs sm:text-sm font-bold shadow-md cursor-pointer"
         >
-          <Upload size={14} />
-          Upload Policy
+          <Upload size={16} />
+          <span>Upload Policy</span>
         </button>
       </div>
 
       {/* ─── Quick actions (only shown when policies exist) ─ */}
       {policies.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={onNavigateToCost}
-            className="surface p-4 text-left hover:border-white/[0.12] transition-all duration-150 group"
+            className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-zinc-200">Cost Estimator</p>
-                <p className="text-xs text-zinc-500 mt-0.5">Simulate treatment out-of-pocket costs</p>
+                <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Cost Estimator</p>
+                <p className="text-xs text-[#558187] mt-1">Simulate treatment out-of-pocket costs with exact sub-limits</p>
               </div>
-              <ChevronRight size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+              <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
             </div>
           </button>
           <button
             onClick={onNavigateToCompare}
-            className="surface p-4 text-left hover:border-white/[0.12] transition-all duration-150 group"
+            className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-zinc-200">Compare Policies</p>
-                <p className="text-xs text-zinc-500 mt-0.5">Side-by-side coverage comparison</p>
+                <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Compare Policies</p>
+                <p className="text-xs text-[#558187] mt-1">Side-by-side room rent, waiting period, and co-payment comparison</p>
               </div>
-              <ChevronRight size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+              <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
             </div>
           </button>
         </div>
@@ -74,39 +74,39 @@ export default function DashboardView({
       {/* ─── Policies grid ──────────────────────────────── */}
       <div>
         <SectionHeader
-          title="Your Policies"
-          subtitle="Click any policy to explore extracted clauses or start an AI consultation"
+          title="Your Analyzed Policies"
+          subtitle="Click any policy to review extracted contract facts or initiate an AI consultation"
           action={
             policies.length > 0 && (
               <button
                 onClick={() => setIsUploadOpen(true)}
-                className="btn btn-ghost text-xs gap-1.5 text-zinc-500 hover:text-zinc-200"
+                className="btn-pill-dark px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer"
               >
-                <Plus size={13} />
-                Add
+                <Plus size={14} className="text-[#d2f57b]" />
+                <span>Add Policy</span>
               </button>
             )
           }
         />
 
         {loadingPolicies ? (
-          <div className="flex flex-col items-center py-16 gap-3">
-            <Spinner size={20} className="text-zinc-600" />
-            <p className="text-sm text-zinc-500">Loading policies…</p>
+          <div className="flex flex-col items-center py-20 gap-3">
+            <Spinner size={24} className="text-[#062327]" />
+            <p className="text-sm font-semibold text-[#558187]">Loading policies…</p>
           </div>
         ) : policies.length === 0 ? (
-          <div className="surface border-2 border-dashed border-white/[0.06]">
+          <div className="bg-white border-2 border-dashed border-[#062327]/12 rounded-3xl overflow-hidden">
             <EmptyState
               icon={FileText}
-              title="No policies yet"
-              description="Upload a health insurance policy PDF to start extracting facts, detecting red flags, and getting AI-powered answers."
+              title="No policies uploaded yet"
+              description="Upload your health insurance policy PDF to automatically index clauses, flag hidden sub-limits, and simulate medical bills."
               action={
                 <button
                   onClick={() => setIsUploadOpen(true)}
-                  className="btn btn-primary gap-2"
+                  className="btn-pill-lime py-3 px-6 flex items-center gap-2 text-sm font-bold shadow-md cursor-pointer"
                 >
-                  <Upload size={14} />
-                  Upload your first policy
+                  <Upload size={16} />
+                  <span>Upload your first policy</span>
                 </button>
               }
             />
