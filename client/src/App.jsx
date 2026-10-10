@@ -6,6 +6,7 @@ import DashboardView from './components/dashboard/DashboardView';
 import ChatBox from './components/chat/ChatBox';
 import CostEstimatorView from './components/cost/CostEstimatorView';
 import ComparisonView from './components/comparison/ComparisonView';
+import RecommendationView from './components/recommendations/RecommendationView';
 import ClaimsWorkflowView from './claims/ClaimsWorkflowView';
 import { LiquidBlob } from './components/common/LiquidBlob';
 import api from './services/api';
@@ -17,6 +18,29 @@ export default function App() {
   const [policies, setPolicies]             = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [chatTargetPolicy, setChatTargetPolicy] = useState(null);
+  const [recommendationCompareData, setRecommendationCompareData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('insurai_compare_recommendations') || localStorage.getItem('insurai_latest_recommendations');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.top_recommendations || (Array.isArray(parsed) ? parsed : null);
+      }
+    } catch {
+      return null;
+    }
+  });
+
+  const handleNavigateToCompare = (data) => {
+    if (data && data.length > 0) {
+      setRecommendationCompareData(data);
+      try {
+        localStorage.setItem('insurai_compare_recommendations', JSON.stringify(data));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setActiveTab('compare');
+  };
 
   const fetchPolicies = async () => {
     try {
@@ -89,8 +113,16 @@ export default function App() {
             onDeletePolicy={handleDeletePolicy}
             onStartChat={handleStartChatWithPolicy}
             onNavigateToCost={() => setActiveTab('cost')}
-            onNavigateToCompare={() => setActiveTab('compare')}
+            onNavigateToCompare={() => handleNavigateToCompare()}
             onNavigateToClaims={() => setActiveTab('claims')}
+            onNavigateToRecommend={() => setActiveTab('recommend')}
+          />
+        );
+      case 'recommend':
+        return (
+          <RecommendationView
+            policies={policies}
+            onNavigateToCompare={handleNavigateToCompare}
           />
         );
       case 'chat':
@@ -100,7 +132,17 @@ export default function App() {
       case 'cost':
         return <CostEstimatorView policies={policies} />;
       case 'compare':
-        return <ComparisonView policies={policies} />;
+        return (
+          <ComparisonView
+            policies={policies}
+            recommendedPlans={recommendationCompareData}
+            onNavigateToRecommend={() => setActiveTab('recommend')}
+            onClearRecommendedPlans={() => {
+              setRecommendationCompareData(null);
+              localStorage.removeItem('insurai_compare_recommendations');
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -154,7 +196,9 @@ export default function App() {
 
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         <MobileTopBar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-6xl w-full mx-auto">
+        <main className={`flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8 w-full mx-auto ${
+          activeTab === 'compare' ? 'max-w-[102rem] 2xl:max-w-[97vw]' : 'max-w-6xl'
+        }`}>
           <div key={activeTab} className="animate-fade-in">
             {renderView()}
           </div>

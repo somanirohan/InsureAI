@@ -17,11 +17,13 @@ from fastapi.responses import JSONResponse
 try:
     from config import settings
     from db import check_db_health, init_db
-    from routers import auth, chat, claims, comparisons, cost, dashboard, policies
+    from routers import auth, chat, claims, comparisons, cost, dashboard, policies, recommendations
+    from services.policy_crawler import policy_crawler_service
 except ImportError:
     from server.config import settings
     from server.db import check_db_health, init_db
-    from server.routers import auth, chat, claims, comparisons, cost, dashboard, policies
+    from server.routers import auth, chat, claims, comparisons, cost, dashboard, policies, recommendations
+    from server.services.policy_crawler import policy_crawler_service
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,6 +39,8 @@ async def lifespan(app: FastAPI):
     try:
         await init_db()
         logger.info("MongoDB initialized and verified.")
+        await policy_crawler_service.seed_or_refresh_catalog()
+        logger.info("Health insurance policy catalog initialized and verified.")
     except Exception as exc:
         logger.critical("Fatal error initializing MongoDB: %s", exc)
         raise
@@ -81,6 +85,7 @@ app.include_router(chat.router)
 app.include_router(cost.router)
 app.include_router(comparisons.router)
 app.include_router(dashboard.router)
+app.include_router(recommendations.router)
 
 # ── Canonical WebSocket Routes ────────────────────────────────────────────────
 app.add_api_websocket_route("/api/chat/ws", chat.websocket_chat_endpoint)

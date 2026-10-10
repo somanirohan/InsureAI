@@ -14,6 +14,7 @@ export default function DashboardView({
   onNavigateToCost,
   onNavigateToCompare,
   onNavigateToClaims,
+  onNavigateToRecommend,
 }) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedPolicyForFacts, setSelectedPolicyForFacts] = useState(null);
@@ -42,47 +43,60 @@ export default function DashboardView({
         </button>
       </div>
 
-      {/* ─── Quick actions (only shown when policies exist) ─ */}
-      {policies.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <button
-            onClick={onNavigateToClaims}
-            className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Claims Workflow</p>
-                <p className="text-xs text-[#558187] mt-1">Policy-cited readiness checklist & settlement tracking</p>
+      {/* ─── Quick actions ─ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <button
+          onClick={onNavigateToRecommend}
+          className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm relative overflow-hidden"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#d2f57b]/30 text-[#062327] text-[10px] font-bold uppercase tracking-wider mb-2">
+                New AI Feature
               </div>
-              <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">AI Advisor</p>
+              <p className="text-xs text-[#558187] mt-1">Get personalized policy recommendations based on age & budget</p>
             </div>
-          </button>
-          <button
-            onClick={onNavigateToCost}
-            className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Cost Estimator</p>
-                <p className="text-xs text-[#558187] mt-1">Simulate treatment out-of-pocket costs with exact sub-limits</p>
-              </div>
-              <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+            <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+          </div>
+        </button>
+        <button
+          onClick={onNavigateToClaims}
+          className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Claims Workflow</p>
+              <p className="text-xs text-[#558187] mt-1">Policy-cited readiness checklist & settlement tracking</p>
             </div>
-          </button>
-          <button
-            onClick={onNavigateToCompare}
-            className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Compare Policies</p>
-                <p className="text-xs text-[#558187] mt-1">Side-by-side room rent, waiting period, and co-payment comparison</p>
-              </div>
-              <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+            <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+          </div>
+        </button>
+        <button
+          onClick={onNavigateToCost}
+          className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Cost Estimator</p>
+              <p className="text-xs text-[#558187] mt-1">Simulate treatment out-of-pocket costs with exact sub-limits</p>
             </div>
-          </button>
-        </div>
-      )}
+            <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+          </div>
+        </button>
+        <button
+          onClick={onNavigateToCompare}
+          className="bg-white border border-[#062327]/10 rounded-3xl p-5 text-left hover:border-[#062327]/30 hover:shadow-[0_6px_24px_rgba(6,35,39,0.10)] transition-all group cursor-pointer shadow-sm"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-headline text-base font-bold text-[#062327] group-hover:text-[#0b3d45] transition-colors">Compare Policies</p>
+              <p className="text-xs text-[#558187] mt-1">Side-by-side room rent, waiting period, and co-payment comparison</p>
+            </div>
+            <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />
+          </div>
+        </button>
+      </div>
 
       {/* ─── Policies grid ──────────────────────────────── */}
       <div>
@@ -114,13 +128,22 @@ export default function DashboardView({
               title="No policies uploaded yet"
               description="Upload your health insurance policy PDF to automatically index clauses, flag hidden sub-limits, and simulate medical bills."
               action={
-                <button
-                  onClick={() => setIsUploadOpen(true)}
-                  className="btn-pill-lime py-3 px-6 flex items-center gap-2 text-sm font-bold shadow-md cursor-pointer"
-                >
-                  <Upload size={16} />
-                  <span>Upload your first policy</span>
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => setIsUploadOpen(true)}
+                    className="btn-pill-lime py-3 px-6 flex items-center gap-2 text-sm font-bold shadow-md cursor-pointer"
+                  >
+                    <Upload size={16} />
+                    <span>Upload your first policy</span>
+                  </button>
+                  <button
+                    onClick={onNavigateToRecommend}
+                    className="btn-pill-dark py-3 px-6 flex items-center gap-2 text-sm font-bold shadow-sm cursor-pointer"
+                  >
+                    <Activity size={16} className="text-[#d2f57b]" />
+                    <span>Find Policies with AI Advisor</span>
+                  </button>
+                </div>
               }
             />
           </div>

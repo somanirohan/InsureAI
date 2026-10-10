@@ -279,6 +279,12 @@ async def init_db() -> None:
         await database.claims.create_index("policy_id")
         await database.claims.create_index([("user_id", 1), ("status", 1)])
 
+        # Policy recommendations & catalog
+        await database.catalog_policies.create_index("product_id", unique=True)
+        await database.catalog_policies.create_index("insurer_name")
+        await database.policy_recommendations.create_index("user_id")
+        await database.policy_recommendations.create_index("created_at")
+
         logger.info("MongoDB indexes verified successfully.")
     except Exception as exc:
         logger.warning("Note on index verification: %s", exc)

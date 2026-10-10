@@ -10,11 +10,13 @@ import {
   Menu,
   X,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard',    icon: LayoutGrid },
+  { id: 'recommend', label: 'Recommend',    icon: Sparkles },
   { id: 'claims',    label: 'Claims',       icon: ShieldAlert },
   { id: 'chat',      label: 'AI Assistant', icon: MessageSquare },
   { id: 'cost',      label: 'Cost',         icon: DollarSign },
