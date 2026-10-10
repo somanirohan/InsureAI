@@ -12,13 +12,17 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, status
 
 try:
+    from config import settings
     from db import get_async_db, serialize_doc
-    from models.user import AuthTokenResponse, UserLogin, UserRegister, UserResponse
+    from models.user import AuthTokenResponse, GoogleAuthRequest, UserLogin, UserRegister, UserResponse
     from services.auth_service import create_access_token, get_current_user, hash_password, verify_password
+    from services.google_auth_service import exchange_google_auth_code, verify_google_id_token
 except ImportError:
+    from server.config import settings
     from server.db import get_async_db, serialize_doc
-    from server.models.user import AuthTokenResponse, UserLogin, UserRegister, UserResponse
+    from server.models.user import AuthTokenResponse, GoogleAuthRequest, UserLogin, UserRegister, UserResponse
     from server.services.auth_service import create_access_token, get_current_user, hash_password, verify_password
+    from server.services.google_auth_service import exchange_google_auth_code, verify_google_id_token
 
 logger = logging.getLogger("insureai.auth")
 
@@ -125,3 +129,116 @@ async def login(payload: UserLogin):
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Return currently authenticated user profile without password_hash."""
     return {"user": serialize_doc(current_user)}
+
+
+@router.get("/google/config")
+async def get_google_oauth_config():
+    """Return public Google OAuth configuration (client_id only)."""
+    return {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "enabled": bool(settings.GOOGLE_CLIENT_ID),
+    }
+
+
+@router.post("/google", response_model=AuthTokenResponse)
+async def google_auth(payload: GoogleAuthRequest):
+    """
+    Authenticate user via Google OAuth 2.0.
+    Supports either:
+      1. Google ID token credential from Google Identity Services (GIS popup / One-Tap)
+      2. Authorization code from standard OAuth 2.0 code exchange
+    Finds or creates the user in MongoDB, and returns an InsurAI JWT access token.
+    """
+    google_user = None
+
+    if payload.credential:
+        google_user = await verify_google_id_token(payload.credential)
+    elif payload.code:
+        google_user = await exchange_google_auth_code(
+            code=payload.code,
+            redirect_uri=payload.redirect_uri,
+        )
+
+    if not google_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google authentication failed. Invalid token or authorization code.",
+        )
+
+    email_clean = google_user["email"].lower().strip()
+    google_id = google_user.get("google_id")
+    full_name = google_user.get("full_name") or email_clean.split("@")[0]
+    avatar_url = google_user.get("avatar_url")
+
+    db = get_async_db()
+    existing_user = await db.users.find_one({"$or": [{"email": email_clean}, {"google_id": google_id}]})
+
+    now = datetime.utcnow()
+
+    if existing_user:
+        if not existing_user.get("is_active", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is inactive.",
+            )
+
+        user_id_str = str(existing_user["_id"])
+        update_fields = {
+            "last_login_at": now,
+        }
+        if google_id and not existing_user.get("google_id"):
+            update_fields["google_id"] = google_id
+        if avatar_url and not existing_user.get("avatar_url"):
+            update_fields["avatar_url"] = avatar_url
+        if not existing_user.get("auth_provider"):
+            update_fields["auth_provider"] = "google"
+
+        await db.users.update_one({"_id": existing_user["_id"]}, {"$set": update_fields})
+
+        safe_user = {
+            "_id": user_id_str,
+            "full_name": existing_user.get("full_name", full_name),
+            "email": existing_user.get("email", email_clean),
+            "phone": existing_user.get("phone"),
+            "avatar_url": existing_user.get("avatar_url") or avatar_url,
+            "auth_provider": existing_user.get("auth_provider", "google"),
+            "is_active": True,
+            "created_at": existing_user.get("created_at"),
+        }
+    else:
+        # Create new user record
+        user_oid = ObjectId()
+        user_id_str = str(user_oid)
+        new_user = {
+            "_id": user_oid,
+            "full_name": full_name,
+            "email": email_clean,
+            "password_hash": None,
+            "google_id": google_id,
+            "avatar_url": avatar_url,
+            "auth_provider": "google",
+            "phone": None,
+            "is_active": True,
+            "created_at": now,
+            "last_login_at": now,
+        }
+        await db.users.insert_one(new_user)
+
+        safe_user = {
+            "_id": user_id_str,
+            "full_name": full_name,
+            "email": email_clean,
+            "phone": None,
+            "avatar_url": avatar_url,
+            "auth_provider": "google",
+            "is_active": True,
+            "created_at": now,
+        }
+
+    token = create_access_token(user_id=user_id_str, email=email_clean)
+
+    return {
+        "token": token,
+        "user": safe_user,
+    }
+

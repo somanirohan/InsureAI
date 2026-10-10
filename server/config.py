@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -42,6 +42,9 @@ class ServerSettings(BaseSettings):
     UPLOAD_DIR: str = "server/uploads"
     MAX_FILE_SIZE_MB: int = 25
     ENVIRONMENT: str = "development"
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: str = "http://localhost:5173"
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
