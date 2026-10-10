@@ -20,16 +20,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first for caching layers
-COPY server/requirements.txt /app/server/requirements.txt
+COPY requirements.txt /app/server/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/server/requirements.txt
 
-# Copy application code (both app/ RAG engine and server/ API layer)
-COPY app /app/app
-COPY server /app/server
+# Copy server code
+COPY . /app/server
 
 # Expose container application port
 EXPOSE 5001
 
-# Run Uvicorn pointing to server.main:app
-CMD ["sh", "-c", "uvicorn server.main:app --host 0.0.0.0 --port ${PORT:-5001}"]
+# Run Uvicorn from inside the server module
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-5001}"]
