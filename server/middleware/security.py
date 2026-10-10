@@ -101,6 +101,9 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
             settings.COOKIE_NAME in request.cookies or "insureai_token" in request.cookies
         )
 
+        if "*" in allowed:
+            return await call_next(request)
+
         path = request.url.path.lower()
         if origin:
             # Origin must be explicitly allowed

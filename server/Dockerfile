@@ -5,6 +5,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app:/app/server \
+    ALLOWED_ORIGINS=* \
     PORT=5001
 
 # Install system dependencies (including tesseract for OCR capabilities)

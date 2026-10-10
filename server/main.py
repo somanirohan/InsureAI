@@ -62,7 +62,7 @@ app = FastAPI(
 # ── CORS & Security Middleware Stack ──────────────────────────────────────────
 allowed_origins = settings.ALLOWED_ORIGINS if isinstance(settings.ALLOWED_ORIGINS, list) else [settings.CLIENT_URL]
 if not allowed_origins:
-    allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    allowed_origins = [*]
 
 # 1. Sliding-window rate limiter per client IP
 app.add_middleware(RateLimitMiddleware)
@@ -74,14 +74,19 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(CSRFProtectionMiddleware)
 
 # 4. Outermost: CORS middleware (handles OPTIONS preflight before internal middleware)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+cors_kwargs = {
+    "allow_credentials": True,
+    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    "allow_headers": ["*"],
+    "expose_headers": ["*"],
+}
+
+if "*" in allowed_origins:
+    cors_kwargs["allow_origin_regex"] = "https?://.*"
+else:
+    cors_kwargs["allow_origins"] = allowed_origins
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # ── Include Routers ───────────────────────────────────────────────────────────
 app.include_router(auth.router)
