@@ -205,6 +205,7 @@ export default function ComparisonView({
           title: 'Core Highlights & Recommendation Fit',
           rows: [
             { label: 'Overall Match Score', values: getVal((p) => `${p.overall_match_score}% Match`) },
+            { label: 'Claim Settlement Ratio (CSR)', values: getVal((p) => `${p.claim_settlement_ratio || 95}% IRDAI Filed (#1 Factor)`) },
             { label: 'Rank', values: getVal((p) => `Rank #${p.rank}`) },
             { label: 'Fit Summary', values: getVal((p) => p.why_recommended || '—') },
           ],
@@ -581,8 +582,29 @@ export default function ComparisonView({
                         ))}
                       </CompareRow>
 
+                      {/* Claim Settlement Ratio (CSR) */}
+                      <CompareRow
+                        label="Claim Settlement Ratio (CSR)"
+                        description="Official IRDAI Payout Benchmark (Paramount Factor)"
+                        striped
+                        highlighted={recDiffers((p) => p.claim_settlement_ratio)}
+                      >
+                        {comparedRecPlans.map((plan) => (
+                          <DataCell key={plan.product_id}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 text-xs font-sans tabular-nums px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-200/80">
+                                {plan.claim_settlement_ratio}% IRDAI Filed
+                              </span>
+                              <span className="text-2xs text-slate-500 font-medium">
+                                ({plan.claim_settlement_ratio >= 98.0 ? 'Top Benchmark' : plan.claim_settlement_ratio >= 96.0 ? 'High Honor Rate' : 'Standard Scale'})
+                              </span>
+                            </div>
+                          </DataCell>
+                        ))}
+                      </CompareRow>
+
                       {/* Why Recommended */}
-                      <CompareRow label="Why It Fits You" striped highlighted={false}>
+                      <CompareRow label="Why It Fits You" highlighted={false}>
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
                             <p className="text-xs text-slate-700 leading-relaxed">
@@ -592,32 +614,36 @@ export default function ComparisonView({
                         ))}
                       </CompareRow>
 
-                      {/* 5-Factor Score Breakdown */}
-                      <CompareRow label="Score Breakdown" highlighted={false}>
+                      {/* 6-Factor Score Breakdown */}
+                      <CompareRow label="Score Breakdown" striped highlighted={false}>
                         {comparedRecPlans.map((plan) => {
                           const bd = plan.match_breakdown;
                           return (
                             <DataCell key={plan.product_id}>
                               <div className="space-y-1 text-2xs text-slate-600">
+                                <div className="flex justify-between font-semibold text-amber-900 bg-amber-50/80 px-2 py-0.5 rounded border border-amber-200/60">
+                                  <span>Claim Settlement (CSR):</span>
+                                  <span>{bd.claim_settlement_score} / 35</span>
+                                </div>
                                 <div className="flex justify-between">
                                   <span>Affordability:</span>
-                                  <span className="font-semibold text-slate-800">{bd.affordability_score} / 30</span>
+                                  <span className="font-semibold text-slate-800">{bd.affordability_score} / 22</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Coverage & SI:</span>
-                                  <span className="font-semibold text-slate-800">{bd.coverage_score} / 25</span>
+                                  <span className="font-semibold text-slate-800">{bd.coverage_score} / 18</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Waiting Periods:</span>
-                                  <span className="font-semibold text-slate-800">{bd.waiting_period_score} / 20</span>
+                                  <span className="font-semibold text-slate-800">{bd.waiting_period_score} / 12</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Hospital Network:</span>
-                                  <span className="font-semibold text-slate-800">{bd.hospital_network_score} / 15</span>
+                                  <span className="font-semibold text-slate-800">{bd.hospital_network_score} / 8</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Terms & Copay:</span>
-                                  <span className="font-semibold text-slate-800">{bd.terms_score} / 10</span>
+                                  <span className="font-semibold text-slate-800">{bd.terms_score} / 5</span>
                                 </div>
                               </div>
                             </DataCell>

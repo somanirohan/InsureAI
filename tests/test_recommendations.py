@@ -133,12 +133,13 @@ def test_custom_scoring_weights():
 
 
 def test_api_catalog_endpoint(api_client):
-    """Test GET /api/recommendations/catalog returns full policy catalog."""
+    """Test GET /api/recommendations/catalog returns full policy catalog with 50-policy crawler capacity."""
     res = api_client.get("/api/recommendations/catalog")
     assert res.status_code == 200
     data = res.json()
     assert data["success"] is True
-    assert data["total_policies"] >= 10
+    assert data["total_policies"] >= 45
+    assert data["crawler_capacity"] == 50
 
 
 def test_api_recommendation_endpoint(api_client):
@@ -151,7 +152,8 @@ def test_api_recommendation_endpoint(api_client):
             "annual_budget": 14000,
             "city_tier": "tier_1",
             "pre_existing_conditions": [],
-            "feature_preferences": ["no_room_rent_capping", "zero_copay"],
+            "feature_preferences": ["highest_claim_settlement_ratio", "no_room_rent_capping", "zero_copay"],
+            "min_claim_settlement_ratio": 95.0,
         }
     }
     res = api_client.post("/api/recommendations", json=payload)
@@ -159,4 +161,58 @@ def test_api_recommendation_endpoint(api_client):
     data = res.json()
     assert data["success"] is True
     assert len(data["top_recommendations"]) == 3
+    assert data["crawler_capacity"] == 50
     assert "disclaimer" in data
+    # All top recommendations must respect the minimum 95% Claim Settlement Ratio
+    for rec in data["top_recommendations"]:
+        assert rec["claim_settlement_ratio"] >= 95.0
+        assert rec["match_breakdown"]["claim_settlement_score"] > 0
+
+
+def test_crawler_capacity_50_policies():
+    """Verify that crawler capacity is expanded to 50 policies across major Indian insurers."""
+    assert len(CURATED_INDIAN_POLICIES) == 50
+    assert policy_crawler_service.capacity == 50
+
+    # Verify that all 50 policies have authentic published IRDAI Claim Settlement Ratios
+    for policy in CURATED_INDIAN_POLICIES:
+        csr = policy["claim_settlement_ratio"]
+        assert 90.0 <= csr <= 99.0
+        assert policy["network_hospitals_count"] >= 5000
+        assert len(policy["key_benefits"]) >= 4
+
+    metrics = policy_crawler_service.get_crawler_metrics()
+    assert metrics["crawler_capacity"] == 50
+    assert metrics["total_indexed_policies"] == 50
+    assert metrics["average_claim_settlement_ratio"] >= 94.0
+
+
+def test_claim_settlement_ratio_as_paramount_filter():
+    """Verify Claim Settlement Ratio serves as a strict paramount eligibility parameter when specified."""
+    # Filter for strictly industry-benchmark 98%+ Claim Settlement Ratio
+    profile = UserProfile(
+        age=30,
+        coverage_type="individual",
+        sum_insured_preference=1000000,
+        annual_budget=20000,
+        min_claim_settlement_ratio=98.0,
+    )
+    res = recommendation_engine.generate_recommendations(RecommendationRequest(profile=profile))
+
+    assert res.success is True
+    assert len(res.top_recommendations) >= 1
+    # Every returned plan must satisfy the 98%+ IRDAI threshold
+    for rec in res.top_recommendations:
+        assert rec.claim_settlement_ratio >= 98.0
+
+
+def test_crawler_status_api_endpoint(api_client):
+    """Test GET /api/recommendations/crawler-status returns crawler capacity and CSR analytics."""
+    res = api_client.get("/api/recommendations/crawler-status")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert data["metrics"]["crawler_capacity"] == 50
+    assert data["metrics"]["total_indexed_policies"] == 50
+    assert data["metrics"]["average_claim_settlement_ratio"] > 94.0
+

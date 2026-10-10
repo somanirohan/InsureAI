@@ -58,19 +58,20 @@ function DoodleArrow({ className = '', style = {} }) {
 function AuthDrawer({ onClose, defaultTab = 'login' }) {
   const [isLogin, setIsLogin] = useState(defaultTab === 'login');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('alex@insurai.com');
-  const [password, setPassword] = useState('Shield@2024');
+  const [email, setEmail] = useState('demo@insurai.com');
+  const [password, setPassword] = useState('password123');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
   const { login, register, loginWithGoogle } = useAuth();
 
   const switchTab = (toLogin) => {
     setIsLogin(toLogin);
     setError(null);
     if (toLogin) {
-      setEmail('alex@insurai.com');
-      setPassword('Shield@2024');
+      setEmail('demo@insurai.com');
+      setPassword('password123');
     } else {
       setEmail('');
       setPassword('');

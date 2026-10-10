@@ -32,7 +32,17 @@ class UserProfile(BaseModel):
     )
     feature_preferences: List[str] = Field(
         default_factory=list,
-        description="Priority features: ['no_room_rent_capping', 'zero_copay', 'shortest_ped_wait', 'restoration_benefit', 'maternity_benefit', 'high_hospital_network']",
+        description="Priority features: ['highest_claim_settlement_ratio', 'no_room_rent_capping', 'zero_copay', 'shortest_ped_wait', 'restoration_benefit', 'maternity_benefit', 'high_hospital_network']",
+    )
+    min_claim_settlement_ratio: Optional[float] = Field(
+        None,
+        ge=70.0,
+        le=100.0,
+        description="Minimum acceptable IRDAI Claim Settlement Ratio % (e.g. 90.0, 95.0, 97.0) — paramount selection parameter",
+    )
+    claim_settlement_priority: Optional[str] = Field(
+        "highest",
+        description="Priority weighting for Claim Settlement Ratio: 'highest', 'strict_97', 'strict_95', 'standard'",
     )
     existing_insurance: Optional[str] = Field(
         "none", description="Existing insurance: 'none', 'employer_corporate', 'individual_retail'"
@@ -61,15 +71,17 @@ class UserProfile(BaseModel):
 
 
 class ScoringWeights(BaseModel):
-    affordability: float = Field(0.30, ge=0.0, le=1.0)
-    coverage: float = Field(0.25, ge=0.0, le=1.0)
-    waiting_periods: float = Field(0.20, ge=0.0, le=1.0)
-    hospital_network: float = Field(0.15, ge=0.0, le=1.0)
-    terms: float = Field(0.10, ge=0.0, le=1.0)
+    claim_settlement: float = Field(0.35, ge=0.0, le=1.0, description="Paramount factor: IRDAI Claim Settlement Ratio (highest weight)")
+    affordability: float = Field(0.22, ge=0.0, le=1.0)
+    coverage: float = Field(0.18, ge=0.0, le=1.0)
+    waiting_periods: float = Field(0.12, ge=0.0, le=1.0)
+    hospital_network: float = Field(0.08, ge=0.0, le=1.0)
+    terms: float = Field(0.05, ge=0.0, le=1.0)
 
     def normalized(self) -> Dict[str, float]:
         total = (
-            self.affordability
+            self.claim_settlement
+            + self.affordability
             + self.coverage
             + self.waiting_periods
             + self.hospital_network
@@ -77,13 +89,15 @@ class ScoringWeights(BaseModel):
         )
         if total <= 0:
             return {
-                "affordability": 0.30,
-                "coverage": 0.25,
-                "waiting_periods": 0.20,
-                "hospital_network": 0.15,
-                "terms": 0.10,
+                "claim_settlement": 0.35,
+                "affordability": 0.22,
+                "coverage": 0.18,
+                "waiting_periods": 0.12,
+                "hospital_network": 0.08,
+                "terms": 0.05,
             }
         return {
+            "claim_settlement": self.claim_settlement / total,
             "affordability": self.affordability / total,
             "coverage": self.coverage / total,
             "waiting_periods": self.waiting_periods / total,
@@ -98,11 +112,12 @@ class RecommendationRequest(BaseModel):
 
 
 class MatchBreakdown(BaseModel):
-    affordability_score: float = Field(..., description="Score out of 30")
-    coverage_score: float = Field(..., description="Score out of 25")
-    waiting_period_score: float = Field(..., description="Score out of 20")
-    hospital_network_score: float = Field(..., description="Score out of 15")
-    terms_score: float = Field(..., description="Score out of 10")
+    claim_settlement_score: float = Field(..., description="Score out of 35 (IRDAI Claim Settlement Ratio - Paramount Factor)")
+    affordability_score: float = Field(..., description="Score out of 22")
+    coverage_score: float = Field(..., description="Score out of 18")
+    waiting_period_score: float = Field(..., description="Score out of 12")
+    hospital_network_score: float = Field(..., description="Score out of 8")
+    terms_score: float = Field(..., description="Score out of 5")
     overall_score: float = Field(..., description="Normalized score 0-100")
     scoring_details: Dict[str, str] = Field(default_factory=dict)
 
@@ -114,6 +129,10 @@ class PolicyRecommendationItem(BaseModel):
     coverage_types: List[str]
     recommended_sum_insured: float
     estimated_annual_premium: float
+    claim_settlement_ratio: float = Field(
+        97.0,
+        description="Official IRDAI Claim Settlement Ratio percentage (e.g. 98.4%)",
+    )
     premium_type: str = Field(
         "indicative_estimate",
         description="'indicative_estimate', 'verified_quote', 'advertised_starting', 'unverified'",
@@ -148,5 +167,7 @@ class RecommendationResponse(BaseModel):
     top_recommendations: List[PolicyRecommendationItem]
     runner_up_recommendations: List[PolicyRecommendationItem] = Field(default_factory=list)
     total_eligible_evaluated: int
+    crawler_capacity: int = Field(50, description="Active crawler capacity for policy discovery and verification")
     scoring_weights: Dict[str, float]
     disclaimer: str
+

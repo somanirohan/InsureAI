@@ -6,7 +6,10 @@
 
 // ─── API ───────────────────────────────────────────────────
 export const API_BASE_URL =
-  import.meta.env.B_URL || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001/api' : '/api');
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.B_URL ||
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001/api' : '/api');
+
 
 export const WS_CHAT_URL =
   import.meta.env.VITE_WS_URL ||

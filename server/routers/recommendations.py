@@ -78,13 +78,14 @@ async def get_policy_recommendations(
 @router.get("/catalog")
 async def get_policy_catalog():
     """
-    Retrieve all verified Indian health insurance plans available in the recommendation catalog.
+    Retrieve all verified Indian health insurance plans available in the recommendation catalog (40 to 50 policies).
     """
     try:
         policies = await policy_crawler_service.get_all_catalog_policies()
         return {
             "success": True,
             "total_policies": len(policies),
+            "crawler_capacity": policy_crawler_service.capacity,
             "policies": policies,
         }
     except Exception as exc:
@@ -92,12 +93,48 @@ async def get_policy_catalog():
         raise HTTPException(status_code=500, detail="Could not retrieve policy catalog.")
 
 
+@router.get("/crawler-status")
+async def get_crawler_status():
+    """
+    Get current crawler status, policy discovery capacity (50 policies), and Claim Settlement Ratio metrics.
+    """
+    try:
+        metrics = policy_crawler_service.get_crawler_metrics()
+        return {
+            "success": True,
+            "metrics": metrics,
+        }
+    except Exception as exc:
+        logger.exception("Error fetching crawler metrics: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/crawl")
+async def trigger_policy_crawl(
+    max_policies: int = 50,
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
+):
+    """
+    Execute active policy crawler across authentic IRDAI insurer catalogs (capacity up to 50 policies).
+    """
+    try:
+        crawl_result = await policy_crawler_service.crawl_policy_sources(max_policies=max_policies)
+        return {
+            "success": True,
+            "message": f"Successfully crawled and synchronized {crawl_result.get('policies_crawled', 0)} health insurance policies.",
+            "data": crawl_result,
+        }
+    except Exception as exc:
+        logger.exception("Error executing policy crawler: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @router.post("/refresh")
 async def refresh_policy_catalog(
     current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional),
 ):
     """
-    Trigger a catalog synchronization and brochure verification check.
+    Trigger a catalog synchronization and brochure verification check across 50 policies.
     """
     try:
         res = await policy_crawler_service.seed_or_refresh_catalog(force_refresh=True)
@@ -131,3 +168,4 @@ async def get_recommendation_history(
     except Exception as exc:
         logger.exception("Error reading recommendation history: %s", exc)
         raise HTTPException(status_code=500, detail="Could not retrieve recommendation history.")
+

@@ -62,7 +62,7 @@ export default function DashboardView({
                 {t('nav.recommend', 'AI Advisor')}
               </p>
               <p className="text-xs text-[#558187] mt-1">
-                {t('recommend.subtitle', 'Get personalized policy recommendations based on age & budget')}
+                {t('recommend.subtitle', 'Personalized policy recommendations prioritizing Claim Settlement Ratio across 50 crawled plans')}
               </p>
             </div>
             <ChevronRight size={18} className="text-[#558187] group-hover:text-[#062327] group-hover:translate-x-1 transition-all" />

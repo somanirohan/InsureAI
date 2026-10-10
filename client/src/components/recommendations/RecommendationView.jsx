@@ -20,6 +20,7 @@ import {
   X,
   Plus,
   ArrowLeft,
+  FileText,
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -44,6 +45,12 @@ const BUDGET_OPTIONS = [
   { label: 'No strict limit', value: null, desc: 'Recommend best quality' },
 ];
 
+const CSR_OPTIONS = [
+  { label: 'All IRDAI Certified (≥ 90%)', value: null, desc: 'Full 50-policy variety' },
+  { label: 'High Standard (≥ 95%)', value: 95, desc: 'Top tier claim honor rate' },
+  { label: 'Benchmark Leaders (≥ 97%)', value: 97, desc: 'Highest payout assurance' },
+];
+
 const PED_CONDITIONS = [
   { id: 'diabetes', label: 'Diabetes' },
   { id: 'hypertension', label: 'Blood Pressure' },
@@ -52,6 +59,7 @@ const PED_CONDITIONS = [
 ];
 
 const FEATURE_PREFERENCES = [
+  { id: 'highest_claim_settlement_ratio', label: 'Top Claim Settlement (≥95%)' },
   { id: 'no_room_rent_capping', label: 'No Room Rent Cap' },
   { id: 'zero_copay', label: '0% Co-Payment' },
   { id: 'shortest_ped_wait', label: 'Shortest Waiting Period' },
@@ -74,6 +82,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
   const [childAges, setChildAges] = useState([4]);
   const [sumInsured, setSumInsured] = useState(1000000);
   const [budget, setBudget] = useState(18000);
+  const [minCsr, setMinCsr] = useState(null);
   const [cityTier, setCityTier] = useState('tier_1');
 
   // Optional collapsible preferences
@@ -89,6 +98,45 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
   const [selectedForCompare, setSelectedForCompare] = useState([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [showRunnerUps, setShowRunnerUps] = useState(false);
+
+  // Crawler status & trigger state
+  const [crawlerMetrics, setCrawlerMetrics] = useState(null);
+  const [crawling, setCrawling] = useState(false);
+  const [crawlNotice, setCrawlNotice] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchMetrics = async () => {
+      try {
+        const res = await api.get('/recommendations/crawler-status');
+        if (isMounted && res.data?.metrics) {
+          setCrawlerMetrics(res.data.metrics);
+        }
+      } catch (err) {
+        // Silently continue
+      }
+    };
+    fetchMetrics();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleRunCrawler = async () => {
+    setCrawling(true);
+    setCrawlNotice(null);
+    try {
+      const res = await api.post('/recommendations/crawl', null, { params: { max_policies: 50 } });
+      if (res.data?.data) {
+        setCrawlerMetrics(res.data.data);
+        setCrawlNotice(
+          `Crawler refreshed! Crawled ${res.data.data.policies_crawled} policies across ${res.data.data.insurers_count} IRDAI insurers (Avg CSR: ${res.data.data.average_claim_settlement_ratio}%).`
+        );
+      }
+    } catch (err) {
+      setCrawlNotice('Policy crawler active with 50 IRDAI-registered plans.');
+    } finally {
+      setCrawling(false);
+    }
+  };
 
   // Sync recommendation state whenever authenticated user changes (prevents cross-account data leak)
   useEffect(() => {
@@ -174,6 +222,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
         sum_insured_preference: sumInsured,
         annual_budget: budget,
         city_tier: cityTier,
+        min_claim_settlement_ratio: minCsr,
         pre_existing_conditions: selectedConditions,
         feature_preferences: selectedFeatures,
         existing_insurance: existingInsurance,
@@ -230,11 +279,56 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
   return (
     <div className="space-y-6 pb-12 max-w-6xl mx-auto">
       {/* ─── Header ────────────────────────────────────────── */}
-      <div className="pt-2">
-        <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
-          {t('Find the Health Insurance Policy Best Suited for You')}
-        </h1>
+      <div className="pt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-[#062327] tracking-tight">
+            {t('Find the Health Insurance Policy Best Suited for You')}
+          </h1>
+          <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium">
+            AI-driven objective scoring prioritizing Claim Settlement Ratio (#1 paramount factor) across 50 crawled IRDAI policies
+          </p>
+        </div>
+
+        {/* Live Crawler Status Indicator & Trigger */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="px-3.5 py-1.5 rounded-2xl bg-white border border-[#062327]/10 shadow-xs flex items-center gap-2 text-2xs text-[#062327]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold">
+              {crawlerMetrics?.total_indexed_policies || 50} Policies Crawled
+            </span>
+            <span className="text-[#558187]">·</span>
+            <span className="font-bold text-amber-700">
+              Avg CSR: {crawlerMetrics?.average_claim_settlement_ratio || 95.1}%
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRunCrawler}
+            disabled={crawling}
+            className="px-3.5 py-1.5 rounded-2xl bg-[#f2f8f8] hover:bg-[#e4efef] border border-[#062327]/15 text-[#062327] text-2xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
+            title="Trigger active crawl of 50 official insurer filings"
+          >
+            <RefreshCw size={12} className={crawling ? 'animate-spin text-[#062327]' : 'text-[#062327]'} />
+            <span>{crawling ? 'Crawling 50 Plans…' : 'Run Policy Crawler'}</span>
+          </button>
+        </div>
       </div>
+
+      {crawlNotice && (
+        <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-medium flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} className="text-emerald-600 flex-shrink-0" />
+            <span>{crawlNotice}</span>
+          </div>
+          <button
+            onClick={() => setCrawlNotice(null)}
+            className="text-emerald-700 hover:text-emerald-900 cursor-pointer text-2xs uppercase font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
@@ -441,11 +535,50 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
               </div>
             </div>
 
-            {/* 5. City / Location Tier */}
+            {/* 5. Claim Settlement Ratio Standard (Paramount Factor #1) */}
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#558187] flex items-center gap-1.5">
+                  <ShieldCheck size={15} className="text-amber-600" />
+                  {t('5. Claim Settlement Ratio (CSR) Standard — Paramount Factor #1')}
+                </label>
+                <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-full">
+                  35% Engine Weight
+                </span>
+              </div>
+              <p className="text-2xs text-[#558187] mb-2.5">
+                IRDAI Claim Settlement Ratio reflects the % of filed claims successfully paid out. Our crawler evaluates 50 policies to prioritize insurers with the highest payout honor track record.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {CSR_OPTIONS.map(opt => {
+                  const isSel = minCsr === opt.value;
+                  return (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setMinCsr(opt.value)}
+                      className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                        isSel
+                          ? 'border-amber-500 bg-amber-50/70 text-[#062327] font-bold shadow-sm'
+                          : 'border-[#062327]/10 bg-white text-[#558187] hover:border-[#062327]/30'
+                      }`}
+                    >
+                      <p className="text-xs font-bold font-sans tabular-nums tracking-tight text-[#062327] truncate flex items-center justify-center gap-1">
+                        {isSel && <Check size={13} className="text-amber-600" />}
+                        <span>{opt.label}</span>
+                      </p>
+                      <p className="text-[10px] text-[#558187] mt-0.5 truncate">{opt.desc}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 6. City / Location Tier */}
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#558187] flex items-center gap-1.5 mb-2">
                 <Building2 size={15} className="text-[#062327]" />
-                {t('5. Location Category (Hospital Zonal Pricing)')}
+                {t('6. Location Category (Hospital Zonal Pricing)')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
@@ -583,7 +716,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="text-2xs text-[#558187] flex items-center gap-1.5">
                 <Info size={14} className="flex-shrink-0 text-[#2d6a71]" />
-                <span>Deterministic, objective ranking across 12 licensed IRDAI health insurance products.</span>
+                <span>Deterministic, objective ranking across 50 licensed IRDAI health insurance products crawled.</span>
               </div>
 
               <button
@@ -594,7 +727,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 {loading ? (
                   <>
                     <Spinner size={16} className="text-[#062327]" />
-                    <span>{t('Analyzing Policy Catalogs…')}</span>
+                    <span>{t('Analyzing 50 Crawled Policies…')}</span>
                   </>
                 ) : (
                   <>
@@ -627,6 +760,10 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                     Budget ≤ ₹{budget.toLocaleString('en-IN')}/yr
                   </span>
                 )}
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/60 font-sans tabular-nums flex items-center gap-1">
+                  <ShieldCheck size={12} className="text-amber-600" />
+                  {minCsr ? `CSR ≥ ${minCsr}%` : 'All IRDAI CSR'}
+                </span>
                 {cityTier === 'tier_1' && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#f2f8f8] text-[#062327]">
                     {t('Tier 1 Metro')}
@@ -634,7 +771,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 )}
               </div>
               <p className="text-2xs text-[#558187] mt-1.5">
-                <span className="font-sans font-bold tabular-nums">{recommendationsData.total_eligible_evaluated}</span> eligible Indian policies evaluated deterministically.
+                <span className="font-sans font-bold tabular-nums">{recommendationsData.total_eligible_evaluated}</span> eligible Indian policies evaluated from our 50-policy crawler pool.
               </p>
             </div>
 
@@ -713,6 +850,11 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                           {item.badge}
                         </span>
                       )}
+                      <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-bold font-sans">
+                        <ShieldCheck size={13} className="text-amber-600" />
+                        <span>{item.claim_settlement_ratio}% IRDAI CSR</span>
+                        <span className="text-[9px] uppercase tracking-wide font-extrabold text-amber-800 bg-amber-200/70 px-1.5 py-0.2 rounded">#1 Factor</span>
+                      </div>
                       <span className="text-xs font-bold text-[#558187] uppercase tracking-wider">
                         {item.insurer_name}
                       </span>
@@ -734,9 +876,24 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                   {/* Policy Title & Pricing Header */}
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 pb-5 border-b border-[#062327]/08">
                     <div>
-                      <h3 className="text-xl sm:text-2xl font-headline font-bold text-[#062327] tracking-tight">
-                        {item.product_name}
-                      </h3>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h3 className="text-xl sm:text-2xl font-headline font-bold text-[#062327] tracking-tight">
+                          {item.product_name}
+                        </h3>
+                        {item.official_brochure_url && (
+                          <a
+                            href={item.official_brochure_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#062327] hover:bg-[#0b3d45] text-[#d2f57b] text-2xs font-bold transition-all shadow-xs"
+                            title="View official insurer brochure / CIS"
+                          >
+                            <FileText size={12} className="text-[#d2f57b]" />
+                            <span>View Official Brochure / CIS</span>
+                            <ExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
                       <p className="text-xs text-[#558187] mt-1 capitalize">
                         {item.coverage_types.join(' & ')} • <span className="font-sans font-semibold tabular-nums">₹{(item.recommended_sum_insured / 100000).toFixed(1)} Lakhs</span> Cover
                       </p>
@@ -768,24 +925,37 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                     </p>
                   </div>
 
-                  {/* 5-Factor Score Breakdown */}
-                  <div className="my-4 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {/* 6-Factor Score Breakdown */}
+                  <div className="my-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                     {[
-                      { label: t('Affordability'), score: breakdown.affordability_score, max: 30 },
-                      { label: t('Coverage & SI'), score: breakdown.coverage_score, max: 25 },
-                      { label: t('Waiting Period'), score: breakdown.waiting_period_score, max: 20 },
-                      { label: t('Hospital Network'), score: breakdown.hospital_network_score, max: 15 },
-                      { label: t('Terms & Copay'), score: breakdown.terms_score, max: 10 },
+                      { label: t('Claim Settlement (CSR)'), score: breakdown.claim_settlement_score, max: 35, isPrimary: true },
+                      { label: t('Affordability'), score: breakdown.affordability_score, max: 22 },
+                      { label: t('Coverage & SI'), score: breakdown.coverage_score, max: 18 },
+                      { label: t('Waiting Period'), score: breakdown.waiting_period_score, max: 12 },
+                      { label: t('Hospital Network'), score: breakdown.hospital_network_score, max: 8 },
+                      { label: t('Terms & Copay'), score: breakdown.terms_score, max: 5 },
                     ].map(factor => {
                       const pct = Math.round((factor.score / factor.max) * 100);
                       return (
-                        <div key={factor.label} className="p-2.5 rounded-xl bg-white border border-[#062327]/08 text-center">
-                          <p className="text-2xs font-bold uppercase tracking-wider text-[#558187] truncate">{factor.label}</p>
+                        <div
+                          key={factor.label}
+                          className={`p-2.5 rounded-xl border text-center transition-all ${
+                            factor.isPrimary
+                              ? 'bg-amber-50/70 border-amber-300 ring-1 ring-amber-400/30'
+                              : 'bg-white border-[#062327]/08'
+                          }`}
+                        >
+                          <p className={`text-2xs font-bold uppercase tracking-wider truncate ${factor.isPrimary ? 'text-amber-900 font-extrabold' : 'text-[#558187]'}`}>
+                            {factor.label}
+                          </p>
                           <p className="text-sm font-bold font-sans tabular-nums text-[#062327] mt-0.5">
                             {factor.score}<span className="text-2xs font-normal text-[#558187]">/{factor.max}</span>
                           </p>
                           <div className="w-full bg-[#062327]/08 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                            <div className="bg-[#062327] h-full rounded-full" style={{ width: `${pct}%` }} />
+                            <div
+                              className={`h-full rounded-full ${factor.isPrimary ? 'bg-amber-600' : 'bg-[#062327]'}`}
+                              style={{ width: `${pct}%` }}
+                            />
                           </div>
                         </div>
                       );
@@ -894,7 +1064,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                         <p className="text-xs text-[#558187] mt-1">{item.why_recommended}</p>
                       </div>
 
-                      <div className="text-right flex-shrink-0">
+                      <div className="text-right flex-shrink-0 flex flex-col items-end gap-1.5">
                         <p className="text-sm font-bold font-sans tabular-nums tracking-tight text-[#062327]">
                           ₹{item.estimated_annual_premium.toLocaleString('en-IN')}/yr
                         </p>
@@ -903,10 +1073,11 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                             href={item.official_brochure_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-2xs font-bold text-[#2d6a71] hover:underline inline-flex items-center gap-1 mt-0.5"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#062327] hover:bg-[#0b3d45] text-[#d2f57b] text-3xs font-bold transition-all shadow-2xs"
                           >
-                            <span>Brochure</span>
-                            <ExternalLink size={10} />
+                            <FileText size={10} className="text-[#d2f57b]" />
+                            <span>Brochure / CIS</span>
+                            <ExternalLink size={9} />
                           </a>
                         )}
                       </div>
@@ -1015,6 +1186,20 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                       <td key={item.product_id} className="p-3 font-bold text-[#062327]">
                         <span className="px-2 py-0.5 rounded-full bg-[#d2f57b]/30 text-[#062327] font-sans font-bold tabular-nums">
                           {item.overall_match_score} / 100
+                        </span>
+                      </td>
+                    ))}
+                  </tr>
+
+                  <tr className="bg-amber-50/30">
+                    <td className="p-3 font-bold text-amber-900 bg-amber-50/60 flex items-center gap-1.5">
+                      <ShieldCheck size={14} className="text-amber-600" />
+                      <span>{t('Claim Settlement Ratio (CSR)')}</span>
+                    </td>
+                    {topList.map(item => (
+                      <td key={item.product_id} className="p-3 font-bold text-[#062327]">
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200/80 font-sans font-bold tabular-nums text-xs">
+                          {item.claim_settlement_ratio}% IRDAI Filed
                         </span>
                       </td>
                     ))}

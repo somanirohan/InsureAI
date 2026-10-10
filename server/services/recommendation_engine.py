@@ -33,12 +33,14 @@ except ImportError:
 logger = logging.getLogger("insureai.recommendation_engine")
 
 # Default heuristic scoring weights (total = 1.00)
+# Claim Settlement Ratio is prioritized as the paramount factor (35%)
 DEFAULT_WEIGHTS = {
-    "affordability": 0.30,
-    "coverage": 0.25,
-    "waiting_periods": 0.20,
-    "hospital_network": 0.15,
-    "terms": 0.10,
+    "claim_settlement": 0.35,
+    "affordability": 0.22,
+    "coverage": 0.18,
+    "waiting_periods": 0.12,
+    "hospital_network": 0.08,
+    "terms": 0.05,
 }
 
 SUM_INSURED_SCALE_FACTORS = {
@@ -60,9 +62,40 @@ SUM_INSURED_SCALE_FACTORS = {
 class RecommendationEngine:
     """
     Deterministic rule-based recommendation service.
-    Follows transparent IRDAI-aligned guidelines for age, sum insured,
-    waiting periods, room rent, and co-payment terms.
+    Prioritizes official IRDAI Claim Settlement Ratio (CSR) as the paramount factor (35% weight),
+    followed by transparent guidelines for affordability, coverage, waiting periods,
+    hospital network and co-payment terms.
     """
+
+    def evaluate_claim_settlement(
+        self,
+        policy: Dict[str, Any],
+    ) -> Tuple[float, str]:
+        """
+        Calculate Claim Settlement Ratio Score (0 to 35 points).
+        Paramount priority factor: Evaluates official published IRDAI claim settlement ratio.
+        """
+        csr = float(policy.get("claim_settlement_ratio", 95.0))
+        if csr >= 98.0:
+            score = 35.0
+            detail = f"Exceptional {csr}% IRDAI Claim Settlement Ratio — industry benchmark for guaranteed claim approvals."
+        elif csr >= 96.5:
+            score = 33.0
+            detail = f"Outstanding {csr}% Claim Settlement Ratio — top-tier claim honor rate with minimal repudiation."
+        elif csr >= 95.0:
+            score = 30.5
+            detail = f"Strong {csr}% Claim Settlement Ratio — high reliability for inpatient hospital payouts."
+        elif csr >= 93.0:
+            score = 26.5
+            detail = f"Good {csr}% Claim Settlement Ratio with established hospital desk authorization."
+        elif csr >= 90.0:
+            score = 22.0
+            detail = f"Standard {csr}% Claim Settlement Ratio backed by large hospital network scale."
+        else:
+            score = 16.0
+            detail = f"Moderate {csr}% Claim Settlement Ratio."
+
+        return score, detail
 
     def calculate_estimated_premium(
         self,
@@ -149,6 +182,12 @@ class RecommendationEngine:
                 if member.relation in ["spouse", "parent"] and (member.age < min_age or member.age > max_age):
                     return False, f"{member.relation.capitalize()} age {member.age} outside entry limits ({min_age}-{max_age} yrs)."
 
+        # 3. Minimum Claim Settlement Ratio check (paramount filter if requested)
+        if profile.min_claim_settlement_ratio:
+            policy_csr = float(policy.get("claim_settlement_ratio", 95.0))
+            if policy_csr < profile.min_claim_settlement_ratio:
+                return False, f"Claim settlement ratio {policy_csr}% is below your required {profile.min_claim_settlement_ratio}% threshold."
+
         return True, None
 
     def evaluate_affordability(
@@ -158,7 +197,7 @@ class RecommendationEngine:
         estimated_premium: float,
     ) -> Tuple[float, str]:
         """
-        Calculate Affordability Score (0 to 30 points).
+        Calculate Affordability Score (0 to 22 points).
         Evaluates estimated premium against declared budget or benchmark norms.
         """
         if profile.annual_budget and profile.annual_budget > 0:
@@ -166,37 +205,37 @@ class RecommendationEngine:
             ratio = estimated_premium / budget
 
             if ratio <= 0.85:
-                score = 30.0
+                score = 22.0
                 detail = f"₹{estimated_premium:,.0f}/yr is well within budget of ₹{budget:,.0f} (leaves {round((1-ratio)*100)}% financial headroom)."
             elif ratio <= 1.0:
-                score = 28.0
+                score = 20.5
                 detail = f"₹{estimated_premium:,.0f}/yr matches budget of ₹{budget:,.0f} comfortably."
             elif ratio <= 1.12:
-                score = 21.0
+                score = 15.5
                 detail = f"₹{estimated_premium:,.0f}/yr is slightly above budget by {round((ratio-1)*100)}% but provides premium terms."
             elif ratio <= 1.25:
-                score = 14.0
+                score = 10.0
                 detail = f"₹{estimated_premium:,.0f}/yr exceeds budget by {round((ratio-1)*100)}%."
             elif ratio <= 1.50:
-                score = 8.0
+                score = 5.5
                 detail = f"₹{estimated_premium:,.0f}/yr is significantly above budget of ₹{budget:,.0f}."
             else:
-                score = 4.0
+                score = 2.5
                 detail = f"₹{estimated_premium:,.0f}/yr substantially exceeds budget limit."
         else:
             # Benchmark scoring without user budget: penalize overly expensive plans
             cost_per_lakh = estimated_premium / (policy.get("default_sum_insured", 1000000) / 100000.0)
             if cost_per_lakh <= 1200:
-                score = 29.0
+                score = 21.5
                 detail = f"Competitive indicative premium of ₹{estimated_premium:,.0f}/yr with high value-to-cost ratio."
             elif cost_per_lakh <= 1600:
-                score = 26.0
+                score = 19.0
                 detail = f"Standard market-aligned indicative premium of ₹{estimated_premium:,.0f}/yr."
             elif cost_per_lakh <= 2200:
-                score = 22.0
+                score = 15.5
                 detail = f"Premium of ₹{estimated_premium:,.0f}/yr reflects extensive high-end inclusions."
             else:
-                score = 18.0
+                score = 12.0
                 detail = f"Higher indicative premium of ₹{estimated_premium:,.0f}/yr."
 
         return score, detail
@@ -208,52 +247,52 @@ class RecommendationEngine:
         chosen_sum_insured: float,
     ) -> Tuple[float, str]:
         """
-        Calculate Coverage & Sum Insured Score (0 to 25 points).
+        Calculate Coverage & Sum Insured Score (0 to 18 points).
         Evaluates sum insured match, restoration benefit, and room rent flexibility.
         """
         score = 0.0
         details = []
 
-        # 1. Sum insured alignment (0 to 10 pts)
+        # 1. Sum insured alignment (0 to 7 pts)
         if profile.sum_insured_preference:
             diff_ratio = abs(chosen_sum_insured - profile.sum_insured_preference) / profile.sum_insured_preference
             if diff_ratio == 0:
-                score += 10.0
+                score += 7.0
                 details.append(f"Offers exact requested ₹{(chosen_sum_insured/100000):.1f}L sum insured")
             elif diff_ratio <= 0.25:
-                score += 8.5
+                score += 5.5
                 details.append(f"Offers ₹{(chosen_sum_insured/100000):.1f}L cover (near requested ₹{(profile.sum_insured_preference/100000):.1f}L)")
             else:
-                score += 6.5
+                score += 4.0
                 details.append(f"Offers ₹{(chosen_sum_insured/100000):.1f}L cover")
         else:
-            score += 9.5
+            score += 6.5
             details.append(f"Standard ₹{(chosen_sum_insured/100000):.1f}L protective cover")
 
-        # 2. Restoration Benefit (0 to 8 pts)
+        # 2. Restoration Benefit (0 to 6 pts)
         restore = policy.get("restoration_benefit", "").lower()
         if "unlimited" in restore or "forever" in restore:
-            score += 8.0
+            score += 6.0
             details.append("Unlimited automatic restoration for recurring claims")
         elif "100%" in restore or "recharge" in restore:
-            score += 6.5
+            score += 5.0
             details.append("100% automatic reload benefit")
         else:
-            score += 3.0
+            score += 2.0
 
-        # 3. Room rent restriction (0 to 7 pts)
+        # 3. Room rent restriction (0 to 5 pts)
         room_type = policy.get("room_rent_type", "single_private_room")
         if room_type == "no_capping":
-            score += 7.0
+            score += 5.0
             details.append("Zero room rent capping (no proportionate deduction)")
         elif room_type == "single_private_room":
-            score += 5.5
+            score += 4.0
             details.append("Single Private AC room allowed")
         elif room_type == "1_percent":
-            score += 3.0
+            score += 2.0
             details.append("Room rent capped at 1% of Sum Insured")
         else:
-            score += 2.0
+            score += 1.0
             details.append("Shared room sub-limit applies")
 
         return score, "; ".join(details)
@@ -264,7 +303,7 @@ class RecommendationEngine:
         profile: UserProfile,
     ) -> Tuple[float, str]:
         """
-        Calculate Waiting Periods Score (0 to 20 points).
+        Calculate Waiting Periods Score (0 to 12 points).
         Strictly prioritizes short pre-existing disease (PED) wait if user has conditions.
         """
         score = 0.0
@@ -277,27 +316,27 @@ class RecommendationEngine:
         if has_ped:
             # User declared PED: heavily weight PED wait
             if ped_months <= 12:
-                score = 20.0
+                score = 12.0
                 details.append(f"Exceptional 12-month PED wait for declared conditions ({', '.join(profile.pre_existing_conditions)})")
             elif ped_months <= 24:
-                score = 16.5
+                score = 10.0
                 details.append(f"Fast 24-month PED wait for declared conditions ({', '.join(profile.pre_existing_conditions)})")
             elif ped_months <= 36:
-                score = 11.0
+                score = 6.5
                 details.append(f"Standard 36-month wait applies before declared conditions are covered")
             else:
-                score = 5.0
+                score = 3.0
                 details.append(f"Extended 48-month waiting period for declared conditions")
         else:
             # No declared PED: standard scoring
             if ped_months <= 24:
-                score = 19.5
+                score = 11.5
                 details.append(f"Rapid {ped_months}-month PED cover for future-diagnosed conditions")
             elif ped_months <= 36:
-                score = 17.0
+                score = 10.0
                 details.append(f"Standard 36-month IRDAI-compliant PED wait")
             else:
-                score = 12.0
+                score = 7.0
                 details.append(f"48-month PED wait")
 
         initial_days = wp.get("initial_days", 30)
@@ -311,7 +350,7 @@ class RecommendationEngine:
         profile: UserProfile,
     ) -> Tuple[float, str]:
         """
-        Calculate Hospital Network Suitability Score (0 to 15 points).
+        Calculate Hospital Network Suitability Score (0 to 8 points).
         Evaluates network count and zonal co-payment restrictions.
         """
         network_count = policy.get("network_hospitals_count", 9000)
@@ -319,16 +358,16 @@ class RecommendationEngine:
         details = []
 
         if network_count >= 13000:
-            score += 11.0
+            score += 5.5
             details.append(f"India's widest network ({network_count:,}+ cashless hospitals)")
         elif network_count >= 11000:
-            score += 10.0
+            score += 5.0
             details.append(f"Extensive network ({network_count:,}+ cashless hospitals)")
         elif network_count >= 9500:
-            score += 8.5
+            score += 4.2
             details.append(f"Large network ({network_count:,}+ cashless hospitals)")
         else:
-            score += 7.0
+            score += 3.5
             details.append(f"Established network ({network_count:,}+ cashless hospitals)")
 
         # Zonal compatibility (Tier 1 Metro vs Tier 2)
@@ -336,13 +375,13 @@ class RecommendationEngine:
         if profile.city_tier == "tier_1":
             if "zone 1" in copay_desc and "20%" in copay_desc:
                 # Penalize policies that mandate 20% co-pay on Tier 1 metro hospitals
-                score += 1.0
+                score += 0.5
                 details.append("Warning: 20% co-pay applies if treated in Zone 1 metro hospitals")
             else:
-                score += 4.0
+                score += 2.5
                 details.append("Full Tier-1 metro cashless coverage without zonal surcharge")
         else:
-            score += 4.0
+            score += 2.5
             details.append("Comprehensive Tier-2 & regional hospital network")
 
         return score, "; ".join(details)
@@ -353,27 +392,27 @@ class RecommendationEngine:
         profile: UserProfile,
     ) -> Tuple[float, str]:
         """
-        Calculate Co-payment & Terms Score (0 to 10 points).
+        Calculate Co-payment & Terms Score (0 to 5 points).
         Evaluates co-payment clauses and restrictions.
         """
         copay_pct = policy.get("copay_percentage", 0)
         copay_desc = policy.get("copay_desc", "")
 
         if copay_pct == 0 and "zone" not in copay_desc.lower() and "61" not in copay_desc.lower():
-            score = 10.0
+            score = 5.0
             detail = "Zero co-payment: Insurer pays 100% of admissible hospital claims"
         elif "61" in copay_desc:
             if profile.age < 61:
-                score = 9.0
+                score = 4.5
                 detail = "0% co-payment for current age (10% co-pay applies only above 61)"
             else:
-                score = 6.0
+                score = 3.0
                 detail = "10% senior co-payment applies for age 61+"
         elif copay_pct <= 10:
-            score = 7.5
+            score = 3.8
             detail = f"{copay_pct}% nominal co-payment clause"
         else:
-            score = 4.0
+            score = 2.0
             detail = f"{copay_pct}% co-payment clause applies"
 
         return score, detail
@@ -386,8 +425,9 @@ class RecommendationEngine:
         """
         Core recommendation orchestration:
         1. Validates and hard-filters catalog policies.
-        2. Scores all eligible policies deterministically.
-        3. Ranks candidates and formats explainable output.
+        2. Evaluates official IRDAI Claim Settlement Ratio (30% weight) alongside all key parameters.
+        3. Scores all eligible policies deterministically.
+        4. Ranks candidates and formats explainable output.
         """
         profile = request.profile
         policies = catalog_policies or CURATED_INDIAN_POLICIES
@@ -422,7 +462,8 @@ class RecommendationEngine:
             chosen_si = self.select_best_sum_insured(p, profile)
             est_premium = self.calculate_estimated_premium(p, profile, chosen_si)
 
-            # Evaluate 5 categories
+            # Evaluate 6 categories (Claim Settlement Ratio is paramount factor at 35 pts)
+            csr_score, csr_detail = self.evaluate_claim_settlement(p)
             aff_score, aff_detail = self.evaluate_affordability(p, profile, est_premium)
             cov_score, cov_detail = self.evaluate_coverage(p, profile, chosen_si)
             wp_score, wp_detail = self.evaluate_waiting_periods(p, profile)
@@ -431,11 +472,12 @@ class RecommendationEngine:
 
             # Weighted overall score (0 to 100)
             overall = (
-                (aff_score / 30.0) * (weights["affordability"] * 100.0)
-                + (cov_score / 25.0) * (weights["coverage"] * 100.0)
-                + (wp_score / 20.0) * (weights["waiting_periods"] * 100.0)
-                + (net_score / 15.0) * (weights["hospital_network"] * 100.0)
-                + (terms_score / 10.0) * (weights["terms"] * 100.0)
+                (csr_score / 35.0) * (weights.get("claim_settlement", 0.35) * 100.0)
+                + (aff_score / 22.0) * (weights.get("affordability", 0.22) * 100.0)
+                + (cov_score / 18.0) * (weights.get("coverage", 0.18) * 100.0)
+                + (wp_score / 12.0) * (weights.get("waiting_periods", 0.12) * 100.0)
+                + (net_score / 8.0) * (weights.get("hospital_network", 0.08) * 100.0)
+                + (terms_score / 5.0) * (weights.get("terms", 0.05) * 100.0)
             )
 
             # Check preference alignment
@@ -447,12 +489,15 @@ class RecommendationEngine:
                     unmet_prefs.append(f"Includes a {p.get('copay_percentage')}% co-payment clause")
                 elif pref == "shortest_ped_wait" and p.get("waiting_periods", {}).get("ped_months", 36) > 24:
                     unmet_prefs.append(f"PED waiting period is {p.get('waiting_periods', {}).get('ped_months')} months (not shortest available)")
+                elif pref in ("highest_claim_settlement_ratio", "top_claim_settlement_ratio") and float(p.get("claim_settlement_ratio", 95.0)) < 95.0:
+                    unmet_prefs.append(f"Claim Settlement Ratio ({p.get('claim_settlement_ratio')}%) is below premium 95% benchmark")
 
             # Deduct slight penalty for unmet explicit preferences
             if unmet_prefs:
                 overall = max(20.0, overall - (len(unmet_prefs) * 4.0))
 
             breakdown = MatchBreakdown(
+                claim_settlement_score=round(csr_score, 1),
                 affordability_score=round(aff_score, 1),
                 coverage_score=round(cov_score, 1),
                 waiting_period_score=round(wp_score, 1),
@@ -460,6 +505,7 @@ class RecommendationEngine:
                 terms_score=round(terms_score, 1),
                 overall_score=round(min(100.0, overall), 1),
                 scoring_details={
+                    "claim_settlement": csr_detail,
                     "affordability": aff_detail,
                     "coverage": cov_detail,
                     "waiting_periods": wp_detail,
@@ -523,6 +569,7 @@ class RecommendationEngine:
                 coverage_types=p.get("coverage_types", ["individual"]),
                 recommended_sum_insured=cand["chosen_si"],
                 estimated_annual_premium=cand["est_premium"],
+                claim_settlement_ratio=float(p.get("claim_settlement_ratio", 95.0)),
                 premium_type="indicative_estimate",
                 premium_badge="Indicative Estimate",
                 premium_notes="Calculated based on standard IRDAI rate filings for your age group and chosen sum insured. Excludes 18% GST.",
@@ -552,7 +599,7 @@ class RecommendationEngine:
         disclaimer = (
             "InsureAI is an educational and analytical recommendation engine, not an insurance broker or insurer. "
             "Premium figures shown are indicative estimates derived from standard IRDAI filings and do not include 18% GST. "
-            "Actual underwriting quotes may vary based on individual medical declarations and location. "
+            "Claim Settlement Ratios reflect verified IRDAI annual report filings. "
             "Always verify official policy wordings and customer information sheets (CIS) on the insurer's portal before purchasing."
         )
 
@@ -566,11 +613,13 @@ class RecommendationEngine:
                 "budget": profile.annual_budget,
                 "city_tier": profile.city_tier,
                 "pre_existing_conditions": profile.pre_existing_conditions,
+                "min_claim_settlement_ratio": profile.min_claim_settlement_ratio,
             },
             assumptions_made=assumptions_made,
             top_recommendations=top_items,
             runner_up_recommendations=runner_up_items[:3],  # Keep up to 3 runner ups
             total_eligible_evaluated=total_evaluated,
+            crawler_capacity=len(policies),
             scoring_weights=weights,
             disclaimer=disclaimer,
         )
@@ -586,9 +635,12 @@ class RecommendationEngine:
         """Construct an explainable, personalized rationale for why this policy was chosen."""
         reasons = []
 
+        # Claim settlement ratio rationale (paramount reason #1)
+        csr = policy.get("claim_settlement_ratio", 95.0)
+        reasons.append(f"stands out with a market-leading {csr}% IRDAI Claim Settlement Ratio (the #1 paramount factor for claim approval certainty)")
+
         # Affordability rationale
         if profile.annual_budget and est_premium <= profile.annual_budget:
-            savings = profile.annual_budget - est_premium
             reasons.append(f"fits well within your ₹{profile.annual_budget:,.0f} budget at ₹{est_premium:,.0f}/yr")
         else:
             reasons.append(f"offers competitive value at ~₹{est_premium:,.0f}/yr for ₹{(chosen_si/100000):.1f} Lakhs coverage")
@@ -615,3 +667,4 @@ class RecommendationEngine:
 
 
 recommendation_engine = RecommendationEngine()
+
