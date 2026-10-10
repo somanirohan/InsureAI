@@ -5,7 +5,10 @@
   "scripts": {
     "server": "python -m uvicorn server.main:app --port 5001 --reload",
     "client": "npm --prefix client run dev",
-    "seed": "python -m server.utils.seeder"
+    "seed": "python -m server.utils.seeder",
+    "build:server": "python -m pip install -r server/requirements.txt && python -m compileall server/",
+    "build:client": "npm --prefix client run build",
+    "build": "npm run build:server && npm run build:client"
   },
   "keywords": ["insurance", "rag", "mongodb", "chromadb", "react", "fastapi", "tailwind"],
   "author": "InsurAI Team",
