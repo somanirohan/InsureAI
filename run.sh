@@ -26,7 +26,7 @@ done
 
 echo ""
 echo "🚀 Starting FastAPI backend (:5001)..."
-python3.11 server/main.py &
+python3 server/main.py &
 BACKEND_PID=$!
 
 echo "🚀 Starting React frontend (:5173)..."

@@ -530,6 +530,7 @@ export default function CostEstimatorView({ policies }) {
                         {fmt(estimate.covered_amount)}
                       </p>
                     </div>
+                    <p className="text-[10px] font-bold text-red-600 mt-2">* Estimated amount. Actual may vary.</p>
                     <p className="text-[11px] text-emerald-700 mt-3 font-semibold flex items-center gap-1">
                       <CheckCircle2 size={13} className="text-emerald-700" />
                       <span>Net admissible claim</span>
@@ -556,6 +557,14 @@ export default function CostEstimatorView({ policies }) {
                       <span>Direct self contribution</span>
                     </p>
                   </div>
+                </div>
+
+                {/* Indicative Estimate Disclaimer (Directly below numbers) */}
+                <div className="flex items-start sm:items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-xs leading-relaxed">
+                  <Info size={15} className="text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
+                  <p className="text-xs text-[#4b6367]">
+                    <strong className="text-[#062327]">Disclaimer:</strong> This is an estimated amount. Real hospital charges and settlement amounts may vary based on clinical complications, doctor fees, room category chosen, and final insurer claim adjudication.
+                  </p>
                 </div>
 
                 {/* Visual Bill Coverage Proportion Bar */}
