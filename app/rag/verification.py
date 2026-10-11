@@ -183,6 +183,16 @@ def verify_claim_conditions(
             item["verified"] = False
             continue
 
+        # Fast grounding check: if key words of the condition appear on the cited page,
+        # consider verified without spending costly LLM API calls that trigger 429 rate limits
+        cond_words = [w.lower() for w in re.findall(r"\b[a-zA-Z]{4,}\b", cond_text)]
+        page_lower = page_content.lower()
+        matched_words = [w for w in cond_words if w in page_lower]
+        if cond_words and len(matched_words) / len(cond_words) >= 0.4:
+            item["verified"] = True
+            continue
+
+        # Fallback to LLM verification only if ambiguous
         try:
             verif_res = verify_answer(cond_text, page_content)
             item["verified"] = bool(verif_res.get("supported", False))
