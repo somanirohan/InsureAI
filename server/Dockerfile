@@ -14,10 +14,12 @@ ENV OLLAMA_BASE_URL=http://127.0.0.1:11434 \
     OLLAMA_TIMEOUT_SECONDS=30 \
     EMBEDDING_PROVIDER=ollama
 
-# Install system dependencies (including tesseract for OCR) and Ollama binary
+# Install system dependencies (including tesseract for OCR, zstd for Ollama extraction) and Ollama binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    zstd \
+    procps \
     tesseract-ocr \
     tesseract-ocr-eng \
     libmupdf-dev \
