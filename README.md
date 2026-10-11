@@ -236,11 +236,11 @@ OPENROUTER_API_KEY=
 OPENROUTER_MODEL=meta-llama/llama-3-8b-instruct
 NVIDIA_API_KEY=
 
-# ── Embedding Provider (Options: api) ──────────────────────────────
-EMBEDDING_PROVIDER=api
-EMBEDDING_API_BASE_URL=https://api.openai.com/v1
-EMBEDDING_API_KEY=
-EMBEDDING_API_MODEL=text-embedding-3-small
+# ── Embedding Provider (Ollama — primary local provider) ───────────
+EMBEDDING_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+OLLAMA_TIMEOUT_SECONDS=30
 CHROMA_PERSIST_DIR=./chroma_store
 
 # ── Chunking & Retrieval Parameters ────────────────────────────────
@@ -249,6 +249,26 @@ CHUNK_OVERLAP=80
 TOP_K=5
 OCR_TEXT_THRESHOLD=50
 ```
+
+#### Ollama Embedding Setup (Primary Provider)
+InsurAI uses **Ollama** with `nomic-embed-text` as the primary embedding provider. If Ollama is unavailable or uninitialized, InsurAI automatically falls back to ChromaDB's built-in embeddings without interruption.
+
+1. Install and start Ollama:
+   ```bash
+   ollama serve
+   ```
+2. Pull the embedding model:
+   ```bash
+   ollama pull nomic-embed-text
+   ```
+
+#### Docker Deployment
+You can also run InsurAI with Docker Compose, which includes an Ollama service:
+```bash
+docker compose up -d
+docker compose exec ollama ollama pull nomic-embed-text
+```
+The server container connects to Ollama via `http://ollama:11434`. If Ollama is temporarily unavailable, ChromaDB fallback is used automatically.
 
 ---
 

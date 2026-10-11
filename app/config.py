@@ -48,13 +48,15 @@ class Settings(BaseSettings):
     nvidia_model: str = "meta/llama3-8b-instruct"
 
     # ── Embedding provider selection ──────────────────────────────────────────
-    # Set EMBEDDING_PROVIDER=api
-    embedding_provider: Literal["api"] = "api"
+    # Set EMBEDDING_PROVIDER=ollama (primary, local embeddings)
+    # ChromaDB built-in embeddings are used automatically as a fallback when
+    # Ollama is unavailable (see app/rag/vectorstore.py).
+    embedding_provider: Literal["ollama"] = "ollama"
 
-    # API-based embeddings (OpenAI-compatible; can be OpenRouter, NVIDIA, etc.)
-    embedding_api_base_url: str = "https://api.openai.com/v1"
-    embedding_api_key: str = ""
-    embedding_api_model: str = "text-embedding-3-small"
+    # Ollama (local embeddings — primary provider)
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_embedding_model: str = "nomic-embed-text"
+    ollama_timeout_seconds: int = 30
 
     # ── Vector store ──────────────────────────────────────────────────────────
     # ChromaDB: local embedded directory or hosted remote instance (HttpClient/CloudClient)

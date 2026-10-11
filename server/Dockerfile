@@ -8,6 +8,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ALLOWED_ORIGINS=* \
     PORT=5001
 
+# Ollama runs as a separate Docker service; point the server at it via compose.
+# Override at runtime: -e OLLAMA_BASE_URL=http://ollama:11434
+ENV OLLAMA_BASE_URL=http://ollama:11434 \
+    OLLAMA_EMBEDDING_MODEL=nomic-embed-text \
+    OLLAMA_TIMEOUT_SECONDS=30 \
+    EMBEDDING_PROVIDER=ollama
+
 # Install system dependencies (including tesseract for OCR capabilities)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \

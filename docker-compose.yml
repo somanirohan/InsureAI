@@ -1,0 +1,78 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# InsureAI — Docker Compose
+#
+# Services:
+#   server  — FastAPI application (port 5001)
+#   ollama  — Local Ollama embedding server (port 11434)
+#
+# Ollama is the primary embedding provider.
+# If the Ollama service is temporarily unavailable, the server falls back
+# to ChromaDB's built-in embedding behaviour automatically (logged as WARNING).
+#
+# Quick start:
+#   docker compose up -d
+#   docker compose exec ollama ollama pull nomic-embed-text
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── FastAPI server ──────────────────────────────────────────────────────────
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      # Embedding — point at the Ollama service inside the Docker network
+      EMBEDDING_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+      OLLAMA_TIMEOUT_SECONDS: "30"
+      # LLM stays on Groq (inject key via .env or secret)
+      LLM_PROVIDER: groq
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-qwen/qwen3.8-27b}
+      # Database
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-insurai}
+      # Server
+      PORT: "5001"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    env_file:
+      - server/.env        # gitignored — real secrets go here
+    volumes:
+      # Persist ChromaDB embeddings across restarts
+      - chroma_data:/app/server/chroma_store
+    depends_on:
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Ollama embedding server ─────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      # Persist downloaded models across restarts
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  chroma_data:
+  ollama_models:
