@@ -685,19 +685,44 @@ function MessageBubble({ msg, plainLanguageMode }) {
         </div>
 
         {/* Citations */}
-        {!isUser && msg.citations?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-1">
-            {msg.citations.map((cite, i) => (
-              <span
-                key={i}
-                className="text-[10px] font-semibold text-[#558187] bg-white border border-[#062327]/10 px-2.5 py-1 rounded-full flex items-center gap-1 hover:border-[#062327]/25 hover:bg-[#f5f8f8] transition-colors shadow-xs"
-              >
-                <BookOpen size={10} className="text-[#062327]" />
-                <span>p.{cite.page_number || '?'} · {cite.section_heading || 'Policy contract clause'}</span>
-              </span>
-            ))}
-          </div>
-        )}
+        {!isUser && msg.citations?.length > 0 && (() => {
+          // De-duplicate citations by (page_number, heading)
+          const seen = new Set();
+          const uniqueCitations = msg.citations.filter((cite) => {
+            const key = `${cite.page_number}-${cite.section_heading || cite.excerpt?.slice(0, 30)}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          return (
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {uniqueCitations.map((cite, i) => {
+                const sourceType = cite.source_type || 'policy_clause';
+                const typeBadge =
+                  sourceType === 'structured_fact' ? 'Schedule Fact' :
+                  sourceType === 'irdai_reference' ? 'IRDAI Guideline' :
+                  'Policy Clause';
+
+                const heading = cite.section_heading || (cite.excerpt ? cite.excerpt.slice(0, 28) + '...' : 'Policy Clause');
+
+                return (
+                  <span
+                    key={i}
+                    title={cite.excerpt || undefined}
+                    className="text-[10px] font-semibold text-[#558187] bg-white border border-[#062327]/10 px-2.5 py-1 rounded-full flex items-center gap-1.5 hover:border-[#062327]/25 hover:bg-[#f5f8f8] transition-colors shadow-xs"
+                  >
+                    <BookOpen size={10} className="text-[#062327]" />
+                    <span className="font-mono text-[9px] text-[#2d6a71] bg-[#eef7f7] px-1 py-0.5 rounded">
+                      {typeBadge}
+                    </span>
+                    <span>p.{cite.page_number || '?'} · {heading}</span>
+                  </span>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -1037,6 +1062,7 @@ export default function ChatBox({ initialPolicy, policies }) {
         token,
         question,
         policy_id: selectedPolicyId || null,
+        scope: selectedPolicyId ? null : 'all',
         conversation_id: currentConversationId,
         plain_language_mode: plainLanguageMode,
       }));
@@ -1048,6 +1074,7 @@ export default function ChatBox({ initialPolicy, policies }) {
     const res = await api.post('/chat/message', {
       conversation_id: currentConversationId,
       policy_id: selectedPolicyId || null,
+      scope: selectedPolicyId ? null : 'all',
       question,
       plain_language_mode: plainLanguageMode,
     });

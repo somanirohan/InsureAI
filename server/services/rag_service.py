@@ -7,7 +7,9 @@ fact mapping, and asynchronous execution of app.rag.qa.answer_question.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
+import re
 from typing import Any, Dict, List, Optional, Sequence, Union
 from bson import ObjectId
 from fastapi import HTTPException, status
@@ -101,7 +103,8 @@ class RagService:
                 "policy_id": actual_policy_id,
                 "chunk_vector_id": chunk_vec_id,
                 "page_number": cite.page_number,
-                "section_heading": getattr(cite, "section_heading", None),
+                "section_heading": getattr(cite, "section_heading", None) or "Policy Clause",
+                "source_type": getattr(cite, "source_type", "policy_clause"),
                 "excerpt": cite.excerpt,
             })
 
@@ -347,25 +350,58 @@ class RagService:
         answer_parts: List[str] = []
 
         if is_structured_comp and routed_field:
-            # Deterministic Comparison Table from structured facts
+            # Deterministic Comparison Table from structured facts reusing single-policy formatter
+            from app.rag.qa import _format_structured_answer
             field_header = routed_field.replace("_", " ").title()
             table_lines = [
                 f"### Comparison: {field_header}",
                 "",
-                f"| Policy | {field_header} | Source Page |",
+                f"| Policy | {field_header} | Source Pages |",
                 "| :--- | :--- | :--- |",
             ]
             for res in successful_results:
                 p_name = res["policy_name"]
-                ans = res["answer"]
                 cites = res.get("citations", [])
-                p_cite = f"Page {cites[0]['page_number']}" if cites else "Not found in this policy"
-                # Extract clean value
-                clean_val = ans.replace(f"The {field_header.lower()} under this policy is ", "").replace("The applicable co-pay is ", "").strip()
-                if "no " in clean_val.lower() and "found" in clean_val.lower():
-                    clean_val = "Not found in this policy"
+                p_pages = sorted(list(set(c["page_number"] for c in cites if c.get("page_number"))))
+                p_cite = f"Page {', '.join(str(p) for p in p_pages)}" if p_pages else "—"
+
+                # Pull raw fact from target_policies and invoke existing single-policy formatter
+                matching_p = next((p for p in target_policies if str(p["_id"]) == res["policy_id"]), None)
+                if matching_p:
+                    m_facts = matching_p.get("facts", [])
+                    st_facts = mongo_facts_to_rag_facts(m_facts)
+                    f_data = st_facts.get(routed_field)
+                    single_ans, _, _ = _format_structured_answer(routed_field, f_data)
+                else:
+                    single_ans = res["answer"]
+
+                # Extract cell text from single-policy answer to keep wording identical
+                clean_ans = single_ans.strip()
+                if "no " in clean_ans.lower() and ("found" in clean_ans.lower() or "applicable" in clean_ans.lower() or "mentioned" in clean_ans.lower()):
+                    cell_val = "Not found in this policy"
                     p_cite = "—"
-                table_lines.append(f"| **{p_name}** | {clean_val} | {p_cite} |")
+                elif routed_field in ("sum_insured", "room_rent_limit", "co_pay", "deductible"):
+                    m_bold = re.search(r"\*\*([^*]+)\*\*", clean_ans)
+                    cell_val = m_bold.group(1).strip() if m_bold else clean_ans
+                elif routed_field in ("waiting_periods", "exclusions", "claim_conditions"):
+                    lines = [l.strip() for l in clean_ans.splitlines() if l.strip().startswith("-")]
+                    items = []
+                    for l in lines:
+                        clean_item = re.sub(r"^\s*-\s*", "", l)
+                        clean_item = re.sub(r"\s*\(Page\s+\d+\)$", "", clean_item).strip()
+                        clean_item = clean_item.replace("**", "").strip()
+                        items.append(clean_item)
+                    cell_val = "; ".join(items) if items else "Not found in this policy"
+                else:
+                    cell_val = clean_ans
+
+                # Ensure no newlines or pipes inside markdown table cell
+                clean_cell = cell_val.replace("\n", " ").replace("|", "/").strip()
+                if not clean_cell or "not found" in clean_cell.lower():
+                    clean_cell = "Not found in this policy"
+                    p_cite = "—"
+
+                table_lines.append(f"| **{p_name}** | {clean_cell} | {p_cite} |")
 
             answer_parts.append("\n".join(table_lines))
         else:

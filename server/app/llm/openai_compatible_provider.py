@@ -69,17 +69,21 @@ class OpenAICompatibleProvider(LLMProvider):
             response = self._client.chat.completions.create(**create_kwargs)
             return response.choices[0].message.content or ""
         except Exception as exc:
-            # If the model does not exist or account lacks access, auto-fallback to available model
+            # If the model does not exist or account hit rate limits, auto-fallback to alternative available chat model
             err_str = str(exc).lower()
-            if "model_not_found" in err_str or "does not exist" in err_str:
+            if any(k in err_str for k in ("model_not_found", "does not exist", "rate_limit", "rate limit", "429")):
                 try:
-                    available = [m.id for m in self._client.models.list().data if not any(x in m.id.lower() for x in ("guard", "whisper", "embed"))]
-                    if available:
-                        fallback_model = available[0]
-                        create_kwargs["model"] = fallback_model
-                        self.model = fallback_model
-                        response = self._client.chat.completions.create(**create_kwargs)
-                        return response.choices[0].message.content or ""
+                    candidates = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+                    for alt in candidates:
+                        if alt == self.model:
+                            continue
+                        try:
+                            create_kwargs["model"] = alt
+                            response = self._client.chat.completions.create(**create_kwargs)
+                            self.model = alt
+                            return response.choices[0].message.content or ""
+                        except Exception:
+                            continue
                 except Exception:
                     pass
             raise
