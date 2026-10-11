@@ -65,6 +65,15 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
     type: 'error', // 'invalid' | 'duplicate' | 'error'
   });
   const inputRef = useRef(null);
+  const pollTimerRef = useRef(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -89,6 +98,10 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
       title = 'Policy already uploaded';
     }
 
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+    }
+
     setError(msg);
     setUploading(false);
     setPipelineStep(null);
@@ -111,6 +124,9 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
   };
 
   const handleReset = () => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+    }
     setFile(null);
     setUploading(false);
     setPipelineStep(null);
@@ -188,9 +204,23 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
       const policyId = uploadedPolicy._id;
       setPipelineStep(uploadedPolicy.status || 'uploading');
 
-      // Poll real backend status every 1.2 seconds until ready or failed
-      const pollInterval = setInterval(async () => {
+      // Poll real backend status every 1.5 seconds until ready, failed, or timed out (90s limit)
+      const startTime = Date.now();
+      const MAX_POLL_MS = 90000;
+
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+
+      pollTimerRef.current = setInterval(async () => {
         try {
+          if (Date.now() - startTime > MAX_POLL_MS) {
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+            setUploading(false);
+            triggerAlert('Policy processing is taking longer than usual. Please refresh your dashboard in a moment.');
+            return;
+          }
+
           const pollRes = await api.get(`/policies/${policyId}`);
           const pol = pollRes.data.policy;
           const currentStatus = pol.status;
@@ -198,20 +228,21 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
           setPipelineStep(currentStatus);
 
           if (currentStatus === 'ready') {
-            clearInterval(pollInterval);
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
             setUploading(false);
             setPipelineStep('ready');
             setExtractedPolicy(pol);
           } else if (currentStatus === 'failed') {
-            clearInterval(pollInterval);
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
             const failReason = pol.processing_error || 'Policy extraction failed on server.';
             triggerAlert(failReason);
           }
         } catch (pollErr) {
           console.error('Error polling policy status:', pollErr);
         }
-      }, 1200);
+      }, 1500);
     } catch (err) {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       const rawMsg = err.response?.data?.detail || err.response?.data?.error || err.message || 'Upload failed. Please try again.';
       triggerAlert(rawMsg);
     }

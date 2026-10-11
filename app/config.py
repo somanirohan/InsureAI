@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     # Set EMBEDDING_PROVIDER=ollama (primary, local embeddings)
     # ChromaDB built-in embeddings are used automatically as a fallback when
     # Ollama is unavailable (see app/rag/vectorstore.py).
-    embedding_provider: Literal["ollama"] = "ollama"
+    embedding_provider: Literal["ollama", "api"] = "ollama"
 
     # Ollama (local embeddings — primary provider)
     ollama_base_url: str = "http://localhost:11434"

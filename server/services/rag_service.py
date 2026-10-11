@@ -103,7 +103,7 @@ class RagService:
                 "policy_id": actual_policy_id,
                 "chunk_vector_id": chunk_vec_id,
                 "page_number": cite.page_number,
-                "section_heading": getattr(cite, "section_heading", None) or "Policy Clause",
+                "section_heading": getattr(cite, "section_heading", None),
                 "source_type": getattr(cite, "source_type", "policy_clause"),
                 "excerpt": cite.excerpt,
             })

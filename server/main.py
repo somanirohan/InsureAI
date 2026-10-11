@@ -138,7 +138,7 @@ async def root():
         "status": "online",
         "documentation": "/docs",
         "health": "/api/health",
-        "client_frontend": "http://localhost:5173",
+        "client_frontend": settings.CLIENT_URL,
         "timestamp": datetime.utcnow().isoformat(),
         "endpoints": {
             "recommendations": "/api/recommendations",

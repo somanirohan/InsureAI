@@ -153,7 +153,7 @@ async def check_duplicate_policy(
             {"file_hash": file_hash},
             {"file_name": orig_filename, "file_size_bytes": file_size_bytes},
         ],
-        "status": {"$ne": "failed"},
+        "status": "ready",
     }
 
     existing = await db.policies.find_one(query)

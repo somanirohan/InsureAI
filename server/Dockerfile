@@ -8,20 +8,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ALLOWED_ORIGINS=* \
     PORT=5001
 
-# Ollama runs as a separate Docker service; point the server at it via compose.
-# Override at runtime: -e OLLAMA_BASE_URL=http://ollama:11434
-ENV OLLAMA_BASE_URL=http://ollama:11434 \
+# Internal Ollama runs inside this same container on 127.0.0.1:11434
+ENV OLLAMA_BASE_URL=http://127.0.0.1:11434 \
     OLLAMA_EMBEDDING_MODEL=nomic-embed-text \
     OLLAMA_TIMEOUT_SECONDS=30 \
     EMBEDDING_PROVIDER=ollama
 
-# Install system dependencies (including tesseract for OCR capabilities)
+# Install system dependencies (including tesseract for OCR) and Ollama binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     tesseract-ocr \
     tesseract-ocr-eng \
     libmupdf-dev \
+    && curl -fsSL https://ollama.com/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory to /app/server
@@ -35,8 +35,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy server code into /app/server
 COPY . /app/server
 
+# Ensure startup script is executable
+RUN chmod +x /app/server/start.sh
+
 # Expose container application port
 EXPOSE 5001
 
-# Run Uvicorn directly on main:app
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-5001}"]
+# Start Ollama daemon in background and launch FastAPI via start.sh
+CMD ["/app/server/start.sh"]
