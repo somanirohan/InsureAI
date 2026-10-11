@@ -40,6 +40,14 @@ COPY . /app/server
 # Ensure startup script is executable
 RUN chmod +x /app/server/start.sh
 
+# Pre-download nomic-embed-text at build time into the container image
+# so startup is instant and Ollama never needs to download over the network at runtime
+RUN ollama serve > /dev/null 2>&1 & \
+    PID=$! && \
+    sleep 3 && \
+    ollama pull nomic-embed-text && \
+    kill $PID 2>/dev/null || true
+
 # Expose container application port
 EXPOSE 5001
 
