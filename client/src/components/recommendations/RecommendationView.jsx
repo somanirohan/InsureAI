@@ -289,19 +289,8 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
           </p>
         </div>
 
-        {/* Live Crawler Status Indicator & Trigger */}
+        {/* Live Crawler Trigger */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="px-3.5 py-1.5 rounded-2xl bg-white border border-[#062327]/10 shadow-xs flex items-center gap-2 text-2xs text-[#062327]">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-bold">
-              {crawlerMetrics?.total_indexed_policies || 50} Policies Crawled
-            </span>
-            <span className="text-[#558187]">·</span>
-            <span className="font-bold text-amber-700">
-              Avg CSR: {crawlerMetrics?.average_claim_settlement_ratio || 95.1}%
-            </span>
-          </div>
-
           <button
             type="button"
             onClick={handleRunCrawler}
@@ -310,7 +299,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             title="Trigger active crawl of 50 official insurer filings"
           >
             <RefreshCw size={12} className={crawling ? 'animate-spin text-[#062327]' : 'text-[#062327]'} />
-            <span>{crawling ? 'Crawling 50 Plans…' : 'Run Policy Crawler'}</span>
+            <span>{crawling ? 'Crawling Plans…' : 'Run Policy Crawler'}</span>
           </button>
         </div>
       </div>
@@ -760,10 +749,12 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                     Budget ≤ ₹{budget.toLocaleString('en-IN')}/yr
                   </span>
                 )}
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/60 font-sans tabular-nums flex items-center gap-1">
-                  <ShieldCheck size={12} className="text-amber-600" />
-                  {minCsr ? `CSR ≥ ${minCsr}%` : 'All IRDAI CSR'}
-                </span>
+                {minCsr && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/60 font-sans tabular-nums flex items-center gap-1">
+                    <ShieldCheck size={12} className="text-amber-600" />
+                    CSR ≥ {minCsr}%
+                  </span>
+                )}
                 {cityTier === 'tier_1' && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#f2f8f8] text-[#062327]">
                     {t('Tier 1 Metro')}
@@ -814,7 +805,6 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/60 text-xs text-amber-900 flex items-start gap-2">
               <Info size={15} className="text-amber-700 flex-shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold">Transparent Assumptions: </span>
                 <span>{recommendationsData.assumptions_made.join(' ')}</span>
               </div>
             </div>
@@ -850,11 +840,6 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                           {item.badge}
                         </span>
                       )}
-                      <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-bold font-sans">
-                        <ShieldCheck size={13} className="text-amber-600" />
-                        <span>{item.claim_settlement_ratio}% IRDAI CSR</span>
-                        <span className="text-[9px] uppercase tracking-wide font-extrabold text-amber-800 bg-amber-200/70 px-1.5 py-0.2 rounded">#1 Factor</span>
-                      </div>
                       <span className="text-xs font-bold text-[#558187] uppercase tracking-wider">
                         {item.insurer_name}
                       </span>
