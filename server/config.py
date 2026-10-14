@@ -54,6 +54,15 @@ class ServerSettings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"
     COOKIE_DOMAIN: Optional[str] = None
 
+    # ── Email / SMTP Configuration ──────────────────────────────────────────
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: str = "noreply@insurai.com"
+    SMTP_TLS: bool = True
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
+
     # ── Rate Limiting & Protection ─────────────────────────────────────────────
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_AUTH_MAX_REQUESTS: int = 20  # per minute per IP for /api/auth

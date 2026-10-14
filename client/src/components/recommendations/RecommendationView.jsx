@@ -992,7 +992,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                           <ExternalLink size={12} />
                         </a>
                       )}
-                      <span className="text-zinc-300">•</span>
+                      <span className="text-[#062327]/20">•</span>
                       <span className="text-2xs text-[#558187]">
                         <span className="font-sans font-semibold tabular-nums">{item.network_hospitals_count.toLocaleString('en-IN')}+</span> {t('Cashless Hospitals')}
                       </span>
@@ -1083,9 +1083,9 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
 
       {/* ─── Floating Compare Bar when policies are checked ─── */}
       {recommendationsData && selectedForCompare.length >= 2 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white text-slate-800 px-4 py-2.5 rounded-xl shadow-lg border border-slate-200 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3">
-          <span className="text-xs font-medium text-slate-600">
-            <strong className="text-slate-900 font-semibold">{selectedForCompare.length}</strong> policies selected
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white text-[#062327] px-4 py-2.5 rounded-2xl shadow-xl border border-[#062327]/12 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3">
+          <span className="text-xs font-semibold text-[#558187]">
+            <strong className="text-[#062327] font-bold">{selectedForCompare.length}</strong> policies selected
           </span>
           <button
             type="button"
@@ -1108,15 +1108,15 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
 
       {/* ─── Comparison Modal ─────────────────────────────── */}
       {showCompareModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-[#062327]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#062327]/12 rounded-3xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
+            <div className="p-5 border-b border-[#062327]/10 flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="font-headline text-lg font-bold text-[#062327]">
                   {t('Side-by-Side Plan Comparison')}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-[#558187] mt-0.5 font-medium">
                   Direct evaluation of top ranked policies against your requested parameters
                 </p>
               </div>
@@ -1141,7 +1141,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
                 <button
                   type="button"
                   onClick={() => setShowCompareModal(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-[#f5f8f8] hover:bg-[#062327]/08 flex items-center justify-center text-[#558187] hover:text-[#062327] transition-colors cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -1276,7 +1276,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-100 flex items-center justify-end gap-2.5 bg-slate-50/70">
+            <div className="p-4 border-t border-[#062327]/10 flex items-center justify-end gap-2.5 bg-[#f8fbfb]">
               {onNavigateToCompare && (
                 <button
                   type="button"
@@ -1297,7 +1297,7 @@ export default function RecommendationView({ policies = [], onNavigateToCompare 
               <button
                 type="button"
                 onClick={() => setShowCompareModal(false)}
-                className="px-4 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+                className="px-4 py-1.5 rounded-full border border-[#062327]/15 bg-white text-[#558187] hover:text-[#062327] text-xs font-bold hover:bg-[#f5f8f8] transition-colors cursor-pointer"
               >
                 {t('common.close', 'Close')}
               </button>

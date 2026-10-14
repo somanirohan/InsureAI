@@ -135,6 +135,14 @@ def validate_policy_text(text: str) -> dict[str, Any]:
     }
 
 
+from bson import ObjectId
+
+try:
+    from db import to_object_id
+except ImportError:
+    from server.db import to_object_id
+
+
 async def check_duplicate_policy(
     db: Any,
     user_id: Any,
@@ -143,12 +151,19 @@ async def check_duplicate_policy(
     file_size_bytes: int,
 ) -> Optional[dict[str, Any]]:
     """
-    Check if a policy has already been uploaded by this user in MongoDB.
-    Detects duplicate files by SHA-256 hash or identical filename + file size.
+    Check if a policy has already been uploaded by THIS user in MongoDB.
+    Detects duplicate files by SHA-256 hash or identical filename + file size strictly for this user.
     Ignores previously failed uploads so users can re-try.
     """
+    if not user_id:
+        return None
+
+    u_id_str = str(user_id)
+    u_oid = to_object_id(user_id)
+    id_list = [id_val for id_val in (u_oid, u_id_str) if id_val is not None]
+
     query = {
-        "user_id": user_id,
+        "user_id": {"$in": id_list},
         "$or": [
             {"file_hash": file_hash},
             {"file_name": orig_filename, "file_size_bytes": file_size_bytes},
@@ -158,3 +173,4 @@ async def check_duplicate_policy(
 
     existing = await db.policies.find_one(query)
     return existing
+

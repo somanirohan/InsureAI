@@ -218,10 +218,13 @@ async def upload_policy(
 async def get_user_policies(current_user: dict = Depends(get_current_user)):
     """Retrieve all policies belonging to the authenticated user."""
     u_oid = to_object_id(current_user["_id"])
+    u_str = str(current_user["_id"])
+    id_list = [id_val for id_val in (u_oid, u_str) if id_val is not None]
+
     db = get_async_db()
 
     policies = (
-        await db.policies.find({"user_id": u_oid})
+        await db.policies.find({"user_id": {"$in": id_list} if len(id_list) > 1 else u_oid})
         .sort("uploaded_at", -1)
         .to_list(length=100)
     )

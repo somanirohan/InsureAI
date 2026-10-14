@@ -20,19 +20,19 @@ import { exportComparisonToExcel, exportComparisonToPdf } from '../../services/e
 
 // ─── Status Badge Helper ──────────────────────────────────
 function Tag({ text, variant = 'neutral' }) {
-  if (!text || text === '—') return <span className="text-slate-400 font-normal">—</span>;
+  if (!text || text === '—') return <span className="text-[#558187] font-normal">—</span>;
 
-  let style = 'bg-slate-100 text-slate-700 border-slate-200';
+  let style = 'bg-[#f5f8f8] text-[#2d6a71] border-[#062327]/10';
   if (variant === 'positive') {
     style = 'bg-emerald-50 text-emerald-800 border-emerald-200/80';
   } else if (variant === 'negative') {
     style = 'bg-amber-50 text-amber-800 border-amber-200/80';
   } else if (variant === 'info') {
-    style = 'bg-sky-50 text-sky-800 border-sky-200/80';
+    style = 'bg-[#f0fbfb] text-[#2d6a71] border-[#062327]/15';
   }
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${style}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${style}`}>
       {text}
     </span>
   );
@@ -44,16 +44,16 @@ function CompareRow({ label, description, children, striped, highlighted }) {
     <tr
       className={`transition-colors ${
         highlighted
-          ? 'bg-amber-50/50 hover:bg-amber-50'
+          ? 'bg-[#d2f57b]/15 hover:bg-[#d2f57b]/25'
           : striped
-          ? 'bg-slate-50/40 hover:bg-slate-50/80'
-          : 'bg-white hover:bg-slate-50/80'
+          ? 'bg-[#f8fbfb] hover:bg-[#f2f8f8]'
+          : 'bg-white hover:bg-[#f8fbfb]'
       }`}
     >
-      <td className="sticky left-0 z-10 bg-inherit px-5 py-3.5 text-xs font-semibold text-slate-600 w-52 min-w-[13rem] align-top border-b border-slate-100 border-r border-slate-200/70 shadow-[1px_0_0_rgba(0,0,0,0.02)]">
+      <td className="sticky left-0 z-10 bg-inherit px-5 py-3.5 text-xs font-bold text-[#062327] w-52 min-w-[13rem] align-top border-b border-[#062327]/08 border-r border-[#062327]/10 shadow-[1px_0_0_rgba(6,35,39,0.02)]">
         <div>{label}</div>
         {description && (
-          <div className="text-2xs text-slate-400 font-normal mt-0.5 leading-tight">
+          <div className="text-2xs text-[#558187] font-normal mt-0.5 leading-tight">
             {description}
           </div>
         )}
@@ -66,7 +66,7 @@ function CompareRow({ label, description, children, striped, highlighted }) {
 function DataCell({ children, className = '' }) {
   return (
     <td
-      className={`px-5 py-3.5 text-xs text-slate-800 border-b border-slate-100 border-l border-slate-200/70 align-top min-w-[240px] ${className}`}
+      className={`px-5 py-3.5 text-xs text-[#062327] border-b border-[#062327]/08 border-l border-[#062327]/08 align-top min-w-[240px] ${className}`}
     >
       {children}
     </td>
@@ -331,13 +331,13 @@ export default function ComparisonView({
   return (
     <div className="space-y-6 w-full">
       {/* ─── Top Control Header ───────────────────────────── */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs">
+      <div className="bg-white border border-[#062327]/10 rounded-3xl p-5 sm:p-6 shadow-[0_4px_20px_rgba(6,35,39,0.06)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="font-headline text-xl sm:text-2xl font-extrabold text-[#062327] tracking-tight">
               {t('compare.title', 'Compare Policies')}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-[#558187] mt-1 font-medium">
               {t('compare.subtitle', 'Side-by-side comparison of coverage, limits, co-pay, waiting periods, and network hospitals')}
             </p>
           </div>
@@ -345,17 +345,17 @@ export default function ComparisonView({
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Mode Switcher */}
             {(recommendedPlans?.length > 0 || policies.length > 0) && (
-              <div className="bg-slate-100 p-1 rounded-full border border-slate-200/80 flex items-center text-xs">
+              <div className="bg-[#f5f8f8] p-1 rounded-full border border-[#062327]/10 flex items-center text-xs">
                 <button
                   type="button"
                   onClick={() => setActiveMode('recommended')}
                   className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
                     activeMode === 'recommended'
                       ? 'bg-[#d2f57b] text-[#062327] border border-[#062327] shadow-[0_2px_0_#062327]'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-[#558187] hover:text-[#062327]'
                   }`}
                 >
-                  <Sparkles size={13} className={activeMode === 'recommended' ? 'text-[#062327]' : 'text-slate-400'} />
+                  <Sparkles size={13} className={activeMode === 'recommended' ? 'text-[#062327]' : 'text-[#558187]'} />
                   <span>{t('Market Plans')} ({recommendedPlans?.length || 0})</span>
                 </button>
                 <button
@@ -364,10 +364,10 @@ export default function ComparisonView({
                   className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
                     activeMode === 'uploaded'
                       ? 'bg-[#d2f57b] text-[#062327] border border-[#062327] shadow-[0_2px_0_#062327]'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-[#558187] hover:text-[#062327]'
                   }`}
                 >
-                  <FileText size={13} className={activeMode === 'uploaded' ? 'text-[#062327]' : 'text-slate-400'} />
+                  <FileText size={13} className={activeMode === 'uploaded' ? 'text-[#062327]' : 'text-[#558187]'} />
                   <span>{t('Uploaded Docs')} ({policies.length})</span>
                 </button>
               </div>
@@ -381,10 +381,10 @@ export default function ComparisonView({
               className={`px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 highlightDiffs
                   ? 'bg-[#d2f57b] text-[#062327] border-[#062327] shadow-[0_2px_0_#062327]'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  : 'border-[#062327]/15 bg-white text-[#558187] hover:text-[#062327] hover:bg-[#f5f8f8]'
               }`}
             >
-              <Layers size={13} className={highlightDiffs ? 'text-[#062327]' : 'text-slate-400'} />
+              <Layers size={13} className={highlightDiffs ? 'text-[#062327]' : 'text-[#558187]'} />
               <span>{t('Highlight differences')}</span>
             </button>
 
@@ -403,27 +403,27 @@ export default function ComparisonView({
               </button>
 
               {exportOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-40 animate-fade-in text-xs font-medium">
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-[#062327]/12 rounded-2xl shadow-xl py-1.5 z-40 animate-fade-in text-xs font-medium">
                   <button
                     type="button"
                     onClick={() => handleExport('xlsx')}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer transition-colors"
+                    className="w-full text-left px-3.5 py-2 hover:bg-[#f5f8f8] flex items-center gap-2.5 text-[#062327] cursor-pointer transition-colors"
                   >
                     <FileSpreadsheet size={15} className="text-emerald-600" />
                     <div>
-                      <div className="font-semibold text-slate-900">Excel Spreadsheet</div>
-                      <div className="text-3xs text-slate-400">Download formatted .xlsx / .xls</div>
+                      <div className="font-semibold text-[#062327]">Excel Spreadsheet</div>
+                      <div className="text-3xs text-[#558187]">Download formatted .xlsx / .xls</div>
                     </div>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleExport('pdf')}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer transition-colors border-t border-slate-100"
+                    className="w-full text-left px-3.5 py-2 hover:bg-[#f5f8f8] flex items-center gap-2.5 text-[#062327] cursor-pointer transition-colors border-t border-[#062327]/08"
                   >
                     <Printer size={15} className="text-rose-600" />
                     <div>
-                      <div className="font-semibold text-slate-900">PDF Report</div>
-                      <div className="text-3xs text-slate-400">Print or save styled PDF</div>
+                      <div className="font-semibold text-[#062327]">PDF Report</div>
+                      <div className="text-3xs text-[#558187]">Print or save styled PDF</div>
                     </div>
                   </button>
                 </div>
@@ -440,15 +440,15 @@ export default function ComparisonView({
       {activeMode === 'recommended' && (
         <div className="space-y-4">
           {(!recommendedPlans || recommendedPlans.length === 0) ? (
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-10 text-center shadow-xs space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#d2f57b]/30 text-[#062327] flex items-center justify-center mx-auto border border-[#062327]/10">
-                <Sparkles size={24} />
+            <div className="bg-white border border-[#062327]/10 rounded-3xl p-10 text-center shadow-[0_4px_20px_rgba(6,35,39,0.06)] space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#d2f57b] text-[#062327] border-2 border-[#062327] flex items-center justify-center mx-auto shadow-sm">
+                <Sparkles size={24} className="stroke-[2.5]" />
               </div>
               <div className="max-w-md mx-auto">
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="font-headline text-base font-bold text-[#062327]">
                   No Market Plans to Compare Yet
                 </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-xs text-[#558187] mt-1 leading-relaxed font-medium">
                   Run the recommendation engine to generate curated market plans (Bajaj Allianz, HDFC ERGO, Care, Star, etc.) tailored to your profile.
                 </p>
               </div>
@@ -466,8 +466,8 @@ export default function ComparisonView({
           ) : (
             <>
               {/* Plan Selection Filter Chips */}
-              <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="text-xs font-semibold text-slate-700">
+              <div className="bg-white border border-[#062327]/10 rounded-2xl p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs font-bold text-[#062327]">
                   Select plans to compare:
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -481,19 +481,19 @@ export default function ComparisonView({
                         className={`px-3 py-1.5 rounded-full text-xs transition-all flex items-center gap-2 border cursor-pointer ${
                           isChecked
                             ? 'bg-[#d2f57b]/30 border-[#062327] text-[#062327] font-bold shadow-[0_2px_0_#062327]'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            : 'bg-white border-[#062327]/15 text-[#558187] hover:text-[#062327] hover:bg-[#f5f8f8]'
                         }`}
                       >
                         <div
                           className={`w-3.5 h-3.5 rounded flex items-center justify-center ${
                             isChecked
                               ? 'bg-[#d2f57b] border border-[#062327] text-[#062327]'
-                              : 'border border-slate-300 bg-white'
+                              : 'border border-[#062327]/25 bg-white'
                           }`}
                         >
                           {isChecked && <Check size={10} strokeWidth={3} />}
                         </div>
-                        <span className="text-2xs text-slate-500 font-mono">#{plan.rank}</span>
+                        <span className="text-2xs text-[#558187] font-mono">#{plan.rank}</span>
                         <span>{plan.product_name}</span>
                       </button>
                     );
@@ -502,50 +502,50 @@ export default function ComparisonView({
               </div>
 
               {/* ── Comparison Table ────────────────────────── */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+              <div className="bg-white border border-[#062327]/10 rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(6,35,39,0.06)]">
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-xs">
                     {/* Sticky Table Header */}
-                    <thead className="sticky top-0 z-20 bg-white shadow-2xs border-b border-slate-200">
+                    <thead className="sticky top-0 z-20 bg-white shadow-2xs border-b border-[#062327]/10">
                       <tr>
-                        <th className="sticky left-0 z-30 bg-white px-5 py-5 text-left font-semibold text-slate-600 uppercase tracking-wider w-52 min-w-[13rem] border-r border-slate-200/70">
-                          <span className="text-2xs text-slate-400 block font-normal">Plan Details</span>
-                          <span className="text-sm font-bold text-slate-900">Features</span>
+                        <th className="sticky left-0 z-30 bg-white px-5 py-5 text-left font-bold text-[#062327] uppercase tracking-wider w-52 min-w-[13rem] border-r border-[#062327]/10">
+                          <span className="text-2xs text-[#558187] block font-medium">Plan Details</span>
+                          <span className="font-headline text-sm font-bold text-[#062327]">Features</span>
                         </th>
                         {comparedRecPlans.map((plan) => (
                           <th
                             key={plan.product_id}
-                            className="px-5 py-5 text-left border-l border-slate-200/70 min-w-[260px] align-top bg-white"
+                            className="px-5 py-5 text-left border-l border-[#062327]/10 min-w-[260px] align-top bg-white"
                           >
                             <div className="flex items-center justify-between gap-2 mb-1.5">
-                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-2xs font-semibold">
+                              <span className="px-2 py-0.5 rounded-md bg-[#f5f8f8] text-[#2d6a71] border border-[#062327]/08 text-2xs font-bold">
                                 Rank #{plan.rank}
                               </span>
                               {plan.badge && (
-                                <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200/60 text-3xs font-semibold">
+                                <span className="px-2 py-0.5 rounded-md bg-[#f0fbfb] text-[#062327] border border-[#062327]/15 text-3xs font-bold">
                                   {plan.badge}
                                 </span>
                               )}
-                              <span className="text-3xs font-semibold text-slate-500 uppercase tracking-wider ml-auto">
+                              <span className="text-3xs font-bold text-[#558187] uppercase tracking-wider ml-auto">
                                 {plan.insurer_name}
                               </span>
                             </div>
 
-                            <p className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                            <p className="font-headline text-sm sm:text-base font-bold text-[#062327] leading-snug">
                               {plan.product_name}
                             </p>
 
-                            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-baseline justify-between">
+                            <div className="mt-3 pt-2.5 border-t border-[#062327]/08 flex items-baseline justify-between">
                               <div>
-                                <span className="text-3xs uppercase tracking-wider text-slate-400 font-medium block">
+                                <span className="text-3xs uppercase tracking-wider text-[#558187] font-bold block">
                                   Annual Premium
                                 </span>
-                                <div className="text-base font-bold text-slate-900 tabular-nums">
+                                <div className="text-base font-bold text-[#062327] tabular-nums">
                                   ₹{plan.estimated_annual_premium.toLocaleString('en-IN')}
-                                  <span className="text-3xs font-normal text-slate-500"> /yr</span>
+                                  <span className="text-3xs font-normal text-[#558187]"> /yr</span>
                                 </div>
                               </div>
-                              <span className="px-2.5 py-1 rounded-full bg-[#d2f57b]/35 border border-[#062327]/30 text-[#062327] font-bold text-xs tabular-nums">
+                              <span className="px-2.5 py-1 rounded-full bg-[#d2f57b] border border-[#062327] text-[#062327] font-bold text-xs tabular-nums shadow-2xs">
                                 {plan.overall_match_score}% Match
                               </span>
                             </div>
@@ -555,12 +555,12 @@ export default function ComparisonView({
                     </thead>
 
                     {/* Table Body */}
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-[#062327]/06">
                       {/* SECTION: SUMMARY & SCORES */}
-                      <tr className="bg-slate-50/80">
+                      <tr className="bg-[#edf5f5]">
                         <td
                           colSpan={comparedRecPlans.length + 1}
-                          className="px-5 py-2.5 text-2xs font-bold text-slate-600 uppercase tracking-wider sticky left-0 z-10"
+                          className="px-5 py-2.5 text-2xs font-bold text-[#062327] uppercase tracking-wider sticky left-0 z-10"
                         >
                           Core Highlights & Recommendation Fit
                         </td>
@@ -571,10 +571,10 @@ export default function ComparisonView({
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
                             <div className="flex items-center gap-2.5">
-                              <span className="font-bold text-slate-900 text-sm">
+                              <span className="font-bold text-[#062327] text-sm font-sans tabular-nums">
                                 {plan.overall_match_score} / 100
                               </span>
-                              <span className="text-2xs text-slate-500">
+                              <span className="text-2xs text-[#558187]">
                                 ({plan.overall_match_score >= 85 ? 'Exceptional Fit' : 'Strong Alignment'})
                               </span>
                             </div>
@@ -592,10 +592,10 @@ export default function ComparisonView({
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-slate-900 text-xs font-sans tabular-nums px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-200/80">
+                              <span className="font-bold text-amber-900 text-xs font-sans tabular-nums px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200/80">
                                 {plan.claim_settlement_ratio}% IRDAI Filed
                               </span>
-                              <span className="text-2xs text-slate-500 font-medium">
+                              <span className="text-2xs text-[#558187] font-medium">
                                 ({plan.claim_settlement_ratio >= 98.0 ? 'Top Benchmark' : plan.claim_settlement_ratio >= 96.0 ? 'High Honor Rate' : 'Standard Scale'})
                               </span>
                             </div>
@@ -607,7 +607,7 @@ export default function ComparisonView({
                       <CompareRow label="Why It Fits You" highlighted={false}>
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
-                            <p className="text-xs text-slate-700 leading-relaxed">
+                            <p className="text-xs text-[#2d6a71] leading-relaxed">
                               {plan.why_recommended}
                             </p>
                           </DataCell>
@@ -620,30 +620,30 @@ export default function ComparisonView({
                           const bd = plan.match_breakdown;
                           return (
                             <DataCell key={plan.product_id}>
-                              <div className="space-y-1 text-2xs text-slate-600">
+                              <div className="space-y-1 text-2xs text-[#558187]">
                                 <div className="flex justify-between font-semibold text-amber-900 bg-amber-50/80 px-2 py-0.5 rounded border border-amber-200/60">
                                   <span>Claim Settlement (CSR):</span>
                                   <span>{bd.claim_settlement_score} / 35</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Affordability:</span>
-                                  <span className="font-semibold text-slate-800">{bd.affordability_score} / 22</span>
+                                  <span className="font-semibold text-[#062327]">{bd.affordability_score} / 22</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Coverage & SI:</span>
-                                  <span className="font-semibold text-slate-800">{bd.coverage_score} / 18</span>
+                                  <span className="font-semibold text-[#062327]">{bd.coverage_score} / 18</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Waiting Periods:</span>
-                                  <span className="font-semibold text-slate-800">{bd.waiting_period_score} / 12</span>
+                                  <span className="font-semibold text-[#062327]">{bd.waiting_period_score} / 12</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Hospital Network:</span>
-                                  <span className="font-semibold text-slate-800">{bd.hospital_network_score} / 8</span>
+                                  <span className="font-semibold text-[#062327]">{bd.hospital_network_score} / 8</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Terms & Copay:</span>
-                                  <span className="font-semibold text-slate-800">{bd.terms_score} / 5</span>
+                                  <span className="font-semibold text-[#062327]">{bd.terms_score} / 5</span>
                                 </div>
                               </div>
                             </DataCell>
@@ -652,10 +652,10 @@ export default function ComparisonView({
                       </CompareRow>
 
                       {/* SECTION: FINANCIALS & COVERAGE */}
-                      <tr className="bg-slate-50/80">
+                      <tr className="bg-[#edf5f5]">
                         <td
                           colSpan={comparedRecPlans.length + 1}
-                          className="px-5 py-2.5 text-2xs font-bold text-slate-600 uppercase tracking-wider sticky left-0 z-10"
+                          className="px-5 py-2.5 text-2xs font-bold text-[#062327] uppercase tracking-wider sticky left-0 z-10"
                         >
                           Pricing & Coverage
                         </td>
@@ -665,11 +665,11 @@ export default function ComparisonView({
                       <CompareRow label="Estimated Premium" highlighted={recDiffers((p) => p.estimated_annual_premium)}>
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
-                            <div className="font-bold text-sm text-slate-900 tabular-nums">
+                            <div className="font-bold text-sm text-[#062327] tabular-nums">
                               ₹{plan.estimated_annual_premium.toLocaleString('en-IN')}
-                              <span className="text-2xs font-normal text-slate-500"> / year</span>
+                              <span className="text-2xs font-normal text-[#558187]"> / year</span>
                             </div>
-                            <div className="text-2xs text-slate-500 mt-0.5">
+                            <div className="text-2xs text-[#558187] mt-0.5">
                               ≈ ₹{Math.round(plan.estimated_annual_premium / 12).toLocaleString('en-IN')} / month (excl. 18% GST)
                             </div>
                           </DataCell>
@@ -680,10 +680,10 @@ export default function ComparisonView({
                       <CompareRow label="Sum Insured Limit" striped highlighted={recDiffers((p) => p.recommended_sum_insured)}>
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
-                            <span className="font-bold text-sm text-slate-900 tabular-nums">
+                            <span className="font-bold text-sm text-[#062327] tabular-nums">
                               ₹{(plan.recommended_sum_insured / 100000).toFixed(1)} Lakhs
                             </span>
-                            <p className="text-2xs text-slate-500 mt-0.5">Annual base cover</p>
+                            <p className="text-2xs text-[#558187] mt-0.5">Annual base cover</p>
                           </DataCell>
                         ))}
                       </CompareRow>
@@ -698,10 +698,10 @@ export default function ComparisonView({
                       </CompareRow>
 
                       {/* SECTION: HOSPITALIZATION & ROOM RENT */}
-                      <tr className="bg-slate-50/80">
+                      <tr className="bg-[#edf5f5]">
                         <td
                           colSpan={comparedRecPlans.length + 1}
-                          className="px-5 py-2.5 text-2xs font-bold text-slate-600 uppercase tracking-wider sticky left-0 z-10"
+                          className="px-5 py-2.5 text-2xs font-bold text-[#062327] uppercase tracking-wider sticky left-0 z-10"
                         >
                           Room Rent & Hospitalization Terms
                         </td>
@@ -715,7 +715,7 @@ export default function ComparisonView({
                           return (
                             <DataCell key={plan.product_id}>
                               <Tag text={text} variant={hasCap ? 'negative' : 'positive'} />
-                              <p className="text-2xs text-slate-500 mt-1">
+                              <p className="text-2xs text-[#558187] mt-1">
                                 {!hasCap ? 'No sub-limit penalty on room or doctor fees' : 'Proportional deduction if room exceeds 1% of SI'}
                               </p>
                             </DataCell>
@@ -731,7 +731,7 @@ export default function ComparisonView({
                           return (
                             <DataCell key={plan.product_id}>
                               <Tag text={text} variant={zeroCopay ? 'positive' : 'negative'} />
-                              <p className="text-2xs text-slate-500 mt-1">
+                              <p className="text-2xs text-[#558187] mt-1">
                                 {zeroCopay ? 'Insurer covers 100% of approved claims' : 'Out-of-pocket patient co-payment applies'}
                               </p>
                             </DataCell>
@@ -746,17 +746,17 @@ export default function ComparisonView({
                           return (
                             <DataCell key={plan.product_id}>
                               <Tag text={text} variant="positive" />
-                              <p className="text-2xs text-slate-500 mt-1">Refills sum insured if fully exhausted</p>
+                              <p className="text-2xs text-[#558187] mt-1">Refills sum insured if fully exhausted</p>
                             </DataCell>
                           );
                         })}
                       </CompareRow>
 
                       {/* SECTION: WAITING PERIODS */}
-                      <tr className="bg-slate-50/80">
+                      <tr className="bg-[#edf5f5]">
                         <td
                           colSpan={comparedRecPlans.length + 1}
-                          className="px-5 py-2.5 text-2xs font-bold text-slate-600 uppercase tracking-wider sticky left-0 z-10"
+                          className="px-5 py-2.5 text-2xs font-bold text-[#062327] uppercase tracking-wider sticky left-0 z-10"
                         >
                           Waiting Periods
                         </td>
@@ -770,7 +770,7 @@ export default function ComparisonView({
                           return (
                             <DataCell key={plan.product_id}>
                               <Tag text={wait} variant={isShort ? 'positive' : 'negative'} />
-                              <p className="text-2xs text-slate-500 mt-0.5">Waiting duration for declared prior ailments</p>
+                              <p className="text-2xs text-[#558187] mt-0.5">Waiting duration for declared prior ailments</p>
                             </DataCell>
                           );
                         })}
@@ -782,8 +782,8 @@ export default function ComparisonView({
                           const wait = plan.waiting_periods_summary?.specific_illness || '2 Years';
                           return (
                             <DataCell key={plan.product_id}>
-                              <span className="font-semibold text-slate-800 text-xs">{wait}</span>
-                              <p className="text-2xs text-slate-500 mt-0.5">Joint replacement, cataract, hernia, etc.</p>
+                              <span className="font-bold text-[#062327] text-xs">{wait}</span>
+                              <p className="text-2xs text-[#558187] mt-0.5">Joint replacement, cataract, hernia, etc.</p>
                             </DataCell>
                           );
                         })}
@@ -793,19 +793,19 @@ export default function ComparisonView({
                       <CompareRow label="Initial Waiting Period" highlighted={false}>
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
-                            <span className="font-semibold text-slate-800 text-xs">
+                            <span className="font-bold text-[#062327] text-xs">
                               {plan.waiting_periods_summary?.initial || '30 Days'}
                             </span>
-                            <p className="text-2xs text-slate-500 mt-0.5">Accidental injury covered from Day 1</p>
+                            <p className="text-2xs text-[#558187] mt-0.5">Accidental injury covered from Day 1</p>
                           </DataCell>
                         ))}
                       </CompareRow>
 
                       {/* SECTION: NETWORK HOSPITALS & SERVICES */}
-                      <tr className="bg-slate-50/80">
+                      <tr className="bg-[#edf5f5]">
                         <td
                           colSpan={comparedRecPlans.length + 1}
-                          className="px-5 py-2.5 text-2xs font-bold text-slate-600 uppercase tracking-wider sticky left-0 z-10"
+                          className="px-5 py-2.5 text-2xs font-bold text-[#062327] uppercase tracking-wider sticky left-0 z-10"
                         >
                           Cashless Network & Sources
                         </td>
@@ -815,10 +815,10 @@ export default function ComparisonView({
                       <CompareRow label="Cashless Network" highlighted={recDiffers((p) => p.network_hospitals_count)}>
                         {comparedRecPlans.map((plan) => (
                           <DataCell key={plan.product_id}>
-                            <div className="font-semibold text-slate-900 text-xs tabular-nums">
+                            <div className="font-bold text-[#062327] text-xs tabular-nums">
                               {plan.network_hospitals_count.toLocaleString('en-IN')}+ Partner Hospitals
                             </div>
-                            <p className="text-2xs text-slate-500 mt-0.5">Cashless Anywhere pan-India network</p>
+                            <p className="text-2xs text-[#558187] mt-0.5">Cashless Anywhere pan-India network</p>
                           </DataCell>
                         ))}
                       </CompareRow>
@@ -829,8 +829,8 @@ export default function ComparisonView({
                           <DataCell key={plan.product_id}>
                             <ul className="space-y-1">
                               {plan.key_benefits.map((b, i) => (
-                                <li key={i} className="flex items-start gap-1.5 text-xs text-slate-700">
-                                  <Check size={13} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-[#062327]">
+                                  <Check size={13} className="text-emerald-600 flex-shrink-0 mt-0.5 stroke-[2.5]" />
                                   <span>{b}</span>
                                 </li>
                               ))}
@@ -846,14 +846,14 @@ export default function ComparisonView({
                             {plan.key_limitations && plan.key_limitations.length > 0 ? (
                               <ul className="space-y-1">
                                 {plan.key_limitations.map((lim, i) => (
-                                  <li key={i} className="flex items-start gap-1.5 text-xs text-slate-600">
+                                  <li key={i} className="flex items-start gap-1.5 text-xs text-[#2d6a71]">
                                     <AlertTriangle size={13} className="text-amber-600 flex-shrink-0 mt-0.5" />
                                     <span>{lim}</span>
                                   </li>
                                 ))}
                               </ul>
                             ) : (
-                              <span className="text-slate-400">—</span>
+                              <span className="text-[#558187]">—</span>
                             )}
                           </DataCell>
                         ))}
@@ -874,7 +874,7 @@ export default function ComparisonView({
                                 <ExternalLink size={11} />
                               </a>
                             ) : (
-                              <span className="text-slate-400">IRDAI Catalog</span>
+                              <span className="text-[#558187]">IRDAI Catalog</span>
                             )}
                           </DataCell>
                         ))}
@@ -884,7 +884,7 @@ export default function ComparisonView({
                 </div>
 
                 {/* Table Footer */}
-                <div className="px-5 py-3.5 bg-slate-50/70 border-t border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+                <div className="px-5 py-3.5 bg-[#f8fbfb] border-t border-[#062327]/08 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#558187]">
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
@@ -895,12 +895,12 @@ export default function ComparisonView({
                       Sub-limit / Restriction
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />
+                      <span className="w-2 h-2 rounded-full bg-[#558187] inline-block" />
                       Standard Market Term
                     </span>
                   </div>
 
-                  <p className="text-2xs text-slate-400">
+                  <p className="text-2xs text-[#558187]">
                     InsurAI Policy Comparison Matrix • IRDAI Registered Products
                   </p>
                 </div>
@@ -918,12 +918,12 @@ export default function ComparisonView({
           <ErrorBanner message={uploadedError} onDismiss={() => setUploadedError(null)} />
 
           {/* Policy selector */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div className="bg-white border border-[#062327]/10 rounded-3xl p-5 sm:p-6 shadow-[0_4px_20px_rgba(6,35,39,0.06)]">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-slate-800 uppercase tracking-wider">
+              <p className="font-headline text-sm font-bold text-[#062327] uppercase tracking-wider">
                 Select Uploaded Policies to Compare
               </p>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-[#558187] font-semibold">
                 {selectedUploadedIds.length} selected (min 2)
               </span>
             </div>
@@ -944,17 +944,17 @@ export default function ComparisonView({
                         key={p._id}
                         onClick={() => toggleUploaded(p._id)}
                         aria-pressed={isSelected}
-                        className={`p-4 rounded-xl border text-left flex items-start justify-between gap-3 transition-all duration-200 cursor-pointer ${
+                        className={`p-4 rounded-2xl border text-left flex items-start justify-between gap-3 transition-all duration-200 cursor-pointer ${
                           isSelected
                             ? 'border-[#062327] bg-[#d2f57b]/25 shadow-[0_2px_0_#062327]'
-                            : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-white'
+                            : 'border-[#062327]/10 bg-[#f9fbfb] hover:border-[#062327]/25 hover:bg-white'
                         }`}
                       >
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 truncate">
+                          <p className="font-headline text-sm font-bold text-[#062327] truncate">
                             {p.insurer_name || p.file_name}
                           </p>
-                          <p className="text-xs text-slate-500 capitalize mt-1">
+                          <p className="text-xs text-[#558187] capitalize mt-1 font-medium">
                             {p.policy_type?.replace(/_/g, ' ') || 'Health Insurance'}
                             {p.sum_insured ? ` · ₹${(p.sum_insured / 100000).toFixed(1)}L` : ''}
                           </p>
@@ -963,7 +963,7 @@ export default function ComparisonView({
                           className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
                             isSelected
                               ? 'bg-[#d2f57b] border border-[#062327] text-[#062327]'
-                              : 'border border-slate-300 bg-white'
+                              : 'border border-[#062327]/20 bg-white'
                           }`}
                         >
                           {isSelected && <Check size={12} strokeWidth={3} className="text-[#062327]" />}
@@ -994,7 +994,7 @@ export default function ComparisonView({
                     )}
                   </button>
                   {selectedUploadedIds.length < 2 && (
-                    <p className="text-xs text-slate-500">Select at least 2 policies to run comparison</p>
+                    <p className="text-xs text-[#558187] font-medium">Select at least 2 policies to run comparison</p>
                   )}
                 </div>
               </>
@@ -1003,23 +1003,23 @@ export default function ComparisonView({
 
           {/* Comparison Table */}
           {uploadedResult && metadata.length > 0 && (
-            <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+            <div className="bg-white border border-[#062327]/10 rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(6,35,39,0.06)]">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-xs">
-                  <thead className="sticky top-0 z-20 bg-slate-50/90 border-b border-slate-200">
+                  <thead className="sticky top-0 z-20 bg-white border-b border-[#062327]/10 shadow-2xs">
                     <tr>
-                      <th className="sticky left-0 z-30 bg-slate-50 px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 w-52 border-r border-slate-200/70">
+                      <th className="sticky left-0 z-30 bg-white px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#062327] w-52 border-r border-[#062327]/10">
                         Feature
                       </th>
                       {metadata.map((m) => (
                         <th
                           key={m.policy_id}
-                          className="px-5 py-4 text-left text-xs font-semibold text-slate-900 border-l border-slate-200/70 min-w-[220px]"
+                          className="px-5 py-4 text-left text-xs font-bold text-[#062327] border-l border-[#062327]/10 min-w-[220px]"
                         >
-                          <div className="font-bold text-sm text-slate-900">
+                          <div className="font-headline font-bold text-sm text-[#062327]">
                             {m.insurer_name}
                           </div>
-                          <div className="text-slate-500 font-normal capitalize mt-0.5 text-xs">
+                          <div className="text-[#558187] font-medium capitalize mt-0.5 text-xs">
                             {m.policy_type?.replace(/_/g, ' ')}
                           </div>
                         </th>
@@ -1027,12 +1027,12 @@ export default function ComparisonView({
                     </tr>
                   </thead>
 
-                  <tbody>
+                  <tbody className="divide-y divide-[#062327]/06">
                     {/* Sum Insured */}
                     <CompareRow label="Sum Insured">
                       {metadata.map((m) => (
                         <DataCell key={m.policy_id}>
-                          <span className="font-bold text-slate-900 text-sm tabular-nums">
+                          <span className="font-bold text-[#062327] text-sm tabular-nums">
                             {uploadedResult.coverage_comparison?.[m.policy_id] || '—'}
                           </span>
                         </DataCell>
@@ -1043,7 +1043,7 @@ export default function ComparisonView({
                     <CompareRow label="Annual Premium" striped>
                       {metadata.map((m) => (
                         <DataCell key={m.policy_id}>
-                          <span className="font-bold text-slate-900 text-sm tabular-nums">
+                          <span className="font-bold text-[#062327] text-sm tabular-nums">
                             {uploadedResult.premium_comparison?.[m.policy_id] || '—'}
                           </span>
                         </DataCell>
@@ -1086,11 +1086,11 @@ export default function ComparisonView({
                         return (
                           <DataCell key={m.policy_id}>
                             {waits.length === 0 ? (
-                              <span className="text-slate-400">—</span>
+                              <span className="text-[#558187]">—</span>
                             ) : (
                               <ul className="space-y-1">
                                 {waits.map((w, i) => (
-                                  <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                                  <li key={i} className="flex items-start gap-2 text-xs text-[#062327]">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
                                     {w}
                                   </li>
@@ -1109,11 +1109,11 @@ export default function ComparisonView({
                         return (
                           <DataCell key={m.policy_id}>
                             {exclusions.length === 0 ? (
-                              <span className="text-slate-400">—</span>
+                              <span className="text-[#558187]">—</span>
                             ) : (
                               <ul className="space-y-1">
                                 {exclusions.map((ex, i) => (
-                                  <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                                  <li key={i} className="flex items-start gap-2 text-xs text-[#062327]">
                                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
                                     {ex}
                                   </li>
@@ -1129,7 +1129,7 @@ export default function ComparisonView({
               </div>
 
               {/* Table footer */}
-              <div className="px-5 py-3.5 bg-slate-50/70 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500">
+              <div className="px-5 py-3.5 bg-[#f8fbfb] border-t border-[#062327]/08 flex items-center justify-between text-xs text-[#558187]">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
@@ -1140,11 +1140,11 @@ export default function ComparisonView({
                     Restrictive
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />
+                    <span className="w-2 h-2 rounded-full bg-[#558187] inline-block" />
                     Neutral
                   </span>
                 </div>
-                <p className="text-2xs text-slate-400">AI Policy Comparison Matrix</p>
+                <p className="text-2xs text-[#558187]">AI Policy Comparison Matrix</p>
               </div>
             </div>
           )}

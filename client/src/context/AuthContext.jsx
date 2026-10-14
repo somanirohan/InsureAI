@@ -3,11 +3,20 @@ import api from '../services/api';
 
 const AuthContext = createContext();
 
+const normalizeUser = (u) => {
+  if (!u) return null;
+  const uid = u._id || u.id;
+  return { ...u, _id: uid, id: uid };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('insurai_user') || localStorage.getItem('medshield_user');
-      return (saved && saved !== 'undefined' && saved !== 'null') ? JSON.parse(saved) : null;
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        return normalizeUser(JSON.parse(saved));
+      }
+      return null;
     } catch {
       return null;
     }
@@ -47,8 +56,9 @@ export const AuthProvider = ({ children }) => {
         // Validate active session via HttpOnly cookie or token header
         const res = await api.get('/auth/me');
         if (res.data?.user) {
-          setUser(res.data.user);
-          localStorage.setItem('insurai_user', JSON.stringify(res.data.user));
+          const normalized = normalizeUser(res.data.user);
+          setUser(normalized);
+          localStorage.setItem('insurai_user', JSON.stringify(normalized));
           try {
             const secRes = await api.get('/auth/security-status');
             setSecurityStatus(secRes.data);
@@ -82,9 +92,10 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
     }
     if (newUser) {
-      localStorage.setItem('insurai_user', JSON.stringify(newUser));
-      localStorage.setItem('medshield_user', JSON.stringify(newUser));
-      setUser(newUser);
+      const normalized = normalizeUser(newUser);
+      localStorage.setItem('insurai_user', JSON.stringify(normalized));
+      localStorage.setItem('medshield_user', JSON.stringify(normalized));
+      setUser(normalized);
     }
     fetchSecurityStatus();
     return res.data;
@@ -105,9 +116,10 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
     }
     if (newUser) {
-      localStorage.setItem('insurai_user', JSON.stringify(newUser));
-      localStorage.setItem('medshield_user', JSON.stringify(newUser));
-      setUser(newUser);
+      const normalized = normalizeUser(newUser);
+      localStorage.setItem('insurai_user', JSON.stringify(normalized));
+      localStorage.setItem('medshield_user', JSON.stringify(normalized));
+      setUser(normalized);
     }
     fetchSecurityStatus();
     return res.data;
@@ -123,9 +135,10 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
     }
     if (newUser) {
-      localStorage.setItem('insurai_user', JSON.stringify(newUser));
-      localStorage.setItem('medshield_user', JSON.stringify(newUser));
-      setUser(newUser);
+      const normalized = normalizeUser(newUser);
+      localStorage.setItem('insurai_user', JSON.stringify(normalized));
+      localStorage.setItem('medshield_user', JSON.stringify(normalized));
+      setUser(normalized);
     }
     fetchSecurityStatus();
     return res.data;

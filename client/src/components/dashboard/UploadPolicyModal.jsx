@@ -18,6 +18,7 @@ import {
   Clock,
 } from 'lucide-react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { Spinner, ErrorBanner } from '../common/ui';
 
 const PIPELINE_STEPS = [
@@ -123,6 +124,18 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
     }, 80);
   };
 
+  const { user } = useAuth();
+  const currentUid = user?._id || user?.id;
+
+  // Multi-account safe: only compare against policies belonging strictly to the currently logged in user
+  const userPolicies = (existingPolicies || []).filter(p => {
+    if (!p) return false;
+    if (p.user_id && currentUid) {
+      return String(p.user_id) === String(currentUid);
+    }
+    return true;
+  });
+
   const handleReset = () => {
     if (pollTimerRef.current) {
       clearInterval(pollTimerRef.current);
@@ -150,8 +163,8 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
       return;
     }
 
-    // Client-side duplicate check
-    const isDuplicate = existingPolicies?.some(
+    // Client-side duplicate check strictly for the authenticated user
+    const isDuplicate = userPolicies.some(
       p => p.file_name?.toLowerCase() === f.name.toLowerCase() && p.file_size_bytes === f.size
     );
     if (isDuplicate) {
@@ -179,8 +192,8 @@ export default function UploadPolicyModal({ isOpen, onClose, onUploadSuccess, ex
       return;
     }
 
-    // Client-side duplicate check before upload
-    const isDuplicate = existingPolicies?.some(
+    // Client-side duplicate check before upload strictly for the authenticated user
+    const isDuplicate = userPolicies.some(
       p => p.file_name?.toLowerCase() === file.name.toLowerCase() && p.file_size_bytes === file.size
     );
     if (isDuplicate) {

@@ -581,7 +581,7 @@ export default function CostEstimatorView({ policies }) {
                   </div>
 
                   {/* Dual-color bar */}
-                  <div className="w-full h-3 rounded-full bg-zinc-200 overflow-hidden flex shadow-inner">
+                  <div className="w-full h-3 rounded-full bg-[#062327]/10 overflow-hidden flex shadow-inner">
                     <div
                       style={{ width: `${coveredPctNum}%` }}
                       className="bg-emerald-600 transition-all duration-500 rounded-l-full"

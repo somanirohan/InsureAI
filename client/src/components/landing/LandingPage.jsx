@@ -5,12 +5,15 @@ import {
   User, Phone, Menu, DollarSign, Sparkles, CheckCircle2,
   AlertCircle, Check, Activity, Search, ArrowUpRight,
   ShieldCheck, Zap, Heart, Clock, HelpCircle, Layers,
-  ExternalLink
+  ExternalLink, Eye, EyeOff, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage, LanguageSelector } from '../../context/LanguageContext';
 import { Spinner } from '../common/ui';
 import GoogleLoginButton from '../auth/GoogleLoginButton';
+import PasswordStrengthIndicator, { evaluatePassword } from '../auth/PasswordStrengthIndicator';
+import api from '../../services/api';
+
 
 /* ─────────────────────────────────────────────────────────────
    CLOVER WATERMARK BLOOM
@@ -56,23 +59,37 @@ function DoodleArrow({ className = '', style = {} }) {
    INLINE AUTH DRAWER (Styled in Chainly Petrol Teal & Lime)
    ───────────────────────────────────────────────────────────── */
 function AuthDrawer({ onClose, defaultTab = 'login' }) {
-  const [isLogin, setIsLogin] = useState(defaultTab === 'login');
+  // mode: 'login' | 'register' | 'forgot'
+  const [mode, setMode] = useState(defaultTab);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('demo@insurai.com');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('DemoPass@123!');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Forgot password specific state
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState(null);
+
   const { login, register, loginWithGoogle } = useAuth();
 
-  const switchTab = (toLogin) => {
-    setIsLogin(toLogin);
+  const isLogin = mode === 'login';
+  const isRegister = mode === 'register';
+  const isForgot = mode === 'forgot';
+
+  const switchTab = (newMode) => {
+    setMode(newMode);
     setError(null);
-    if (toLogin) {
+    setForgotSuccess(null);
+    setConfirmPassword('');
+    if (newMode === 'login') {
       setEmail('demo@insurai.com');
-      setPassword('password123');
-    } else {
+      setPassword('DemoPass@123!');
+    } else if (newMode === 'register') {
       setEmail('');
       setPassword('');
     }
@@ -81,16 +98,46 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    if (isRegister) {
+      const { isSatisfied } = evaluatePassword(password);
+      if (!isSatisfied) {
+        setError('Please satisfy all password security requirements before creating your account.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match. Please ensure both password fields are identical.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       if (isLogin) await login(email, password);
-      else await register(fullName, email, password, phone);
+      else if (isRegister) await register(fullName, email, password, phone);
     } catch (err) {
       const isNet = err.code === 'ERR_NETWORK' || err.message?.includes('Network Error');
       const serverMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message;
       setError(isNet
         ? 'Cannot reach the backend on port 5001. Run: npm run server'
         : serverMsg || (isLogin ? 'Authentication failed. Please check your credentials.' : 'Registration failed. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setForgotSuccess(null);
+    setLoading(true);
+
+    try {
+      const res = await api.post('/auth/forgot-password', { email: forgotEmail });
+      setForgotSuccess(res.data?.message || 'Verification link sent to your email.');
+    } catch (err) {
+      const serverMsg = err.response?.data?.detail || err.response?.data?.error || err.response?.data?.message;
+      setError(serverMsg || 'Failed to request password reset link. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -149,33 +196,42 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
         <div className="flex-1 overflow-y-auto px-7 py-6">
           <div className="mb-6">
             <h2 className="font-headline text-2xl font-bold text-white mb-1.5">
-              {isLogin ? 'Welcome back' : 'Create account'}
+              {isForgot ? 'Reset password' : isLogin ? 'Welcome back' : 'Create account'}
             </h2>
             <p className="text-sm sm:text-base text-[#b2d5d9] leading-relaxed">
-              {isLogin ? 'Sign in to access your grounded policy intelligence.' : 'Start analyzing your health insurance in minutes.'}
+              {isForgot
+                ? 'Enter your email to receive a password reset verification link.'
+                : isLogin
+                ? 'Sign in to access your grounded policy intelligence.'
+                : 'Start analyzing your health insurance in minutes.'}
             </p>
           </div>
 
-          {/* Toggle pill */}
-          <div className="flex p-1 mb-6 rounded-full bg-[#051c20] border border-white/10">
-            {['Sign In', 'Register'].map((label, i) => {
-              const active = i === 0 ? isLogin : !isLogin;
-              return (
-                <button
-                  key={label}
-                  id={`drawer-tab-${i === 0 ? 'login' : 'register'}`}
-                  type="button"
-                  onClick={() => switchTab(i === 0)}
-                  className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all cursor-pointer ${active
-                    ? 'bg-[#d2f57b] text-[#062327] shadow-sm'
-                    : 'text-white/60 hover:text-white'
-                    }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+          {/* Toggle pill (Login / Register) */}
+          {!isForgot && (
+            <div className="flex p-1 mb-6 rounded-full bg-[#051c20] border border-white/10">
+              {[
+                { label: 'Sign In', m: 'login' },
+                { label: 'Register', m: 'register' },
+              ].map(({ label, m }) => {
+                const active = mode === m;
+                return (
+                  <button
+                    key={label}
+                    id={`drawer-tab-${m}`}
+                    type="button"
+                    onClick={() => switchTab(m)}
+                    className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all cursor-pointer ${active
+                      ? 'bg-[#d2f57b] text-[#062327] shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                      }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {error && (
             <div className="flex items-start gap-2.5 mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm leading-relaxed">
@@ -184,107 +240,269 @@ function AuthDrawer({ onClose, defaultTab = 'login' }) {
             </div>
           )}
 
-          {/* Google Sign-in */}
-          <div className="mb-5">
-            <GoogleLoginButton
-              label={isLogin ? 'Sign in with Google' : 'Sign up with Google'}
-              onGoogleSuccess={loginWithGoogle}
-              onError={err => setError(err)}
-            />
-          </div>
-
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-white/40">or with email</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-
-          <form id="drawer-auth-form" onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Full Name</label>
-                <div className="relative">
-                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                  <input
-                    id="drawer-fullname"
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    placeholder="Alex Morgan"
-                    style={fieldStyle}
-                  />
+          {/* ══════════════════════════════════════════════════════
+              FORGOT PASSWORD DRAWER VIEW
+              ════════════════════════════════════════════════════ */}
+          {isForgot ? (
+            <div className="space-y-4">
+              {forgotSuccess ? (
+                <div className="p-5 rounded-2xl bg-[#d2f57b]/10 border border-[#d2f57b]/30 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-[#d2f57b]">
+                    <CheckCircle2 size={18} />
+                    <span>Verification Link Sent</span>
+                  </div>
+                  <p className="text-sm text-[#a2cbcf] leading-relaxed">
+                    We've dispatched a secure password reset link to <strong className="text-white">{forgotEmail}</strong>. Please check your inbox and spam folder. Click the link to securely choose a new password.
+                  </p>
+                  <p className="text-xs text-[#6e9ea3]">
+                    The link will expire in 15 minutes.
+                  </p>
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => switchTab('login')}
+                      className="w-full btn-pill-lime py-3 px-5 flex items-center justify-center gap-2 text-sm font-bold shadow-md cursor-pointer"
+                    >
+                      <ArrowLeft size={14} /> Return to Sign In
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotSuccess(null);
+                        setError(null);
+                      }}
+                      className="text-xs text-[#a2cbcf] hover:text-white transition-colors text-center cursor-pointer py-1"
+                    >
+                      Didn't receive an email? Try again
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <form onSubmit={handleForgotSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Email address</label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                      <input
+                        id="drawer-forgot-email"
+                        type="email"
+                        required
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        style={fieldStyle}
+                      />
+                    </div>
+                  </div>
 
-            <div>
-              <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Email address</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                <input
-                  id="drawer-email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  style={fieldStyle}
+                  <div className="pt-2">
+                    <button
+                      id="drawer-forgot-submit"
+                      type="submit"
+                      disabled={loading}
+                      className="w-full btn-pill-lime py-3.5 px-5 flex items-center justify-center gap-2 text-base font-bold shadow-md cursor-pointer disabled:opacity-50"
+                    >
+                      {loading && <Spinner size={16} />}
+                      <span>{loading ? 'Sending Verification Link…' : 'Send Verification Link'}</span>
+                      {!loading && <ArrowRight size={17} />}
+                    </button>
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => switchTab('login')}
+                      className="text-xs text-[#a2cbcf] hover:text-white inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft size={13} /> Back to Sign In
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : (
+            /* ══════════════════════════════════════════════════════
+                LOGIN / REGISTER DRAWER VIEW
+                ════════════════════════════════════════════════════ */
+            <>
+              {/* Google Sign-in */}
+              <div className="mb-5">
+                <GoogleLoginButton
+                  label={isLogin ? 'Sign in with Google' : 'Sign up with Google'}
+                  onGoogleSuccess={loginWithGoogle}
+                  onError={err => setError(err)}
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Password</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                <input
-                  id="drawer-password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={fieldStyle}
-                />
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white/40">or with email</span>
+                <div className="flex-1 h-px bg-white/10" />
               </div>
-            </div>
 
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Phone (optional)</label>
-                <div className="relative">
-                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
-                  <input
-                    id="drawer-phone"
-                    type="tel"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    style={fieldStyle}
-                  />
+              <form id="drawer-auth-form" onSubmit={handleSubmit} className="space-y-4">
+                {isRegister && (
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Full Name</label>
+                    <div className="relative">
+                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                      <input
+                        id="drawer-fullname"
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        placeholder="Alex Morgan"
+                        autoComplete="name"
+                        style={fieldStyle}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Email address</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                    <input
+                      id="drawer-email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      style={fieldStyle}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
 
-            <div className="pt-2">
-              <button
-                id="drawer-submit"
-                type="submit"
-                disabled={loading}
-                className="w-full btn-pill-lime py-3.5 px-5 flex items-center justify-center gap-2 text-base font-bold shadow-md cursor-pointer disabled:opacity-50"
-              >
-                {loading && <Spinner size={16} />}
-                <span>{loading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Sign In' : 'Create Account')}</span>
-                {!loading && <ArrowRight size={17} />}
-              </button>
-            </div>
-          </form>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8]">Password</label>
+                    {isLogin && (
+                      <button
+                        type="button"
+                        id="drawer-forgot-link"
+                        onClick={() => {
+                          setMode('forgot');
+                          setForgotEmail(email);
+                          setError(null);
+                        }}
+                        className="text-xs text-[#d2f57b] hover:underline font-semibold cursor-pointer"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                    <input
+                      id="drawer-password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete={isRegister ? 'new-password' : 'current-password'}
+                      style={{ ...fieldStyle, paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
 
-          {isLogin && (
-            <p className="text-center mt-5 text-sm text-[#7da7ac] leading-relaxed">
-              Pre-filled with demo account. Backend runs on port 5001.
-            </p>
+                  {/* Password Protection Layer & Requirements Checklist */}
+                  {isRegister && (
+                    <PasswordStrengthIndicator password={password} showDetails={true} idPrefix="drawer-reg" />
+                  )}
+                </div>
+
+                {isRegister && (
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Confirm Password</label>
+                    <div className="relative">
+                      <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                      <input
+                        id="drawer-confirm-password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        style={{ ...fieldStyle, paddingRight: '40px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
+                        aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+
+                    {/* Live Match / Mismatch status */}
+                    {confirmPassword.length > 0 && (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+                        {password === confirmPassword ? (
+                          <span className="text-[#d2f57b] font-medium flex items-center gap-1">
+                            <CheckCircle2 size={13} /> Passwords match
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 font-medium flex items-center gap-1">
+                            <AlertTriangle size={13} /> Passwords do not match yet
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isRegister && (
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-wider text-[#9fc4c8] mb-1.5">Phone (optional)</label>
+                    <div className="relative">
+                      <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+                      <input
+                        id="drawer-phone"
+                        type="tel"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        placeholder="+91 98765 43210"
+                        autoComplete="tel"
+                        style={fieldStyle}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    id="drawer-submit"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full btn-pill-lime py-3.5 px-5 flex items-center justify-center gap-2 text-base font-bold shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {loading && <Spinner size={16} />}
+                    <span>{loading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Sign In' : 'Create Account')}</span>
+                    {!loading && <ArrowRight size={17} />}
+                  </button>
+                </div>
+              </form>
+
+              {isLogin && (
+                <p className="text-center mt-5 text-sm text-[#7da7ac] leading-relaxed">
+                  Pre-filled with demo account: <code className="font-mono text-white/90">demo@insurai.com</code>
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -356,8 +356,8 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
     <div className="w-full flex flex-col gap-2.5 my-2 text-xs">
       {/* Heads-up coverage alert (scenario-aware) */}
       {headsUp && (
-        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200">
-          <div className="flex items-center gap-1.5 font-semibold text-amber-400 mb-1">
+        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 shadow-sm">
+          <div className="flex items-center gap-1.5 font-semibold text-amber-800 mb-1">
             <AlertTriangle size={13} />
             <span>Coverage Check Notice</span>
           </div>
@@ -369,37 +369,37 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
       <div className="flex flex-col gap-2">
         {checklist.map((group) => {
           if (!group.items || group.items.length === 0) return null;
-          const isCollapsed = !!collapsedStages[group.stage];
+          const isCollapsed = !collapsedStages[group.stage];
 
           return (
             <div
               key={group.stage}
-              className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden transition-all"
+              className="rounded-xl border border-[#062327]/10 bg-white/70 shadow-sm overflow-hidden transition-all"
             >
               {/* Header */}
               <button
                 type="button"
                 onClick={() => toggleStage(group.stage)}
-                className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-white/[0.04] transition-colors"
+                className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-[#062327]/[0.02] transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-zinc-100 text-xs tracking-tight">
+                  <span className="font-semibold text-[#062327] text-xs tracking-tight">
                     {group.label}
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.06] text-zinc-400 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#062327]/[0.05] text-[#2d6a71] font-mono">
                     {group.items.length}
                   </span>
                 </div>
                 {isCollapsed ? (
-                  <ChevronDown size={14} className="text-zinc-500" />
+                  <ChevronDown size={14} className="text-[#558187]" />
                 ) : (
-                  <ChevronUp size={14} className="text-zinc-500" />
+                  <ChevronUp size={14} className="text-[#558187]" />
                 )}
               </button>
 
               {/* Items */}
               {!isCollapsed && (
-                <div className="px-3.5 pb-3 pt-1 flex flex-col gap-2 border-t border-white/[0.04]">
+                <div className="px-3.5 pb-3 pt-1 flex flex-col gap-2 border-t border-[#062327]/[0.06]">
                   {group.items.map((item, idx) => {
                     const itemId = `${group.stage}-${idx}`;
                     const isChecked = !!checkedItems[itemId];
@@ -407,19 +407,19 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
                     return (
                       <div
                         key={itemId}
-                        className="flex items-start gap-2.5 py-1 px-1 rounded-lg hover:bg-white/[0.02] transition-colors"
+                        className="flex items-start gap-2.5 py-1 px-1 rounded-lg hover:bg-[#062327]/[0.02] transition-colors"
                       >
                         {/* Interactive demo checkbox */}
                         <button
                           type="button"
                           onClick={() => toggleCheck(itemId)}
-                          className="mt-0.5 text-zinc-400 hover:text-brand-400 transition-colors flex-shrink-0"
+                          className="mt-0.5 text-[#558187] hover:text-[#062327] transition-colors flex-shrink-0"
                           title="Mark requirement complete (session demo)"
                         >
                           {isChecked ? (
-                            <CheckSquare size={14} className="text-brand-400" />
+                            <CheckSquare size={14} className="text-[#2d6a71]" />
                           ) : (
-                            <Square size={14} className="text-zinc-500" />
+                            <Square size={14} className="text-[#558187]/70" />
                           )}
                         </button>
 
@@ -427,7 +427,7 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
                           {/* Condition text */}
                           <span
                             className={`leading-relaxed text-xs transition-opacity ${
-                              isChecked ? 'line-through opacity-50 text-zinc-400' : 'text-zinc-200'
+                              isChecked ? 'line-through opacity-50 text-[#558187]' : 'text-[#062327]'
                             }`}
                           >
                             {item.condition}
@@ -437,21 +437,21 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
                           <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                             {/* Deadline badge inline */}
                             {item.deadline && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
                                 <Clock size={9} />
                                 {item.deadline}
                               </span>
                             )}
 
                             {/* Citation chip (same component styling as chat) */}
-                            <span className="inline-flex items-center text-[10px] text-zinc-400 bg-white/[0.04] border border-white/[0.08] px-2 py-0.5 rounded-full">
-                              <BookOpen size={9} className="inline mr-1 text-zinc-500" />
+                            <span className="inline-flex items-center text-[10px] text-[#2d6a71] bg-[#062327]/[0.04] border border-[#062327]/08 px-2 py-0.5 rounded-full">
+                              <BookOpen size={9} className="inline mr-1 text-[#558187]" />
                               p.{item.page_number || item.page || '?'}
                             </span>
 
                             {/* Insurer confirmation badge if not verified */}
                             {!item.verified && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
                                 Confirm with insurer
                               </span>
                             )}
@@ -469,12 +469,12 @@ function ChecklistCard({ checklist, generalAdvice, headsUp }) {
 
       {/* Visually distinct General advice block (not from policy) */}
       {generalAdvice && generalAdvice.length > 0 && (
-        <div className="p-3.5 rounded-xl bg-blue-950/20 border border-blue-500/20 text-blue-200/90 mt-1">
-          <div className="flex items-center gap-1.5 text-blue-400 font-medium text-xs mb-1.5">
+        <div className="p-3.5 rounded-xl bg-sky-50/80 border border-sky-200 text-sky-950 mt-1 shadow-sm">
+          <div className="flex items-center gap-1.5 text-sky-800 font-medium text-xs mb-1.5">
             <Info size={13} />
             <span>General advice — not from your policy</span>
           </div>
-          <ul className="space-y-1 pl-4 list-disc text-[11px] text-zinc-300">
+          <ul className="space-y-1 pl-4 list-disc text-[11px] text-sky-900/90">
             {generalAdvice.map((tip, idx) => (
               <li key={idx} className="leading-relaxed">
                 {tip}
@@ -664,7 +664,7 @@ function MessageBubble({ msg, plainLanguageMode }) {
             <>
               {msg.checklist && msg.checklist.length > 0 ? (
                 <div className="flex flex-col gap-2">
-                  <span className="font-medium text-zinc-100 text-sm">
+                  <span className="font-semibold text-[#062327] text-sm">
                     {msg.answer?.split('\n\n')[0] || "Here are the steps your policy requires to file a claim successfully:"}
                   </span>
                   <ChecklistCard

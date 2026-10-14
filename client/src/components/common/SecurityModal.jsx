@@ -108,58 +108,37 @@ export default function SecurityModal({ isOpen, onClose }) {
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in"
-      style={{ background: 'rgba(5, 5, 12, 0.75)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+      style={{ background: 'rgba(6, 35, 39, 0.45)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="w-full max-w-xl max-h-[92vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden animate-slide-up"
-        style={{
-          background: 'rgba(14, 14, 24, 0.96)',
-          border: '1px solid rgba(255, 255, 255, 0.10)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(200, 169, 110, 0.10)',
-        }}
+        className="w-full max-w-xl max-h-[92vh] flex flex-col rounded-3xl shadow-[0_24px_60px_rgba(6,35,39,0.18)] overflow-hidden bg-white border border-[#062327]/12 animate-slide-up"
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-4.5 border-b"
-          style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
-        >
+        <div className="flex items-center justify-between px-6 py-4.5 border-b border-[#062327]/08 bg-[#f5f8f8]">
           <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, rgba(200,169,110,0.20), rgba(50,200,120,0.15))',
-                border: '1px solid rgba(200,169,110,0.35)',
-              }}
-            >
-              <ShieldCheck size={18} style={{ color: '#e8c97e' }} />
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-[#d2f57b] border border-[#062327] shadow-[0_2px_0_#062327]">
+              <ShieldCheck size={20} className="text-[#062327]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold tracking-tight" style={{ color: '#f0f0f8' }}>
+                <h2 className="text-base font-headline font-bold tracking-tight text-[#062327]">
                   Security & Cookie Architecture
                 </h2>
-                <span
-                  className="px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase rounded-full"
-                  style={{
-                    background: 'rgba(40, 180, 100, 0.15)',
-                    color: '#4ade80',
-                    border: '1px solid rgba(40, 180, 100, 0.3)',
-                  }}
-                >
+                <span className="px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase rounded-full bg-[#d2f57b]/40 text-[#062327] border border-[#062327]/20">
                   Active & Protected
                 </span>
               </div>
-              <p className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.40)' }}>
+              <p className="text-xs text-[#558187]">
                 HIPAA & DPDP compliant data protection for health records
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+            className="p-1.5 rounded-xl text-[#558187] hover:text-[#062327] hover:bg-[#062327]/05 transition-colors"
             aria-label="Close"
           >
             <X size={18} />
@@ -167,35 +146,24 @@ export default function SecurityModal({ isOpen, onClose }) {
         </div>
 
         {/* Content body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 custom-scrollbar bg-white">
           {/* Live Session Status Pill */}
-          <div
-            className="p-3.5 rounded-xl flex items-center justify-between gap-3"
-            style={{
-              background: 'rgba(200, 169, 110, 0.06)',
-              border: '1px solid rgba(200, 169, 110, 0.20)',
-            }}
-          >
+          <div className="p-3.5 rounded-2xl flex items-center justify-between gap-3 bg-[#f5f8f8] border border-[#062327]/10">
             <div className="flex items-center gap-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <div>
-                <p className="text-xs font-semibold text-zinc-200">
-                  User Session: <span className="font-mono text-zinc-400">{user?.email || 'Authenticated'}</span>
+                <p className="text-xs font-semibold text-[#062327]">
+                  User Session: <span className="font-mono text-[#2d6a71]">{user?.email || 'Authenticated'}</span>
                 </p>
-                <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                  Cookie: <span className="font-mono text-amber-300">{sec.session_security?.cookie_name}</span> · SameSite={sec.session_security?.samesite} · Secure={sec.session_security?.secure ? 'True' : 'Auto'}
+                <p className="text-[11px] text-[#558187]">
+                  Cookie: <span className="font-mono font-medium text-[#062327]">{sec.session_security?.cookie_name}</span> · SameSite={sec.session_security?.samesite} · Secure={sec.session_security?.secure ? 'True' : 'Auto'}
                 </p>
               </div>
             </div>
             <button
               onClick={handleRunAudit}
               disabled={loadingAudit}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#e8c97e',
-              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#062327] bg-white hover:bg-[#f0fbfb] border border-[#062327]/15 shadow-sm transition-all"
             >
               <RefreshCw size={12} className={loadingAudit ? 'animate-spin' : ''} />
               <span>{loadingAudit ? 'Auditing...' : 'Re-verify'}</span>
@@ -204,7 +172,7 @@ export default function SecurityModal({ isOpen, onClose }) {
 
           {/* Pillars List */}
           <div className="space-y-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#558187]">
               Active Security Guardrails
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -213,25 +181,21 @@ export default function SecurityModal({ isOpen, onClose }) {
                 return (
                   <div
                     key={idx}
-                    className="p-3.5 rounded-xl flex flex-col justify-between transition-all"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      border: '1px solid rgba(255, 255, 255, 0.06)',
-                    }}
+                    className="p-3.5 rounded-2xl flex flex-col justify-between bg-[#f8fbfb] border border-[#062327]/08 hover:border-[#062327]/20 transition-all shadow-sm"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2">
-                          <Icon size={14} style={{ color: '#c8a96e' }} />
-                          <h3 className="text-xs font-semibold text-zinc-200">{p.title}</h3>
+                          <Icon size={14} className="text-[#2d6a71]" />
+                          <h3 className="text-xs font-bold text-[#062327]">{p.title}</h3>
                         </div>
-                        <CheckCircle2 size={13} className="text-emerald-400 flex-shrink-0" />
+                        <CheckCircle2 size={13} className="text-emerald-600 flex-shrink-0" />
                       </div>
-                      <p className="text-[11px] leading-relaxed text-zinc-400">{p.desc}</p>
+                      <p className="text-[11px] leading-relaxed text-[#558187]">{p.desc}</p>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-white/[0.04] flex items-center justify-between text-[10px]">
-                      <span className="text-zinc-500">Status</span>
-                      <span className="font-mono text-emerald-400 font-medium">{p.status}</span>
+                    <div className="mt-2.5 pt-2 border-t border-[#062327]/06 flex items-center justify-between text-[10px]">
+                      <span className="text-[#558187]">Status</span>
+                      <span className="font-mono text-[#062327] font-semibold">{p.status}</span>
                     </div>
                   </div>
                 );
@@ -240,26 +204,17 @@ export default function SecurityModal({ isOpen, onClose }) {
           </div>
 
           {/* Confidentiality Notice */}
-          <div
-            className="p-3 rounded-xl flex items-start gap-2.5 text-xs text-zinc-400"
-            style={{
-              background: 'rgba(59, 130, 246, 0.05)',
-              border: '1px solid rgba(59, 130, 246, 0.15)',
-            }}
-          >
-            <CheckCircle2 size={15} className="text-blue-400 flex-shrink-0 mt-0.5" />
-            <p className="leading-relaxed">
+          <div className="p-3.5 rounded-2xl flex items-start gap-2.5 text-xs text-[#062327] bg-[#d2f57b]/15 border border-[#062327]/10">
+            <CheckCircle2 size={16} className="text-emerald-700 flex-shrink-0 mt-0.5" />
+            <p className="leading-relaxed text-[#2d6a71] text-[11.5px]">
               Your health insurance documents are never shared or indexed into general model weights. Vectors exist strictly in a sandboxed, ephemeral ChromaDB tenant collection mapped to your account.
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div
-          className="px-6 py-4 border-t flex items-center justify-between flex-shrink-0"
-          style={{ borderColor: 'rgba(255, 255, 255, 0.08)', background: 'rgba(10, 10, 18, 0.8)' }}
-        >
-          <div className="text-[11px] text-zinc-500">
+        <div className="px-6 py-4 border-t border-[#062327]/08 bg-[#f5f8f8] flex items-center justify-between flex-shrink-0">
+          <div className="text-[11px] text-[#558187]">
             {auditTimestamp ? `Audit refreshed at ${auditTimestamp}` : 'Session verified'}
           </div>
           <div className="flex items-center gap-2">
@@ -268,14 +223,14 @@ export default function SecurityModal({ isOpen, onClose }) {
                 logout();
                 onClose();
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200"
             >
               <LogOut size={13} />
               <span>Invalidate Session</span>
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-xl text-xs font-medium text-zinc-200 hover:bg-white/[0.08] transition-all border border-white/[0.12]"
+              className="btn-pill-lime text-xs px-5 py-1.5"
             >
               Done
             </button>

@@ -7,39 +7,66 @@ Strictly excludes password_hash from all API responses.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 from typing import Any
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 
 try:
     from config import settings
-    from db import get_async_db, serialize_doc
-    from models.user import AuthTokenResponse, GoogleAuthRequest, UserLogin, UserRegister, UserResponse
+    from db import get_async_db, serialize_doc, to_object_id
+    from models.user import (
+        AuthTokenResponse,
+        ForgotPasswordRequest,
+        ForgotPasswordResponse,
+        GoogleAuthRequest,
+        ResetPasswordRequest,
+        ResetPasswordResponse,
+        UserLogin,
+        UserRegister,
+        UserResponse,
+        VerifyResetTokenResponse,
+    )
     from services.auth_service import (
         clear_auth_cookie,
         create_access_token,
         get_current_user,
         hash_password,
         set_auth_cookie,
+        validate_password_strength,
         verify_password,
     )
     from services.google_auth_service import exchange_google_auth_code, get_user_from_access_token, verify_google_id_token
     from services.crypto_service import build_user_email_query, hash_sha256, secure_user_data, unsecure_user_data
+    from services.email_service import send_password_reset_email, send_welcome_email
 except ImportError:
     from server.config import settings
-    from server.db import get_async_db, serialize_doc
-    from server.models.user import AuthTokenResponse, GoogleAuthRequest, UserLogin, UserRegister, UserResponse
+    from server.db import get_async_db, serialize_doc, to_object_id
+    from server.models.user import (
+        AuthTokenResponse,
+        ForgotPasswordRequest,
+        ForgotPasswordResponse,
+        GoogleAuthRequest,
+        ResetPasswordRequest,
+        ResetPasswordResponse,
+        UserLogin,
+        UserRegister,
+        UserResponse,
+        VerifyResetTokenResponse,
+    )
     from server.services.auth_service import (
         clear_auth_cookie,
         create_access_token,
         get_current_user,
         hash_password,
         set_auth_cookie,
+        validate_password_strength,
         verify_password,
     )
     from server.services.google_auth_service import exchange_google_auth_code, get_user_from_access_token, verify_google_id_token
     from server.services.crypto_service import build_user_email_query, hash_sha256, secure_user_data, unsecure_user_data
+    from server.services.email_service import send_password_reset_email, send_welcome_email
 
 logger = logging.getLogger("insureai.auth")
 
@@ -47,13 +74,21 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=AuthTokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserRegister, response: Response):
+async def register(payload: UserRegister, response: Response, background_tasks: BackgroundTasks):
     """Register a new user account with bcrypt password hashing and secure HttpOnly cookie."""
     email_clean = payload.email.lower().strip()
     if not email_clean or not payload.password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email and password are required.",
+        )
+
+    # Enforce password protection layer (minimum 8 chars, special chars, uppercase, lowercase, numbers)
+    pwd_valid, pwd_err = validate_password_strength(payload.password)
+    if not pwd_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=pwd_err,
         )
 
     db = get_async_db()
@@ -87,6 +122,13 @@ async def register(payload: UserRegister, response: Response):
 
     # Issue secure HttpOnly session cookie to protect against XSS token harvesting
     set_auth_cookie(response, token)
+
+    # Dispatch welcome email asynchronously to the registered user
+    background_tasks.add_task(
+        send_welcome_email,
+        to_email=email_clean,
+        user_name=payload.full_name.strip(),
+    )
 
     # Sanitize user dict for response
     safe_user = {
@@ -346,4 +388,189 @@ async def get_security_status(current_user: dict = Depends(get_current_user)):
         },
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+def _mask_email(email: str) -> str:
+    """Mask email for privacy in verification previews, e.g., a***n@domain.com."""
+    if "@" not in email:
+        return email
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        masked_local = local[0] + "***"
+    else:
+        masked_local = local[0] + "***" + local[-1]
+    return f"{masked_local}@{domain}"
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(payload: ForgotPasswordRequest):
+    """
+    Initiate forgot password workflow.
+    Generates a secure, time-sensitive verification token and sends a reset link to the user's email.
+    """
+    email_clean = payload.email.lower().strip()
+    if not email_clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A valid email address is required.",
+        )
+
+    db = get_async_db()
+    user = await db.users.find_one(build_user_email_query(email_clean))
+
+    # Anti-enumeration response: always return generic success message to client
+    standard_message = "If an account with that email exists, a password reset link has been sent to your email address."
+
+    if not user:
+        logger.info("Forgot password requested for non-existent email: %s", email_clean)
+        return ForgotPasswordResponse(
+            success=True,
+            message=standard_message,
+        )
+
+    user_id_str = str(user["_id"])
+    decrypted_user = unsecure_user_data(user)
+    user_name = decrypted_user.get("full_name") or email_clean.split("@")[0]
+
+    # Invalidate existing unused tokens for this user
+    await db.password_reset_tokens.update_many(
+        {"user_id": user_id_str, "used": False},
+        {"$set": {"used": True, "invalidated_at": datetime.utcnow()}},
+    )
+
+    # Generate cryptographically secure token
+    token = secrets.token_urlsafe(32)
+    now = datetime.utcnow()
+    expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+
+    token_doc = {
+        "_id": ObjectId(),
+        "token": token,
+        "user_id": user_id_str,
+        "email": email_clean,
+        "expires_at": expires_at,
+        "used": False,
+        "created_at": now,
+    }
+    await db.password_reset_tokens.insert_one(token_doc)
+
+    client_base = settings.CLIENT_URL.rstrip("/")
+    reset_url = f"{client_base}/reset-password?token={token}"
+
+    email_result = await send_password_reset_email(
+        to_email=email_clean,
+        reset_url=reset_url,
+        user_name=user_name,
+    )
+
+    logger.info("Forgot password reset token generated for user %s (provider=%s)", user_id_str, email_result.get("provider"))
+
+    return ForgotPasswordResponse(
+        success=True,
+        message="A verification link has been sent to your email address. Please check your inbox within 15 minutes.",
+        dev_reset_url=None,
+    )
+
+
+@router.get("/verify-reset-token", response_model=VerifyResetTokenResponse)
+async def verify_reset_token(token: str = Query(..., description="The password reset verification token")):
+    """
+    Verify whether a reset password token is valid and unexpired before presenting the reset form.
+    """
+    token_clean = token.strip()
+    if not token_clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification token is required.",
+        )
+
+    db = get_async_db()
+    record = await db.password_reset_tokens.find_one({"token": token_clean, "used": False})
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This verification link is invalid or has already been used. Please request a new password reset.",
+        )
+
+    if record.get("expires_at", datetime.min) < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This verification link has expired (15-minute validity). Please request a new password reset.",
+        )
+
+    masked = _mask_email(record.get("email", ""))
+    return VerifyResetTokenResponse(
+        valid=True,
+        email=masked,
+        message="Token is valid and active.",
+    )
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(payload: ResetPasswordRequest):
+    """
+    Reset user password using a verified token.
+    Enforces password strength protection layer (8+ chars, special char, uppercase, lowercase, numbers).
+    """
+    token_clean = payload.token.strip()
+    if not token_clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification token is required.",
+        )
+
+    # 1. Enforce password protection layer
+    pwd_valid, pwd_err = validate_password_strength(payload.new_password)
+    if not pwd_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=pwd_err,
+        )
+
+    # 2. Check token in database
+    db = get_async_db()
+    record = await db.password_reset_tokens.find_one({"token": token_clean, "used": False})
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This verification link is invalid or has already been used. Please request a new password reset.",
+        )
+
+    now = datetime.utcnow()
+    if record.get("expires_at", datetime.min) < now:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This verification link has expired. Please request a new password reset.",
+        )
+
+    # 3. Update user password
+    user_id_val = to_object_id(record["user_id"]) or record["user_id"]
+    new_hash = hash_password(payload.new_password)
+
+    user_update_result = await db.users.update_one(
+        {"_id": user_id_val},
+        {"$set": {"password_hash": new_hash, "updated_at": now}},
+    )
+
+    if user_update_result.matched_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User account associated with this token was not found.",
+        )
+
+    # 4. Mark token as consumed
+    await db.password_reset_tokens.update_one(
+        {"_id": record["_id"]},
+        {"$set": {"used": True, "used_at": now}},
+    )
+
+    logger.info("Password successfully reset for user %s", record["user_id"])
+
+    return ResetPasswordResponse(
+        success=True,
+        message="Your password has been successfully reset! You can now log in with your new credentials.",
+    )
+
 

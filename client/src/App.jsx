@@ -13,6 +13,7 @@ import HealthPage from './components/common/HealthPage';
 import SecurityModal from './components/common/SecurityModal';
 import CookieConsentBanner from './components/common/CookieConsentBanner';
 import NotFoundPage from './components/common/NotFoundPage';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import api from './services/api';
 import { Spinner } from './components/common/ui';
 
@@ -54,18 +55,21 @@ export default function App() {
     }
   };
 
+  const userId = user?._id || user?.id || null;
+
   // Reset tab to dashboard and scope compare data whenever user changes (login, logout, new account)
   useEffect(() => {
     setActiveTab('dashboard');
     setChatTargetPolicy(null);
 
-    if (!user?._id) {
-      setPolicies([]);
-      setRecommendationCompareData(null);
-    } else {
+    // Immediately clear previous user's policies to prevent cross-account pollution
+    setPolicies([]);
+    setRecommendationCompareData(null);
+
+    if (userId) {
       fetchPolicies();
       try {
-        const userCompareKey = `insurai_compare_recommendations_${user._id}`;
+        const userCompareKey = `insurai_compare_recommendations_${userId}`;
         const saved = localStorage.getItem(userCompareKey);
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -77,7 +81,7 @@ export default function App() {
         setRecommendationCompareData(null);
       }
     }
-  }, [user?._id]);
+  }, [userId]);
 
   const handleNavigateToCompare = (data) => {
     if (data && data.length > 0) {
@@ -115,8 +119,13 @@ export default function App() {
     return <HealthPage />;
   }
 
+  // ── Password Reset Route ─────────────────────────────────
+  if (typeof window !== 'undefined' && window.location.pathname === '/reset-password') {
+    return <ResetPasswordPage />;
+  }
+
   // ── 404 Route for Unrecognized Top-Level Paths ────────────
-  const knownPaths = ['/', '/dashboard', '/recommend', '/claims', '/chat', '/cost', '/compare', '/health', '/api/health'];
+  const knownPaths = ['/', '/dashboard', '/recommend', '/claims', '/chat', '/cost', '/compare', '/health', '/api/health', '/reset-password'];
   if (typeof window !== 'undefined' && window.location.pathname !== '/' && !knownPaths.includes(window.location.pathname)) {
     return <NotFoundPage />;
   }
@@ -124,7 +133,7 @@ export default function App() {
   // ── Auth loading ───────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f6faeb' }}>
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f8f8]">
         <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="relative w-20 h-20">
             <div className="animate-blob-float w-20 h-20" style={{
@@ -211,32 +220,41 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen relative text-[#062327]" style={{ background: '#f6faeb' }}>
-      {/* Subtle ambient background — light lime gradients */}
+    <div className="flex min-h-screen relative text-[#062327] bg-[#f5f8f8] selection:bg-[#d2f57b] selection:text-[#062327]">
+      {/* Landing page signature ambient background lighting */}
       <div
         aria-hidden
         className="fixed inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse at 5% 0%, rgba(210,245,123,0.28) 0%, transparent 45%),
-            radial-gradient(ellipse at 95% 5%, rgba(210,245,123,0.20) 0%, transparent 40%),
-            radial-gradient(ellipse at 50% 100%, rgba(210,245,123,0.12) 0%, transparent 60%)
+            radial-gradient(ellipse at 8% 0%, rgba(210,245,123,0.22) 0%, transparent 45%),
+            radial-gradient(ellipse at 92% 5%, rgba(6,35,39,0.035) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 100%, rgba(210,245,123,0.10) 0%, transparent 60%)
           `,
         }}
       />
 
-      {/* Subtle organic clover watermark in background */}
-      <div className="fixed -top-16 -right-16 pointer-events-none opacity-30 select-none" aria-hidden>
+      {/* Landing page signature clover watermark blooms */}
+      <div className="fixed -top-16 -right-16 pointer-events-none opacity-40 select-none" aria-hidden>
         <svg width="420" height="420" viewBox="0 0 200 200" fill="none">
-          <circle cx="100" cy="65" r="46" fill="rgba(6,35,39,0.03)" />
-          <circle cx="135" cy="100" r="46" fill="rgba(6,35,39,0.03)" />
-          <circle cx="100" cy="135" r="46" fill="rgba(6,35,39,0.03)" />
-          <circle cx="65" cy="100" r="46" fill="rgba(6,35,39,0.03)" />
-          <circle cx="100" cy="100" r="38" fill="rgba(6,35,39,0.03)" />
+          <circle cx="100" cy="65" r="46" fill="rgba(6,35,39,0.025)" />
+          <circle cx="135" cy="100" r="46" fill="rgba(6,35,39,0.025)" />
+          <circle cx="100" cy="135" r="46" fill="rgba(6,35,39,0.025)" />
+          <circle cx="65" cy="100" r="46" fill="rgba(6,35,39,0.025)" />
+          <circle cx="100" cy="100" r="38" fill="rgba(6,35,39,0.025)" />
+        </svg>
+      </div>
+      <div className="fixed bottom-10 -left-20 pointer-events-none opacity-30 select-none" aria-hidden>
+        <svg width="400" height="400" viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="65" r="46" fill="rgba(6,35,39,0.02)" />
+          <circle cx="135" cy="100" r="46" fill="rgba(6,35,39,0.02)" />
+          <circle cx="100" cy="135" r="46" fill="rgba(6,35,39,0.02)" />
+          <circle cx="65" cy="100" r="46" fill="rgba(6,35,39,0.02)" />
+          <circle cx="100" cy="100" r="38" fill="rgba(6,35,39,0.02)" />
         </svg>
       </div>
 
-      {/* Liquid blob accent (present across all tabs) */}
+      {/* Liquid blob accent (present across all tabs, softly blended) */}
       <div
         aria-hidden
         className="fixed pointer-events-none"
@@ -246,7 +264,7 @@ export default function App() {
           width: 'clamp(380px, 50vw, 720px)',
           height: 'clamp(380px, 50vw, 720px)',
           zIndex: 0,
-          opacity: 0.22,
+          opacity: 0.18,
         }}
       >
         <LiquidBlob className="w-full h-full" />

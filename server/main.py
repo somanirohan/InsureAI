@@ -84,7 +84,8 @@ cors_kwargs = {
 if "*" in allowed_origins:
     cors_kwargs["allow_origin_regex"] = "https?://.*"
 else:
-    cors_kwargs["allow_origins"] = allowed_origins
+    # Always allow any localhost or 127.0.0.1 port (5173, 5174, etc.) seamlessly in local dev
+    cors_kwargs["allow_origin_regex"] = r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
 
 app.add_middleware(CORSMiddleware, **cors_kwargs)
 

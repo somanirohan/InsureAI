@@ -60,7 +60,31 @@ def _parse_duration(duration_str: str) -> timedelta:
     return timedelta(days=7)
 
 
-import hashlib
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;:,.<>?/~`'\"\\"
+
+
+def validate_password_strength(password: str) -> tuple[bool, Optional[str]]:
+    """
+    Validate that password meets security requirements:
+    - Minimum 8 characters
+    - At least one special character
+    - At least one uppercase letter (A-Z)
+    - At least one lowercase letter (a-z)
+    - At least one digit (0-9)
+    """
+    if not password or len(password) < PASSWORD_MIN_LENGTH:
+        return False, f"Password must be at least {PASSWORD_MIN_LENGTH} characters long."
+    if not any(c in PASSWORD_SPECIAL_CHARS for c in password):
+        return False, "Password must include at least one special character (e.g. !@#$%^&*)."
+    if not any(c.isupper() for c in password):
+        return False, "Password must include at least one uppercase letter (A-Z)."
+    if not any(c.islower() for c in password):
+        return False, "Password must include at least one lowercase letter (a-z)."
+    if not any(c.isdigit() for c in password):
+        return False, "Password must include at least one number (0-9)."
+    return True, None
+
 
 def hash_password(password: str) -> str:
     """Hash password using industry-standard bcrypt with a fresh random salt."""

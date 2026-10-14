@@ -106,19 +106,27 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path.lower()
         if origin:
-            # Origin must be explicitly allowed
+            # Origin must be explicitly allowed or a local development port
             normalized_origin = origin.rstrip("/")
             is_valid = any(
                 normalized_origin == allowed_orig.rstrip("/")
                 for allowed_orig in allowed
-            )
+            ) or bool(re.match(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", normalized_origin))
             if not is_valid:
                 logger.warning("CSRF block: Untrusted origin '%s' on %s", origin, request.url.path)
                 return JSONResponse(
                     status_code=403,
                     content={"detail": "Cross-Site Request Forgery (CSRF) validation failed. Untrusted origin."},
                 )
-        elif path not in ("/api/auth/login", "/api/auth/register") and has_auth_cookie and not has_custom_header:
+        AUTH_PUBLIC_PATHS = (
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/api/auth/verify-reset-token",
+            "/api/auth/google",
+        )
+        if path not in AUTH_PUBLIC_PATHS and has_auth_cookie and not has_custom_header:
             logger.warning("CSRF block: Missing Origin/Referer and anti-CSRF header on cookie request %s", request.url.path)
             return JSONResponse(
                 status_code=403,
@@ -166,7 +174,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         now = time.time()
 
         # Strict rate limit on sensitive authentication routes
-        if path in ("/api/auth/login", "/api/auth/register"):
+        AUTH_SENSITIVE_PATHS = (
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+        )
+        if path in AUTH_SENSITIVE_PATHS:
             key = (client_ip, "auth")
             count = self._clean_and_count(key, now, window=60.0)
             if count >= settings.RATE_LIMIT_AUTH_MAX_REQUESTS:
