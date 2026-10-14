@@ -114,11 +114,15 @@ Health insurance policies are notoriously dense, laden with legal jargon, and di
   - **Deterministic Precedence Table (`app/claims/precedence.py`)**: Hierarchical rule table resolving document and amount conflicts (`irda_guideline` > `user_confirmed` > `final_bill` > `itemised_bills` > `preauth_approval_letter` > `pre_treatment_estimate`), keeping arithmetic strictly outside the model.
   - **Fallback Resilience**: Automatic fallback to BM25 keyword baseline with visible notice (`Semantic matching unavailable, using keyword fallback`) on provider timeouts.
 
-### 7. Modern Responsive Dark-Themed UI
-- **Rich Aesthetics**: Custom dark palette (`#07070d`) with ambient nebula lighting, starfield canvas effects, and glassmorphic cards.
-- **Bento-Grid Dashboard**: Overview of uploaded policies, extracted fact summaries, quick actions, and recent activity.
-- **Collapsible Navigation**: 3-line minimization button collapses the sidebar into an icon-only strip with centered navigation items.
-- **Responsive Layout**: Designed for seamless usability across desktops, tablets, and smartphones.
+### 7.### 6. Unified Light Health-Tech Design System
+- **Harmonized Aesthetic**: Clean, high-readability light interface featuring a signature mint/petrol palette:
+  - Deep Petrol Teal (`#062327`) for high-contrast, accessible typography and structure.
+  - Soft Mint Canvas (`#f5f8f8`) with dual-clover watermark bloom motifs and subtle ambient radial lighting.
+  - Signature Lime Pill Accents (`#d2f57b`) for primary actions, active navigation states, and status badges.
+- **Unified Across All Tabs**: Dashboard, Market Recommendations, Claims Workflow, AI Chat Assistant, Cost Estimator, and Policy Comparison all share consistent component tokens, rounded-3xl cards, and typography.
+- **Collapsible Navigation & Mobile Drawer**: Responsive sidebar collapses to an icon-only strip with tooltip previews, plus a full slide-over drawer for mobile screens.
+- **Interactive OWASP Security Modal**: Built-in modal detailing session HttpOnly cookie security, anti-CSRF defenses, and multi-tenant data sandboxing.
+
 
 ---
 
